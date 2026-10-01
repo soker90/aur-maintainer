@@ -1,5 +1,6 @@
 name: AUR Maintainer
-description: Automate the maintenance of Arch Linux AUR packages
+description: >-
+  Automate the maintenance of Arch Linux AUR packages
 author: Eduardo Parra
 
 branding:
@@ -8,13 +9,17 @@ branding:
 
 inputs:
   milliseconds:
-    description: Template input retained temporarily while the Action bootstrap is completed
+    description: >-
+      Template input retained temporarily while the Action bootstrap is
+      completed
     required: false
     default: '1000'
 
 outputs:
   time:
-    description: Template output retained temporarily while the Action bootstrap is completed
+    description: >-
+      Template output retained temporarily while the Action bootstrap is
+      completed
 
 runs:
   using: node24
