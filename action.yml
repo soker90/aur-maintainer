@@ -2,7 +2,6 @@ name: AUR Maintainer
 description: >-
   Automate the maintenance of Arch Linux AUR packages
 author: Eduardo Parra
-
 branding:
   icon: package
   color: blue

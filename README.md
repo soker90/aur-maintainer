@@ -2,8 +2,8 @@
 
 A GitHub Action for automating the maintenance of Arch Linux AUR packages.
 
-> **Status:** early development. The public API and configuration format are
-> not stable yet.
+> **Status:** early development. The public API and configuration format are not
+> stable yet.
 
 ## Planned capabilities
 
