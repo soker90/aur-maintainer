@@ -111,7 +111,11 @@ describe('github-tag connector', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.github.com/repos/owner/project/tags?per_page=100&page=1',
-      expect.anything()
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer test-token'
+        })
+      })
     )
   })
 
