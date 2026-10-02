@@ -33,7 +33,7 @@
     "format:check": "npx prettier --check .",
     "lint": "npx eslint .",
     "local-action": "npx @github/local-action . src/main.ts .env",
-    "package": "npx rimraf ./dist && npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "package": "node -e \"require('node:fs').rmSync('./dist', { recursive: true, force: true })\" && npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
     "package:watch": "npm run package -- --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
@@ -72,6 +72,9 @@
   },
   "overrides": {
     "@actions/http-client@3.0.2": {
+      "undici": "6.29.0"
+    },
+    "@actions/http-client@4.0.0": {
       "undici": "6.29.0"
     },
     "@actions/http-client@4.0.0": {
