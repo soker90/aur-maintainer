@@ -12,11 +12,28 @@ inputs:
       Path to the optional repository configuration file
     required: false
     default: .aur-maintainer.yml
+  github-token:
+    description: >-
+      GitHub token used to create the update pull request
+    required: false
+  update-branch:
+    description: >-
+      Branch used for the generated update pull request
+    required: false
+    default: aur-maintainer/updates
+  base-branch:
+    description: >-
+      Branch that receives the generated update pull request
+    required: false
+    default: main
 
 outputs:
   packages:
     description: >-
       JSON array containing discovered packages and detected update candidates
+  pull-request:
+    description: >-
+      URL of the generated update pull request, when one is created
 
 runs:
   using: node24
