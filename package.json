@@ -1,20 +1,23 @@
 {
-  "name": "typescript-action",
-  "description": "GitHub Actions TypeScript template",
+  "name": "aur-maintainer",
+  "description": "GitHub Action for automated Arch Linux AUR package maintenance",
   "version": "0.0.0",
-  "author": "",
+  "author": "Eduardo Parra",
   "type": "module",
   "private": true,
-  "homepage": "https://github.com/actions/typescript-action",
+  "homepage": "https://github.com/soker90/aur-maintainer",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/soker90/aur-maintainer.git"
   },
   "bugs": {
-    "url": "https://github.com/actions/typescript-action/issues"
+    "url": "https://github.com/soker90/aur-maintainer/issues"
   },
   "keywords": [
-    "actions"
+    "actions",
+    "aur",
+    "arch-linux",
+    "aur-maintenance"
   ],
   "exports": {
     ".": "./dist/index.js"
@@ -37,7 +40,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^3.0.0"
+    "@actions/core": "^3.0.1"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.2",
@@ -65,5 +68,13 @@
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "*"
+  },
+  "overrides": {
+    "@actions/http-client@3.0.2": {
+      "undici": "6.29.0"
+    },
+    "@actions/http-client@4.0.0": {
+      "undici": "6.29.0"
+    }
   }
 }

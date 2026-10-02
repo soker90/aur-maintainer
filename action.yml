@@ -1,23 +1,24 @@
-name: The name of your action here
-description: Provide a description here
-author: Your name or organization here
-
-# Add your action's branding here. This will appear on the GitHub Marketplace.
+name: AUR Maintainer
+description: >-
+  Automate the maintenance of Arch Linux AUR packages
+author: Eduardo Parra
 branding:
-  icon: heart
-  color: red
+  icon: package
+  color: blue
 
-# Define your inputs here.
 inputs:
   milliseconds:
-    description: Your input description here
-    required: true
+    description: >-
+      Template input retained temporarily while the Action bootstrap is
+      completed
+    required: false
     default: '1000'
 
-# Define your outputs here.
 outputs:
   time:
-    description: Your output description here
+    description: >-
+      Template output retained temporarily while the Action bootstrap is
+      completed
 
 runs:
   using: node24
