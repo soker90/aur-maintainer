@@ -29,10 +29,13 @@ describe('update pull request creation', () => {
         })
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ html_url: 'https://github.com/test/pr/1' }), {
-          status: 201,
-          headers: { 'content-type': 'application/json' }
-        })
+        new Response(
+          JSON.stringify({ html_url: 'https://github.com/test/pr/1' }),
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json' }
+          }
+        )
       )
 
     await expect(
