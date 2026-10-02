@@ -40,6 +40,15 @@ config:
   repository: stacklok/toolhive-studio
 ```
 
+For repositories that publish versions as Git tags without GitHub Releases,
+use the `github-tag` connector:
+
+```yaml
+connector: github-tag
+config:
+  repository: owner/project
+```
+
 The global configuration can restrict which package directories are managed:
 
 ```yaml
