@@ -88,8 +88,8 @@ describe('discoverPackages', () => {
     const directory = path.join(root, 'packages/broken')
     await mkdir(path.join(directory, 'PKGBUILD'), { recursive: true })
 
-    await expect(discoverPackages(root, { packages: ['packages/broken'] })).rejects.toThrow(
-      'has no PKGBUILD'
-    )
+    await expect(
+      discoverPackages(root, { packages: ['packages/broken'] })
+    ).rejects.toThrow('has no PKGBUILD')
   })
 })
