@@ -29,9 +29,6 @@ jobs:
       - name: Install Dependencies
         id: npm-ci
         run: npm ci
-      - name: Show Prettier Output
-        id: show-prettier
-        run: npx prettier __tests__/update.test.ts
       - name: Check Format
         id: npm-format-check
         run: npm run format:check
