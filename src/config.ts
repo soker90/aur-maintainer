@@ -73,8 +73,9 @@ function isStringArray(value: unknown): value is string[] {
 
 function isMissingFile(error: unknown): boolean {
   return (
-    error instanceof Error &&
+    typeof error === 'object' &&
+    error !== null &&
     'code' in error &&
-    (error as NodeJS.ErrnoException).code === 'ENOENT'
+    (error as { code?: unknown }).code === 'ENOENT'
   )
 }
