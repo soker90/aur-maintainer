@@ -4,6 +4,7 @@ import { loadMaintainerConfig } from './config.js'
 import { createConnectorRegistry } from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
 import { updatePackage } from './update.js'
+import { validatePackage } from './validation.js'
 
 export async function run(): Promise<void> {
   try {
@@ -37,6 +38,7 @@ export async function run(): Promise<void> {
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
         await updatePackageMetadata(pkg)
+        await validatePackage(pkg)
         core.info(
           `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
         )
