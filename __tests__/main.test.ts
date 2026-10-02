@@ -6,10 +6,6 @@ const discoverPackages = jest.fn()
 const loadMaintainerConfig = jest.fn()
 const createConnectorRegistry = jest.fn()
 const updatePackage = jest.fn()
-const updatePackageMetadata = jest.fn()
-const rollbackPackageUpdate = jest.fn()
-const validatePackage = jest.fn()
-const createUpdatePullRequest = jest.fn()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
@@ -19,14 +15,16 @@ jest.unstable_mockModule('../src/connectors.js', () => ({
 }))
 jest.unstable_mockModule('../src/update.js', () => ({
   updatePackage,
-  rollbackPackageUpdate
+  rollbackPackageUpdate: jest.fn()
 }))
 jest.unstable_mockModule('../src/metadata.js', () => ({
-  updatePackageMetadata
+  updatePackageMetadata: jest.fn()
 }))
-jest.unstable_mockModule('../src/validation.js', () => ({ validatePackage }))
+jest.unstable_mockModule('../src/validation.js', () => ({
+  validatePackage: jest.fn()
+}))
 jest.unstable_mockModule('../src/pull-request.js', () => ({
-  createUpdatePullRequest
+  createUpdatePullRequest: jest.fn()
 }))
 
 const { run } = await import('../src/main.js')
