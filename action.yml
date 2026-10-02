@@ -14,7 +14,8 @@ inputs:
     default: .aur-maintainer.yml
   github-token:
     description: >-
-      GitHub token used for GitHub API requests and to create the update pull request
+      GitHub token used for GitHub API requests and to create the update pull
+      request
     required: false
   update-branch:
     description: >-
