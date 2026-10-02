@@ -17,8 +17,8 @@ describe('main.ts', () => {
     jest.resetAllMocks()
   })
 
-  it('fails the action when the workspace configuration cannot be loaded', async () => {
+  it('does not fail when the optional repository configuration is absent', async () => {
     await run()
-    expect(core.setFailed).toHaveBeenCalled()
+    expect(core.setFailed).not.toHaveBeenCalled()
   })
 })
