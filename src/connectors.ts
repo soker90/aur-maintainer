@@ -75,23 +75,38 @@ class GithubTagConnector implements Connector {
       )
     }
 
-    const response = await this.context.fetch(
-      `https://api.github.com/repos/${repository}/tags?per_page=100`,
-      {
-        headers: {
-          accept: 'application/vnd.github+json',
-          'user-agent': 'aur-maintainer'
-        }
-      }
-    )
+    const tags = []
+    let page = 1
 
-    if (!response.ok) {
-      throw new Error(
-        `GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`
+    while (true) {
+      const response = await this.context.fetch(
+        `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`,
+        {
+          headers: {
+            accept: 'application/vnd.github+json',
+            'user-agent': 'aur-maintainer'
+          }
+        }
       )
+
+      if (!response.ok) {
+        throw new Error(
+          `GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`
+        )
+      }
+
+      const pageTags = (await response.json()) as unknown
+      if (!Array.isArray(pageTags)) {
+        throw new Error(
+          `GitHub tags response for ${repository} is not an array`
+        )
+      }
+
+      tags.push(...pageTags)
+      if (pageTags.length < 100) break
+      page += 1
     }
 
-    const tags = (await response.json()) as unknown
     return parseLatestTag(repository, tags)
   }
 }
