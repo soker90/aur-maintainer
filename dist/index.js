@@ -35759,24 +35759,47 @@ function parseLatestTag(repository, value) {
     };
 }
 function compareVersions(left, right) {
-    const parse = (value) => value
-        .split(/[.-]/)
-        .map((part) => (Number.isFinite(Number(part)) ? Number(part) : part));
+    const parse = (value) => {
+        const [withoutBuild] = value.split('+');
+        const [core, ...prerelease] = withoutBuild.split('-');
+        return {
+            core: core.split('.').map(Number),
+            prerelease
+        };
+    };
     const a = parse(left);
     const b = parse(right);
-    for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
-        const leftPart = a[index];
-        const rightPart = b[index];
+    for (let index = 0; index < Math.max(a.core.length, b.core.length); index += 1) {
+        const leftPart = a.core[index] ?? 0;
+        const rightPart = b.core[index] ?? 0;
+        if (leftPart !== rightPart)
+            return leftPart - rightPart;
+    }
+    if (a.prerelease.length === 0 && b.prerelease.length === 0)
+        return 0;
+    if (a.prerelease.length === 0)
+        return 1;
+    if (b.prerelease.length === 0)
+        return -1;
+    for (let index = 0; index < Math.max(a.prerelease.length, b.prerelease.length); index += 1) {
+        const leftPart = a.prerelease[index];
+        const rightPart = b.prerelease[index];
         if (leftPart === rightPart)
             continue;
         if (leftPart === undefined)
             return -1;
         if (rightPart === undefined)
             return 1;
-        if (typeof leftPart === 'number' && typeof rightPart === 'number') {
-            return leftPart - rightPart;
+        const leftNumber = /^\\d+$/.test(leftPart);
+        const rightNumber = /^\\d+$/.test(rightPart);
+        if (leftNumber && rightNumber) {
+            return Number(leftPart) - Number(rightPart);
         }
-        return String(leftPart).localeCompare(String(rightPart));
+        if (leftNumber)
+            return -1;
+        if (rightNumber)
+            return 1;
+        return leftPart.localeCompare(rightPart);
     }
     return 0;
 }
