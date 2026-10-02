@@ -1,4 +1,4 @@
-import { access, readdir, stat } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { loadPackageConfig } from './config.js'
 import type { MaintainerConfig, PackageDefinition } from './types.js'
