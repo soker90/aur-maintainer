@@ -92,5 +92,4 @@ describe('package updates', () => {
       'pkgver=1.0.0'
     )
   })
-
 })
