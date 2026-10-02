@@ -1,4 +1,5 @@
 import type { PackageDefinition, UpdateCandidate } from './types.js'
+import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
 
 export interface Connector {
   readonly name: string
@@ -34,7 +35,11 @@ class GithubReleaseConnector implements Connector {
     config: Record<string, unknown>
   ): Promise<UpdateCandidate> {
     const repository = config.repository
-    if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
+    if (
+      typeof repository !== 'string' ||
+      repository.split('/').length !== 2 ||
+      repository.split('/').some((part) => !part)
+    ) {
       throw new Error(
         'github-release connector requires config.repository in owner/name form'
       )
@@ -65,7 +70,11 @@ class GithubTagConnector implements Connector {
     config: Record<string, unknown>
   ): Promise<UpdateCandidate> {
     const repository = config.repository
-    if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
+    if (
+      typeof repository !== 'string' ||
+      repository.split('/').length !== 2 ||
+      repository.split('/').some((part) => !part)
+    ) {
       throw new Error(
         'github-tag connector requires config.repository in owner/name form'
       )
@@ -121,7 +130,7 @@ function parseRelease(repository: string, value: unknown): UpdateCandidate {
 
   const tag = value.tag_name
   const version = tag.trim().replace(/^v(?=\d)/i, '')
-  if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
+  if (!isSupportedPackageVersion(version)) {
     throw new Error(
       `GitHub release tag "${tag}" for ${repository} is not a supported version`
     )
@@ -143,10 +152,10 @@ function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
       const version = name.trim().replace(/^v(?=\d)/i, '')
       return { name, version }
     })
-    .filter(({ version }) =>
-      /^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)
+    .filter(({ version }) => isSupportedPackageVersion(version))
+    .toSorted((left, right) =>
+      comparePackageVersions(left.version, right.version)
     )
-    .toSorted((left, right) => compareVersions(left.version, right.version))
 
   const latest = candidates.at(-1)
   if (!latest) {
@@ -159,57 +168,6 @@ function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
     version: latest.version,
     metadata: { repository, tag: latest.name }
   }
-}
-
-function compareVersions(left: string, right: string): number {
-  const parse = (value: string) => {
-    const [withoutBuild] = value.split('+')
-    const [core, ...prerelease] = withoutBuild.split('-')
-    return {
-      core: core.split('.').map(Number),
-      prerelease
-    }
-  }
-
-  const a = parse(left)
-  const b = parse(right)
-
-  for (
-    let index = 0;
-    index < Math.max(a.core.length, b.core.length);
-    index += 1
-  ) {
-    const leftPart = a.core[index] ?? 0
-    const rightPart = b.core[index] ?? 0
-    if (leftPart !== rightPart) return leftPart - rightPart
-  }
-
-  if (a.prerelease.length === 0 && b.prerelease.length === 0) return 0
-  if (a.prerelease.length === 0) return 1
-  if (b.prerelease.length === 0) return -1
-
-  for (
-    let index = 0;
-    index < Math.max(a.prerelease.length, b.prerelease.length);
-    index += 1
-  ) {
-    const leftPart = a.prerelease[index]
-    const rightPart = b.prerelease[index]
-    if (leftPart === rightPart) continue
-    if (leftPart === undefined) return -1
-    if (rightPart === undefined) return 1
-
-    const leftNumber = /^\\d+$/.test(leftPart)
-    const rightNumber = /^\\d+$/.test(rightPart)
-    if (leftNumber && rightNumber) {
-      return Number(leftPart) - Number(rightPart)
-    }
-    if (leftNumber) return -1
-    if (rightNumber) return 1
-    return leftPart.localeCompare(rightPart)
-  }
-
-  return 0
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
