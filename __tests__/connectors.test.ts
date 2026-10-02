@@ -35,7 +35,8 @@ describe('github-release connector', () => {
       expect.objectContaining({
         headers: expect.objectContaining({
           accept: 'application/vnd.github+json',
-          authorization: 'Bearer test-token'
+          authorization: 'Bearer test-token',
+          'x-github-api-version': '2026-03-10'
         })
       })
     )
