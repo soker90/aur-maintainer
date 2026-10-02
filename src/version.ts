@@ -22,10 +22,7 @@ export function comparePackageVersions(left: string, right: string): number {
   const length = Math.max(leftSegments.length, rightSegments.length)
 
   for (let index = 0; index < length; index += 1) {
-    const comparison = compareSegment(
-      leftSegments[index],
-      rightSegments[index]
-    )
+    const comparison = compareSegment(leftSegments[index], rightSegments[index])
     if (comparison !== 0) return comparison
   }
 
