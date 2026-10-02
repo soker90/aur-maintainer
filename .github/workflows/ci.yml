@@ -54,7 +54,6 @@ jobs:
           printf 'pkgname=example-bin\npkgver=1.0.0\npkgrel=1\n' > .github/test-fixture/packages/example-bin/PKGBUILD
           printf 'connector: github-release\nconfig:\n  repository: actions/checkout\n' > .github/test-fixture/packages/example-bin/update.yml
           printf 'packages:\n  - .github/test-fixture/packages/example-bin\n' > .github/test-fixture/.aur-maintainer.yml
-          printf 'pkgver=1.0.0 should not remain\n' > /tmp/expected-fixture-check
       - name: Test Local Action
         id: test-action
         uses: ./
