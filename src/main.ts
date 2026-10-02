@@ -3,7 +3,7 @@ import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
 import { createConnectorRegistry } from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
-import { updatePackage } from './update.js'
+import { rollbackPackageUpdate, updatePackage } from './update.js'
 import { createUpdatePullRequest } from './pull-request.js'
 import { validatePackage } from './validation.js'
 
@@ -39,12 +39,17 @@ export async function run(): Promise<void> {
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
-        await updatePackageMetadata(pkg)
-        await validatePackage(pkg)
-        updatedPackages.push(pkg)
-        core.info(
-          `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
-        )
+        try {
+          await updatePackageMetadata(pkg)
+          await validatePackage(pkg)
+          updatedPackages.push(pkg)
+          core.info(
+            `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
+          )
+        } catch (error) {
+          await rollbackPackageUpdate(pkg, update)
+          throw error
+        }
       } else {
         core.info(`Package ${pkg.name} is already at ${update.version}`)
       }
