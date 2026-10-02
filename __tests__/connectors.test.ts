@@ -117,8 +117,8 @@ describe('github-tag connector', () => {
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
     ).resolves.toMatchObject({
-      version: '1.10.0+build.1',
-      metadata: { tag: '1.10.0+build.1' }
+      version: '1.10.0',
+      metadata: { tag: '1.10.0' }
     })
 
     expect(fetchMock).toHaveBeenCalledWith(
