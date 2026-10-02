@@ -103,12 +103,12 @@ class GithubTagConnector implements Connector {
 }
 
 function githubRequestInit(token?: string): RequestInit {
-  const headers = new Headers({
+  const headers: Record<string, string> = {
     accept: 'application/vnd.github+json',
     'user-agent': 'aur-maintainer'
-  })
+  }
 
-  if (token) headers.set('authorization', `Bearer ${token}`)
+  if (token) headers.authorization = `Bearer ${token}`
 
   return { headers }
 }
