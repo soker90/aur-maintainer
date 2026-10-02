@@ -13,9 +13,11 @@ export async function run(): Promise<void> {
     const configPath = core.getInput('config') || '.aur-maintainer.yml'
     const config = await loadMaintainerConfig(workspace, configPath)
     const packages = await discoverPackages(workspace, config)
+    const token = core.getInput('github-token')
 
     const registryContext = {
-      fetch: (input: string | URL, init?: RequestInit) => fetch(input, init)
+      fetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
+      token: token || undefined
     }
     const registry = createConnectorRegistry(registryContext)
 
@@ -57,7 +59,6 @@ export async function run(): Promise<void> {
 
     core.setOutput('packages', JSON.stringify(candidates))
 
-    const token = core.getInput('github-token')
     if (token && updatedPackages.length > 0) {
       const repository = process.env.GITHUB_REPOSITORY
       if (!repository) throw new Error('GITHUB_REPOSITORY is required')

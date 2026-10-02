@@ -35688,12 +35688,7 @@ class GithubReleaseConnector {
         if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
             throw new Error('github-release connector requires config.repository in owner/name form');
         }
-        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
-            headers: {
-                accept: 'application/vnd.github+json',
-                'user-agent': 'aur-maintainer'
-            }
-        });
+        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, githubRequestInit(this.context.token));
         if (!response.ok) {
             throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
         }
@@ -35714,12 +35709,7 @@ class GithubTagConnector {
         const tags = [];
         let page = 1;
         while (true) {
-            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, {
-                headers: {
-                    accept: 'application/vnd.github+json',
-                    'user-agent': 'aur-maintainer'
-                }
-            });
+            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, githubRequestInit(this.context.token));
             if (!response.ok) {
                 throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
             }
@@ -35734,6 +35724,15 @@ class GithubTagConnector {
         }
         return parseLatestTag(repository, tags);
     }
+}
+function githubRequestInit(token) {
+    const headers = {
+        accept: 'application/vnd.github+json',
+        'user-agent': 'aur-maintainer'
+    };
+    if (token)
+        headers.authorization = `Bearer ${token}`;
+    return { headers };
 }
 function parseRelease(repository, value) {
     if (!isRecord(value) || typeof value.tag_name !== 'string') {
@@ -36073,8 +36072,10 @@ async function run() {
         const configPath = getInput('config') || '.aur-maintainer.yml';
         const config = await loadMaintainerConfig(workspace, configPath);
         const packages = await discoverPackages(workspace, config);
+        const token = getInput('github-token');
         const registryContext = {
-            fetch: (input, init) => fetch(input, init)
+            fetch: (input, init) => fetch(input, init),
+            token: token || undefined
         };
         const registry = createConnectorRegistry(registryContext);
         if (packages.length === 0) {
@@ -36107,7 +36108,6 @@ async function run() {
             }
         }
         setOutput('packages', JSON.stringify(candidates));
-        const token = getInput('github-token');
         if (token && updatedPackages.length > 0) {
             const repository = process.env.GITHUB_REPOSITORY;
             if (!repository)
