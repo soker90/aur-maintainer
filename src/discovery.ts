@@ -64,7 +64,10 @@ async function discoverPackage(
 }
 
 async function isPackageDirectory(directory: string): Promise<boolean> {
-  return isDirectory(directory) && isFile(path.join(directory, 'PKGBUILD'))
+  return (
+    (await isDirectory(directory)) &&
+    (await isFile(path.join(directory, 'PKGBUILD')))
+  )
 }
 
 async function isDirectory(filePath: string): Promise<boolean> {
