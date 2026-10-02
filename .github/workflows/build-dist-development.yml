@@ -1,0 +1,38 @@
+name: Build Dist Development
+
+on:
+  push:
+    branches:
+      - feat/apply-package-updates
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: feat/apply-package-updates
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install Dependencies
+        run: npm ci
+      - name: Build Distribution
+        run: npm run package
+      - name: Commit Distribution
+        run: |
+          if git diff --quiet -- dist; then
+            echo "dist is already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist
+          git commit -m "chore: rebuild dist"
+          git push origin HEAD:feat/apply-package-updates
