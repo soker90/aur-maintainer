@@ -2,6 +2,7 @@ const INVALID_VERSION_CHARACTER = /[-:/<>=\s]/
 
 export function isSupportedPackageVersion(version: string): boolean {
   return (
+    /\d/.test(version) &&
     version.length > 0 &&
     /^[\x21-\x7e]+$/.test(version) &&
     !INVALID_VERSION_CHARACTER.test(version)
