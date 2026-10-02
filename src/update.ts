@@ -23,6 +23,21 @@ export async function updatePackage(
   return { changed: true, currentVersion, version: candidate.version }
 }
 
+export async function rollbackPackageUpdate(
+  pkg: PackageDefinition,
+  result: PackageUpdateResult
+): Promise<void> {
+  if (!result.changed) return
+
+  const content = await readFile(pkg.pkgbuildPath, 'utf8')
+  if (readPkgver(content) !== result.version) return
+
+  await writeFile(
+    pkg.pkgbuildPath,
+    replacePkgver(content, result.currentVersion)
+  )
+}
+
 export function readPkgver(content: string): string {
   const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
   if (matches.length !== 1) {

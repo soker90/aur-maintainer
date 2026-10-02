@@ -3,7 +3,12 @@ import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from '@jest/globals'
 import type { PackageDefinition } from '../src/types.js'
-import { readPkgver, replacePkgver, updatePackage } from '../src/update.js'
+import {
+  readPkgver,
+  replacePkgver,
+  rollbackPackageUpdate,
+  updatePackage
+} from '../src/update.js'
 
 describe('package updates', () => {
   it('updates the package file and reports the previous version', async () => {
@@ -61,6 +66,30 @@ describe('package updates', () => {
   it('rejects unsupported versions', () => {
     expect(() => replacePkgver('pkgver=1.0.0\n', 'latest')).toThrow(
       'Unsupported update version'
+    )
+  })
+
+  it('rolls back a failed package update', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    await writeFile(pkgbuildPath, 'pkgname=demo\npkgver=1.1.0\npkgrel=1\n')
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+
+    await rollbackPackageUpdate(pkg, {
+      changed: true,
+      currentVersion: '1.0.0',
+      version: '1.1.0'
+    })
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toContain(
+      'pkgver=1.0.0'
     )
   })
 })
