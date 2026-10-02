@@ -26,11 +26,10 @@ describe('package metadata updates', () => {
     await expect(readFile(pkg.srcinfoPath, 'utf8')).resolves.toBe(
       'pkgbase = demo\n\tpkgver = 1.1.0\n'
     )
-    expect(run).toHaveBeenNthCalledWith(
-      1,
-      'updpkgsums',
-      ['--nocolor', pkg.pkgbuildPath]
-    )
+    expect(run).toHaveBeenNthCalledWith(1, 'updpkgsums', [
+      '--nocolor',
+      pkg.pkgbuildPath
+    ])
     expect(run).toHaveBeenNthCalledWith(
       2,
       'makepkg',
