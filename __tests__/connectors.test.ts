@@ -82,3 +82,42 @@ describe('github-release connector', () => {
     ).rejects.toThrow('not a supported version')
   })
 })
+
+
+describe('github-tag connector', () => {
+  it('selects the highest supported tag', async () => {
+    const fetchMock = jest.fn(async () =>
+      response([
+        { name: 'v1.2.0' },
+        { name: '1.10.0' },
+        { name: 'release' },
+        { name: '1.9.9' }
+      ])
+    )
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-tag'
+    )!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({
+      version: '1.10.0',
+      metadata: { tag: '1.10.0' }
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.github.com/repos/owner/project/tags?per_page=100',
+      expect.anything()
+    )
+  })
+
+  it('rejects when no supported tags exist', async () => {
+    const connector = createConnectorRegistry({
+      fetch: jest.fn(async () => response([{ name: 'latest' }]))
+    }).get('github-tag')!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).rejects.toThrow('contain no supported versions')
+  })
+})
