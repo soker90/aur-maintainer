@@ -83,7 +83,6 @@ describe('github-release connector', () => {
   })
 })
 
-
 describe('github-tag connector', () => {
   it('selects the highest supported tag', async () => {
     const fetchMock = jest.fn(async () =>
