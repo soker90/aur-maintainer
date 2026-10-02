@@ -145,10 +145,11 @@ function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
 
 function compareVersions(left: string, right: string): number {
   const parse = (value: string) => {
-    const [core, prerelease] = value.split('+', 1)[0].split('-', 2)
+    const [withoutBuild] = value.split('+')
+    const [core, ...prerelease] = withoutBuild.split('-')
     return {
       core: core.split('.').map(Number),
-      prerelease: prerelease?.split('.') ?? []
+      prerelease
     }
   }
 
