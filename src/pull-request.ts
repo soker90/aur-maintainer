@@ -81,11 +81,7 @@ export async function createUpdatePullRequest(
     )
     await git.run('git', ['cherry-pick', commit], workspace)
   } else {
-    await git.run(
-      'git',
-      ['switch', '-c', options.updateBranch],
-      workspace
-    )
+    await git.run('git', ['switch', '-c', options.updateBranch], workspace)
   }
 
   await git.run(
