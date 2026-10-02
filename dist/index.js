@@ -35598,7 +35598,8 @@ function isStringArray(value) {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 function isMissingFile(error) {
-    return (error instanceof Error &&
+    return (typeof error === 'object' &&
+        error !== null &&
         'code' in error &&
         error.code === 'ENOENT');
 }
