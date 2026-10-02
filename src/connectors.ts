@@ -97,6 +97,7 @@ class GithubTagConnector implements Connector {
     return parseLatestTag(repository, tags)
   }
 }
+
 function parseRelease(repository: string, value: unknown): UpdateCandidate {
   if (!isRecord(value) || typeof value.tag_name !== 'string') {
     throw new Error(`GitHub release response for ${repository} has no tag_name`)
