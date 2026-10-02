@@ -16,7 +16,7 @@ import require$$0$3 from 'node:net';
 import require$$2 from 'node:http';
 import require$$0$2 from 'node:stream';
 import require$$0 from 'node:buffer';
-import require$$0$4 from 'node:util';
+import require$$0$4, { promisify } from 'node:util';
 import require$$7 from 'node:querystring';
 import require$$8 from 'node:events';
 import require$$0$5 from 'node:diagnostics_channel';
@@ -34,6 +34,7 @@ import 'child_process';
 import 'timers';
 import { readFile, readdir as readdir$1, access as access$1, writeFile as writeFile$1 } from 'node:fs/promises';
 import path from 'node:path';
+import { execFile as execFile$1 } from 'node:child_process';
 
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -35713,6 +35714,46 @@ function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+const execFile = promisify(execFile$1);
+const hostCommandRunner = {
+    async run(command, args, cwd) {
+        const result = await execFile(command, args, { cwd });
+        return result.stdout;
+    }
+};
+async function updatePackageMetadata(pkg, runner = hostCommandRunner) {
+    try {
+        await runner.run('updpkgsums', ['--nocolor', pkg.pkgbuildPath]);
+        const srcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path);
+        await writeFile$1(pkg.srcinfoPath, srcinfo);
+    }
+    catch (error) {
+        if (!isCommandNotFound(error))
+            throw error;
+        await updatePackageMetadataWithDocker(pkg);
+    }
+}
+async function updatePackageMetadataWithDocker(pkg) {
+    await execFile('docker', [
+        'run',
+        '--rm',
+        '--volume',
+        `${pkg.path}:/pkg:rw`,
+        '--workdir',
+        '/pkg',
+        'archlinux:base-devel',
+        'bash',
+        '-c',
+        'pacman -Sy --noconfirm pacman-contrib && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'
+    ], { cwd: pkg.path });
+}
+function isCommandNotFound(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 127));
+}
+
 async function updatePackage(pkg, candidate) {
     const content = await readFile(pkg.pkgbuildPath, 'utf8');
     const currentVersion = readPkgver(content);
@@ -35771,6 +35812,7 @@ async function run() {
             const update = await updatePackage(pkg, candidate);
             candidates.push({ package: pkg.name, candidate, update });
             if (update.changed) {
+                await updatePackageMetadata(pkg);
                 info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
             }
             else {
