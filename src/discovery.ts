@@ -1,4 +1,4 @@
-import { access, readdir } from 'node:fs/promises'
+import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { loadPackageConfig } from './config.js'
 import type { MaintainerConfig, PackageDefinition } from './types.js'
@@ -72,8 +72,7 @@ async function isPackageDirectory(directory: string): Promise<boolean> {
 
 async function isDirectory(filePath: string): Promise<boolean> {
   try {
-    await access(filePath)
-    return true
+    return (await stat(filePath)).isDirectory()
   } catch {
     return false
   }
@@ -81,8 +80,7 @@ async function isDirectory(filePath: string): Promise<boolean> {
 
 async function isFile(filePath: string): Promise<boolean> {
   try {
-    await access(filePath)
-    return true
+    return (await stat(filePath)).isFile()
   } catch {
     return false
   }
