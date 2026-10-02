@@ -74,4 +74,22 @@ describe('discoverPackages', () => {
 
     await expect(discoverPackages(root, {})).rejects.toThrow('has no PKGBUILD')
   })
+
+  it('ignores files in the packages directory', async () => {
+    const root = await workspace()
+    await mkdir(path.join(root, 'packages'), { recursive: true })
+    await writeFile(path.join(root, 'packages', 'not-a-package'), 'content\n')
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([])
+  })
+
+  it('rejects a PKGBUILD path that is a directory', async () => {
+    const root = await workspace()
+    const directory = path.join(root, 'packages/broken')
+    await mkdir(path.join(directory, 'PKGBUILD'), { recursive: true })
+
+    await expect(discoverPackages(root, { packages: ['packages/broken'] })).rejects.toThrow(
+      'has no PKGBUILD'
+    )
+  })
 })
