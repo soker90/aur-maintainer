@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
+import { assertSupportedPackageVersion } from './version.js'
 
 export interface PackageUpdateResult {
   changed: boolean
@@ -39,7 +40,7 @@ export async function rollbackPackageUpdate(
 }
 
 export function readPkgver(content: string): string {
-  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
+  const matches = [...content.matchAll(/^pkgver=([^\\n\\r]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -53,10 +54,8 @@ export function readPkgver(content: string): string {
 }
 
 export function replacePkgver(content: string, version: string): string {
-  if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
-    throw new Error('Unsupported update version "' + version + '"')
-  }
-  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
+  assertSupportedPackageVersion(version)
+  const matches = [...content.matchAll(/^pkgver=([^\\n\\r]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -64,5 +63,5 @@ export function replacePkgver(content: string, version: string): string {
         ')'
     )
   }
-  return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version)
+  return content.replace(/^pkgver=[^\\n\\r]+$/m, 'pkgver=' + version)
 }
