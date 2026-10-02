@@ -42,14 +42,25 @@ describe('github-release connector', () => {
     )
   })
 
+  it('accepts Arch-compatible alphanumeric versions', async () => {
+    const fetchMock = jest.fn(async () => response({ tag_name: 'v1.2.3alpha' }))
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-release'
+    )!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({ version: '1.2.3alpha' })
+  })
+
   it('accepts unprefixed versions', async () => {
-    const fetchMock = jest.fn(async () => response({ tag_name: '1.2.3' }))
+    const fetchMock = jest.fn(async () => response({ tag_name: '2026_10' }))
     const connector = createConnectorRegistry({ fetch: fetchMock }).get(
       'github-release'
     )!({})
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
-    ).resolves.toMatchObject({ version: '1.2.3' })
+    ).resolves.toMatchObject({ version: '2026_10' })
   })
 
   it('rejects malformed repository configuration', async () => {
@@ -94,7 +105,7 @@ describe('github-tag connector', () => {
         { name: '1.10.0' },
         { name: 'release' },
         { name: '1.9.9' },
-        { name: '1.10.0-alpha.1' },
+        { name: '1.10.0alpha.1' },
         { name: '1.10.0+build.1' }
       ])
     )
@@ -119,6 +130,19 @@ describe('github-tag connector', () => {
         })
       })
     )
+  })
+
+  it('selects a valid alphanumeric version over an alpha release', async () => {
+    const fetchMock = jest.fn(async () =>
+      response([{ name: '1.10.0alpha' }, { name: '1.10.0' }])
+    )
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-tag'
+    )!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({ version: '1.10.0' })
   })
 
   it('fetches subsequent pages when the first page is full', async () => {
