@@ -28493,11 +28493,11 @@ var HttpCodes;
     HttpCodes[HttpCodes["ServiceUnavailable"] = 503] = "ServiceUnavailable";
     HttpCodes[HttpCodes["GatewayTimeout"] = 504] = "GatewayTimeout";
 })(HttpCodes || (HttpCodes = {}));
-var Headers$1;
+var Headers;
 (function (Headers) {
     Headers["Accept"] = "accept";
     Headers["ContentType"] = "content-type";
-})(Headers$1 || (Headers$1 = {}));
+})(Headers || (Headers = {}));
 var MediaTypes;
 (function (MediaTypes) {
     MediaTypes["ApplicationJson"] = "application/json";
@@ -35726,12 +35726,12 @@ class GithubTagConnector {
     }
 }
 function githubRequestInit(token) {
-    const headers = new Headers({
+    const headers = {
         accept: 'application/vnd.github+json',
         'user-agent': 'aur-maintainer'
-    });
+    };
     if (token)
-        headers.set('authorization', `Bearer ${token}`);
+        headers.authorization = `Bearer ${token}`;
     return { headers };
 }
 function parseRelease(repository, value) {
