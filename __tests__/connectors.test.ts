@@ -114,7 +114,8 @@ describe('github-tag connector', () => {
       'https://api.github.com/repos/owner/project/tags?per_page=100&page=1',
       expect.objectContaining({
         headers: expect.objectContaining({
-          authorization: 'Bearer test-token'
+          authorization: 'Bearer test-token',
+          'x-github-api-version': '2026-03-10'
         })
       })
     )
