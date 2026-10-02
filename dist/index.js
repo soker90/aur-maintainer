@@ -35711,16 +35711,27 @@ class GithubTagConnector {
         if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
             throw new Error('github-tag connector requires config.repository in owner/name form');
         }
-        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100`, {
-            headers: {
-                accept: 'application/vnd.github+json',
-                'user-agent': 'aur-maintainer'
+        const tags = [];
+        let page = 1;
+        while (true) {
+            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, {
+                headers: {
+                    accept: 'application/vnd.github+json',
+                    'user-agent': 'aur-maintainer'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
             }
-        });
-        if (!response.ok) {
-            throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
+            const pageTags = (await response.json());
+            if (!Array.isArray(pageTags)) {
+                throw new Error(`GitHub tags response for ${repository} is not an array`);
+            }
+            tags.push(...pageTags);
+            if (pageTags.length < 100)
+                break;
+            page += 1;
         }
-        const tags = (await response.json());
         return parseLatestTag(repository, tags);
     }
 }
