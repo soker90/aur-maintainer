@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
+import { assertSupportedPackageVersion } from './version.js'
 
 export interface PackageUpdateResult {
   changed: boolean
@@ -53,9 +54,7 @@ export function readPkgver(content: string): string {
 }
 
 export function replacePkgver(content: string, version: string): string {
-  if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
-    throw new Error('Unsupported update version "' + version + '"')
-  }
+  assertSupportedPackageVersion(version)
   const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(

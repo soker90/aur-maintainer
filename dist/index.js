@@ -35645,8 +35645,7 @@ async function discoverPackage(packagePath, workspace) {
     };
 }
 async function isPackageDirectory(directory) {
-    return ((await isDirectory(directory)) &&
-        (await isFile(path.join(directory, 'PKGBUILD'))));
+    return isDirectory(directory) && isFile(path.join(directory, 'PKGBUILD'));
 }
 async function isDirectory(filePath) {
     try {
@@ -35672,6 +35671,118 @@ function isWithinWorkspace(packagePath, workspace) {
         (!relative.startsWith('..') && !path.isAbsolute(relative)));
 }
 
+const INVALID_VERSION_CHARACTER = /[-:/<>=\s]/;
+function isSupportedPackageVersion(version) {
+    return (/\d/.test(version) &&
+        version.length > 0 &&
+        /^[\x21-\x7e]+$/.test(version) &&
+        !INVALID_VERSION_CHARACTER.test(version));
+}
+function assertSupportedPackageVersion(version) {
+    if (!isSupportedPackageVersion(version)) {
+        throw new Error('Unsupported update version "' + version + '"');
+    }
+}
+function comparePackageVersions(left, right) {
+    if (left === right)
+        return 0;
+    const leftSegments = splitVersion(left);
+    const rightSegments = splitVersion(right);
+    const length = Math.max(leftSegments.length, rightSegments.length);
+    for (let index = 0; index < length; index += 1) {
+        const comparison = compareSegment(leftSegments[index], rightSegments[index]);
+        if (comparison !== 0)
+            return comparison;
+    }
+    return leftSegments.length - rightSegments.length;
+}
+function splitVersion(version) {
+    const segments = [];
+    let delimiters = 0;
+    let segment = '';
+    for (const character of version) {
+        if (/^[A-Za-z0-9]$/.test(character)) {
+            const previousIsAlpha = /[A-Za-z]$/.test(segment);
+            const currentIsAlpha = /[A-Za-z]$/.test(character);
+            if (segment && previousIsAlpha !== currentIsAlpha) {
+                segments.push({ parts: splitAlphaNumeric(segment), delimiters });
+                delimiters = 0;
+                segment = '';
+            }
+            segment += character;
+        }
+        else {
+            if (segment) {
+                segments.push({ parts: splitAlphaNumeric(segment), delimiters });
+                segment = '';
+            }
+            delimiters += 1;
+        }
+    }
+    if (segment || delimiters) {
+        segments.push({
+            parts: segment ? splitAlphaNumeric(segment) : [''],
+            delimiters
+        });
+    }
+    return segments;
+}
+function splitAlphaNumeric(segment) {
+    return segment.match(/[A-Za-z]+|[0-9]+/g) ?? [''];
+}
+function compareSegment(left, right) {
+    if (!left && !right)
+        return 0;
+    if (!left)
+        return compareParts([], right?.parts ?? []);
+    if (!right)
+        return -compareParts([], left.parts);
+    if (left.delimiters !== right.delimiters) {
+        return left.delimiters - right.delimiters;
+    }
+    return compareParts(left.parts, right.parts);
+}
+function compareParts(left, right) {
+    const length = Math.max(left.length, right.length);
+    for (let index = 0; index < length; index += 1) {
+        const leftPart = left[index];
+        const rightPart = right[index];
+        if (leftPart === rightPart)
+            continue;
+        if (leftPart === undefined)
+            return compareMissingPart(rightPart);
+        if (rightPart === undefined)
+            return -compareMissingPart(leftPart);
+        const leftNumeric = /^\d+$/.test(leftPart);
+        const rightNumeric = /^\d+$/.test(rightPart);
+        if (leftNumeric && rightNumeric) {
+            const comparison = compareNumericParts(leftPart, rightPart);
+            if (comparison !== 0)
+                return comparison;
+        }
+        else if (leftNumeric !== rightNumeric) {
+            return leftNumeric ? 1 : -1;
+        }
+        else {
+            return leftPart.localeCompare(rightPart);
+        }
+    }
+    return 0;
+}
+function compareMissingPart(part) {
+    if (part === undefined)
+        return 0;
+    return /^\d+$/.test(part) ? -1 : 1;
+}
+function compareNumericParts(left, right) {
+    const normalizedLeft = left.replace(/^0+(?=\d)/, '');
+    const normalizedRight = right.replace(/^0+(?=\d)/, '');
+    if (normalizedLeft.length !== normalizedRight.length) {
+        return normalizedLeft.length - normalizedRight.length;
+    }
+    return normalizedLeft < normalizedRight ? -1 : 1;
+}
+
 function createConnectorRegistry(context) {
     return new Map([
         ['github-release', () => new GithubReleaseConnector(context)],
@@ -35686,7 +35797,9 @@ class GithubReleaseConnector {
     }
     async detect(_pkg, config) {
         const repository = config.repository;
-        if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
+        if (typeof repository !== 'string' ||
+            repository.split('/').length !== 2 ||
+            repository.split('/').some((part) => !part)) {
             throw new Error('github-release connector requires config.repository in owner/name form');
         }
         const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, githubRequestInit(this.context.token));
@@ -35704,7 +35817,9 @@ class GithubTagConnector {
     }
     async detect(_pkg, config) {
         const repository = config.repository;
-        if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
+        if (typeof repository !== 'string' ||
+            repository.split('/').length !== 2 ||
+            repository.split('/').some((part) => !part)) {
             throw new Error('github-tag connector requires config.repository in owner/name form');
         }
         const tags = [];
@@ -35742,7 +35857,7 @@ function parseRelease(repository, value) {
     }
     const tag = value.tag_name;
     const version = tag.trim().replace(/^v(?=\d)/i, '');
-    if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
+    if (!isSupportedPackageVersion(version)) {
         throw new Error(`GitHub release tag "${tag}" for ${repository} is not a supported version`);
     }
     return { version, metadata: { repository, tag } };
@@ -35759,8 +35874,8 @@ function parseLatestTag(repository, value) {
         const version = name.trim().replace(/^v(?=\d)/i, '');
         return { name, version };
     })
-        .filter(({ version }) => /^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version))
-        .toSorted((left, right) => compareVersions(left.version, right.version));
+        .filter(({ version }) => isSupportedPackageVersion(version))
+        .toSorted((left, right) => comparePackageVersions(left.version, right.version));
     const latest = candidates.at(-1);
     if (!latest) {
         throw new Error(`GitHub tags for ${repository} contain no supported versions`);
@@ -35769,51 +35884,6 @@ function parseLatestTag(repository, value) {
         version: latest.version,
         metadata: { repository, tag: latest.name }
     };
-}
-function compareVersions(left, right) {
-    const parse = (value) => {
-        const [withoutBuild] = value.split('+');
-        const [core, ...prerelease] = withoutBuild.split('-');
-        return {
-            core: core.split('.').map(Number),
-            prerelease
-        };
-    };
-    const a = parse(left);
-    const b = parse(right);
-    for (let index = 0; index < Math.max(a.core.length, b.core.length); index += 1) {
-        const leftPart = a.core[index] ?? 0;
-        const rightPart = b.core[index] ?? 0;
-        if (leftPart !== rightPart)
-            return leftPart - rightPart;
-    }
-    if (a.prerelease.length === 0 && b.prerelease.length === 0)
-        return 0;
-    if (a.prerelease.length === 0)
-        return 1;
-    if (b.prerelease.length === 0)
-        return -1;
-    for (let index = 0; index < Math.max(a.prerelease.length, b.prerelease.length); index += 1) {
-        const leftPart = a.prerelease[index];
-        const rightPart = b.prerelease[index];
-        if (leftPart === rightPart)
-            continue;
-        if (leftPart === undefined)
-            return -1;
-        if (rightPart === undefined)
-            return 1;
-        const leftNumber = /^\\d+$/.test(leftPart);
-        const rightNumber = /^\\d+$/.test(rightPart);
-        if (leftNumber && rightNumber) {
-            return Number(leftPart) - Number(rightPart);
-        }
-        if (leftNumber)
-            return -1;
-        if (rightNumber)
-            return 1;
-        return leftPart.localeCompare(rightPart);
-    }
-    return 0;
 }
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -35896,9 +35966,7 @@ function readPkgver(content) {
     return version;
 }
 function replacePkgver(content, version) {
-    if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
-        throw new Error('Unsupported update version "' + version + '"');
-    }
+    assertSupportedPackageVersion(version);
     const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)];
     if (matches.length !== 1) {
         throw new Error('PKGBUILD must contain exactly one simple pkgver assignment (found ' +
