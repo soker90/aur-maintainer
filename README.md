@@ -8,6 +8,7 @@ A GitHub Action for automating the maintenance of Arch Linux AUR packages.
 ## Planned capabilities
 
 - Detect new upstream versions through reusable connectors.
+- Support GitHub releases and GitHub version tags.
 - Support repository-local and package-local custom connectors.
 - Update `PKGBUILD` and regenerate `.SRCINFO`.
 - Validate packages with Arch Linux tooling.
@@ -34,7 +35,7 @@ repository/
 A package declares how its upstream is discovered in `update.yml`:
 
 ```yaml
-connector: github-release
+connector: github-tag
 config:
   repository: stacklok/toolhive-studio
 ```
