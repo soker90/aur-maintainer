@@ -1,0 +1,60 @@
+
+> aur-maintainer@0.0.0 ci-test
+> NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest
+
+PASS __tests__/main.test.ts
+  main.ts
+    ✓ fails the action when the workspace configuration cannot be loaded (6 ms)
+
+FAIL __tests__/config.test.ts
+  config
+    ✓ loads the optional repository configuration (18 ms)
+    ✕ returns an empty configuration when the repository file is absent (2 ms)
+    ✓ requires a connector in package configuration (15 ms)
+    ✓ loads package connector configuration (5 ms)
+
+  ● config › returns an empty configuration when the repository file is absent
+
+    expect(received).resolves.toEqual()
+
+    Received promise rejected instead of resolved
+    Rejected to value: [Error: ENOENT: no such file or directory, open '/tmp/aur-config-1790955099507-0.2240440976047119/.aur-maintainer.yml']
+
+    [0m [90m 25 |[39m   it([32m'returns an empty configuration when the repository file is absent'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 26 |[39m     [36mconst[39m workspace [33m=[39m [36mawait[39m tempDirectory([32m'aur-config'[39m)
+    [31m[1m>[22m[39m[90m 27 |[39m     [36mawait[39m expect(loadMaintainerConfig(workspace))[33m.[39mresolves[33m.[39mtoEqual({})
+     [90m    |[39m           [31m[1m^[22m[39m
+     [90m 28 |[39m   })
+     [90m 29 |[39m
+     [90m 30 |[39m   it([32m'requires a connector in package configuration'[39m[33m,[39m [36masync[39m () [33m=>[39m {[0m
+
+      at expect (node_modules/expect/build/index.js:2116:15)
+      at Object.<anonymous> (__tests__/config.test.ts:27:11)
+
+PASS __tests__/discovery.test.ts
+  discoverPackages
+    ✓ discovers packages from the conventional packages directory (34 ms)
+    ✓ supports a package at repository root (8 ms)
+    ✓ honours an explicit package list (4 ms)
+    ✓ rejects packages outside the workspace (23 ms)
+    ✓ rejects directories without PKGBUILD (5 ms)
+
+PASS __tests__/wait.test.ts
+  wait.ts
+    ✓ Throws an invalid number (7 ms)
+    ✓ Waits with a valid number (501 ms)
+
+--------------|---------|----------|---------|---------|-------------------
+File          | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+--------------|---------|----------|---------|---------|-------------------
+All files     |   81.92 |    76.66 |   95.65 |   85.13 |                   
+ config.ts    |   78.57 |    75.75 |     100 |      84 | 35,39,49,57       
+ discovery.ts |     100 |    94.11 |     100 |     100 | 31                
+ main.ts      |      40 |     37.5 |      50 |   46.15 | 10-21             
+ wait.ts      |     100 |      100 |     100 |     100 |                   
+--------------|---------|----------|---------|---------|-------------------
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       1 failed, 11 passed, 12 total
+Snapshots:   0 total
+Time:        2.6 s
+Ran all test suites.
