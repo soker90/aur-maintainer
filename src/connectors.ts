@@ -17,7 +17,7 @@ export interface ConnectorContext {
 export function createConnectorRegistry(
   context: ConnectorContext
 ): Map<string, ConnectorFactory> {
-  return new Map([
+  return new Map<string, ConnectorFactory>([
     ['github-release', () => new GithubReleaseConnector(context)],
     ['github-tag', () => new GithubTagConnector(context)]
   ])
