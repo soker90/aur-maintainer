@@ -21,9 +21,10 @@ function response(body: unknown, init?: ResponseInit): Response {
 describe('github-release connector', () => {
   it('normalizes a v-prefixed release version', async () => {
     const fetchMock = jest.fn(async () => response({ tag_name: 'v1.4.3' }))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
-      'github-release'
-    )!({})
+    const connector = createConnectorRegistry({
+      fetch: fetchMock,
+      token: 'test-token'
+    }).get('github-release')!({})
 
     await expect(
       connector.detect(pkg, { repository: 'stacklok/toolhive-studio' })
@@ -33,7 +34,8 @@ describe('github-release connector', () => {
       'https://api.github.com/repos/stacklok/toolhive-studio/releases/latest',
       expect.objectContaining({
         headers: expect.objectContaining({
-          accept: 'application/vnd.github+json'
+          accept: 'application/vnd.github+json',
+          authorization: 'Bearer test-token'
         })
       })
     )
