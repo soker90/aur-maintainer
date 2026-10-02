@@ -175,7 +175,10 @@ async function requestGitHub(
   return response.json()
 }
 
-function getRelativePackagePath(workspace: string, packagePath: string): string {
+function getRelativePackagePath(
+  workspace: string,
+  packagePath: string
+): string {
   const relative = path.relative(workspace, packagePath)
   if (
     relative === '' ||
