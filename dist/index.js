@@ -35566,7 +35566,7 @@ async function loadPackageConfig(packagePath) {
 function parseMaintainerConfig(value, filePath) {
     if (value === null || value === undefined)
         return {};
-    if (!isRecord(value)) {
+    if (!isRecord$1(value)) {
         throw new Error(`${filePath} must contain a YAML object`);
     }
     if (value.packages !== undefined && !isStringArray(value.packages)) {
@@ -35577,13 +35577,13 @@ function parseMaintainerConfig(value, filePath) {
     };
 }
 function parsePackageConfig(value, filePath) {
-    if (!isRecord(value)) {
+    if (!isRecord$1(value)) {
         throw new Error(`${filePath} must contain a YAML object`);
     }
     if (typeof value.connector !== 'string' || value.connector.trim() === '') {
         throw new Error(`${filePath}: "connector" is required`);
     }
-    if (value.config !== undefined && !isRecord(value.config)) {
+    if (value.config !== undefined && !isRecord$1(value.config)) {
         throw new Error(`${filePath}: "config" must be an object`);
     }
     return {
@@ -35591,7 +35591,7 @@ function parsePackageConfig(value, filePath) {
         config: value.config ?? {}
     };
 }
-function isRecord(value) {
+function isRecord$1(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 function isStringArray(value) {
@@ -35670,20 +35670,73 @@ function isWithinWorkspace(packagePath, workspace) {
         (!relative.startsWith('..') && !path.isAbsolute(relative)));
 }
 
+function createConnectorRegistry(context) {
+    return new Map([
+        ['github-release', () => new GithubReleaseConnector(context)]
+    ]);
+}
+class GithubReleaseConnector {
+    context;
+    name = 'github-release';
+    constructor(context) {
+        this.context = context;
+    }
+    async detect(_pkg, config) {
+        const repository = config.repository;
+        if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
+            throw new Error('github-release connector requires config.repository in owner/name form');
+        }
+        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
+            headers: {
+                accept: 'application/vnd.github+json',
+                'user-agent': 'aur-maintainer'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
+        }
+        return parseRelease(repository, (await response.json()));
+    }
+}
+function parseRelease(repository, value) {
+    if (!isRecord(value) || typeof value.tag_name !== 'string') {
+        throw new Error(`GitHub release response for ${repository} has no tag_name`);
+    }
+    const tag = value.tag_name;
+    const version = tag.trim().replace(/^v(?=\d)/i, '');
+    if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
+        throw new Error(`GitHub release tag "${tag}" for ${repository} is not a supported version`);
+    }
+    return { version, metadata: { repository, tag } };
+}
+function isRecord(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 async function run() {
     try {
         const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
         const configPath = getInput('config') || '.aur-maintainer.yml';
         const config = await loadMaintainerConfig(workspace, configPath);
         const packages = await discoverPackages(workspace, config);
+        const registryContext = {
+            fetch: (input, init) => fetch(input, init)
+        };
+        const registry = createConnectorRegistry(registryContext);
         if (packages.length === 0) {
             info('No managed AUR packages found.');
             return;
         }
+        const candidates = [];
         for (const pkg of packages) {
-            info(`Discovered ${pkg.name} (connector: ${pkg.config.connector})`);
+            const factory = registry.get(pkg.config.connector);
+            if (!factory)
+                throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`);
+            const candidate = await factory(registryContext).detect(pkg, pkg.config.config);
+            candidates.push({ package: pkg.name, candidate });
+            info(`Detected ${candidate.version} for ${pkg.name} using ${pkg.config.connector}`);
         }
-        setOutput('packages', JSON.stringify(packages.map((pkg) => pkg.name)));
+        setOutput('packages', JSON.stringify(candidates));
     }
     catch (error) {
         if (error instanceof Error)

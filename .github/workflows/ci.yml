@@ -52,7 +52,7 @@ jobs:
         run: |
           mkdir -p .github/test-fixture/packages/example-bin
           printf 'pkgname=example-bin\n' > .github/test-fixture/packages/example-bin/PKGBUILD
-          printf 'connector: github-release\nconfig:\n  repository: example/project\n' > .github/test-fixture/packages/example-bin/update.yml
+          printf 'connector: github-release\nconfig:\n  repository: actions/checkout\n' > .github/test-fixture/packages/example-bin/update.yml
           printf 'packages:\n  - .github/test-fixture/packages/example-bin\n' > .github/test-fixture/.aur-maintainer.yml
       - name: Test Local Action
         id: test-action
