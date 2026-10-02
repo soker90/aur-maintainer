@@ -40,7 +40,7 @@ export async function rollbackPackageUpdate(
 }
 
 export function readPkgver(content: string): string {
-  const matches = [...content.matchAll(/^pkgver=([^\\n\\r]+)$/gm)]
+  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -55,7 +55,7 @@ export function readPkgver(content: string): string {
 
 export function replacePkgver(content: string, version: string): string {
   assertSupportedPackageVersion(version)
-  const matches = [...content.matchAll(/^pkgver=([^\\n\\r]+)$/gm)]
+  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -63,5 +63,5 @@ export function replacePkgver(content: string, version: string): string {
         ')'
     )
   }
-  return content.replace(/^pkgver=[^\\n\\r]+$/m, 'pkgver=' + version)
+  return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version)
 }
