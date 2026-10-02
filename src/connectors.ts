@@ -1,8 +1,5 @@
 import type { PackageDefinition, UpdateCandidate } from './types.js'
-import {
-  comparePackageVersions,
-  isSupportedPackageVersion
-} from './version.js'
+import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
 
 export interface Connector {
   readonly name: string
