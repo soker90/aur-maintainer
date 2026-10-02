@@ -37,11 +37,18 @@ export async function updatePackageMetadata(
 async function updatePackageMetadataWithDocker(
   pkg: PackageDefinition
 ): Promise<void> {
+  const uid = String(process.getuid?.() ?? 1000)
+  const gid = String(process.getgid?.() ?? 1000)
+
   await execFile(
     'docker',
     [
       'run',
       '--rm',
+      '--env',
+      'HOST_UID=' + uid,
+      '--env',
+      'HOST_GID=' + gid,
       '--volume',
       pkg.path + ':/pkg:rw',
       '--workdir',
@@ -49,7 +56,7 @@ async function updatePackageMetadataWithDocker(
       'archlinux:base-devel',
       'bash',
       '-c',
-      "pacman -Sy --noconfirm pacman-contrib && useradd --create-home builder && chown -R builder:builder /pkg && su - builder -c 'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'"
+      "pacman -Sy --noconfirm pacman-contrib && groupadd -o -g \"$HOST_GID\" builder && useradd -o -u \"$HOST_UID\" -g \"$HOST_GID\" --create-home builder && su - builder -c 'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'"
     ],
     { cwd: pkg.path }
   )
