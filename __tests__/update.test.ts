@@ -30,9 +30,7 @@ describe('package updates', () => {
   })
 
   it('reads a single pkgver assignment', () => {
-    expect(readPkgver('pkgname=demo\npkgver=1.2.3\npkgrel=1\n')).toBe(
-      '1.2.3'
-    )
+    expect(readPkgver('pkgname=demo\npkgver=1.2.3\npkgrel=1\n')).toBe('1.2.3')
   })
 
   it('replaces only the pkgver assignment', () => {
