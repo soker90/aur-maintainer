@@ -997,8 +997,7 @@ function requireConstants$4 () {
 	  'Accept',
 	  'Accept-Encoding',
 	  'Accept-Language',
-	  'Accept-Ranges',
-	  'Access-Control-Allow-Credentials',
+	  'Accept-Ranges',	  'Access-Control-Allow-Credentials',
 	  'Access-Control-Allow-Headers',
 	  'Access-Control-Allow-Methods',
 	  'Access-Control-Allow-Origin',
@@ -1997,7 +1996,6 @@ function requireUtil$7 () {
 
 var diagnostics;
 var hasRequiredDiagnostics;
-
 function requireDiagnostics () {
 	if (hasRequiredDiagnostics) return diagnostics;
 	hasRequiredDiagnostics = 1;
@@ -2997,8 +2995,7 @@ function requireTimers () {
 	 */
 
 	/**
-	 * The fastNow variable contains the internal fast timer clock value.
-	 *
+	 * The fastNow variable contains the internal fast timer clock value.	 *
 	 * @type {number}
 	 */
 	let fastNow = 0;
@@ -3998,7 +3995,6 @@ function requireConstants$2 () {
 	const corsSafeListedMethodsSet = new Set(corsSafeListedMethods);
 
 	const nullBodyStatus = /** @type {const} */ ([101, 204, 205, 304]);
-
 	const redirectStatus = /** @type {const} */ ([301, 302, 303, 307, 308]);
 	const redirectStatusSet = new Set(redirectStatus);
 
@@ -4997,8 +4993,7 @@ function requireWebidl () {
 	webidl.util.Type = function (V) {
 	  switch (typeof V) {
 	    case 'undefined': return 'Undefined'
-	    case 'boolean': return 'Boolean'
-	    case 'string': return 'String'
+	    case 'boolean': return 'Boolean'	    case 'string': return 'String'
 	    case 'symbol': return 'Symbol'
 	    case 'number': return 'Number'
 	    case 'bigint': return 'BigInt'
@@ -5997,8 +5992,7 @@ function requireUtil$6 () {
 
 	// https://html.spec.whatwg.org/multipage/origin.html#clone-a-policy-container
 	function clonePolicyContainer (policyContainer) {
-	  return {
-	    referrerPolicy: policyContainer.referrerPolicy
+	  return {	    referrerPolicy: policyContainer.referrerPolicy
 	  }
 	}
 
@@ -6997,8 +6991,7 @@ function requireUtil$6 () {
 	  _final (callback) {
 	    if (this._inflateStream) {
 	      this._inflateStream.end();
-	      this._inflateStream = null;
-	    }
+	      this._inflateStream = null;	    }
 	    callback();
 	  }
 	}
@@ -7997,7 +7990,6 @@ function requireFormdataParser () {
 	            return 'failure'
 	          }
 	        }
-
 	        break
 	      }
 	      case 'content-type': {
@@ -8997,8 +8989,7 @@ function requireClientH1 () {
 	  }
 
 	  finish () {
-	    assert(currentParser === null);
-	    assert(this.ptr != null);
+	    assert(currentParser === null);	    assert(this.ptr != null);
 	    assert(!this.paused);
 
 	    const { llhttp } = this;
@@ -9997,7 +9988,6 @@ function requireClientH1 () {
 
 	async function writeBlob (abort, body, client, request, socket, contentLength, header, expectsPayload) {
 	  assert(contentLength === body.size, 'blob body must have content length');
-
 	  try {
 	    if (contentLength != null && contentLength !== body.size) {
 	      throw new RequestContentLengthMismatchError()
@@ -10997,7 +10987,6 @@ function requireClientH2 () {
 	    h2stream.end();
 
 	    request.onRequestSent();
-
 	    if (!expectsPayload) {
 	      socket[kReset] = true;
 	    }
@@ -11997,8 +11986,7 @@ function requireFixedQueue () {
 	    return this.head.isEmpty();
 	  }
 
-	  push(data) {
-	    if (this.head.isFull()) {
+	  push(data) {	    if (this.head.isFull()) {
 	      // Head is full: Creates a new queue, sets the old queue's `.next` to it,
 	      // and sets it as the new main queue.
 	      this.head = this.head.next = new FixedCircularBuffer();
@@ -12997,8 +12985,7 @@ function requireProxyAgent () {
 
 	/**
 	 * @param {Record<string, string>} headers
-	 *
-	 * Previous versions of ProxyAgent suggests the Proxy-Authorization in request headers
+	 *	 * Previous versions of ProxyAgent suggests the Proxy-Authorization in request headers
 	 * Nevertheless, it was changed and to avoid a security vulnerability by end users
 	 * this check was created.
 	 * It should be removed in the next major version for performance reasons
@@ -13997,8 +13984,7 @@ function requireReadable () {
 	 * @returns {Uint8Array}
 	 */
 	function chunksConcat (chunks, length) {
-	  if (chunks.length === 0 || length === 0) {
-	    return new Uint8Array(0)
+	  if (chunks.length === 0 || length === 0) {	    return new Uint8Array(0)
 	  }
 	  if (chunks.length === 1) {
 	    // fast-path
@@ -14997,7 +14983,6 @@ function requireApiUpgrade () {
 	  onHeaders () {
 	    throw new SocketError('bad upgrade', null)
 	  }
-
 	  onUpgrade (statusCode, rawHeaders, socket) {
 	    assert(statusCode === 101);
 
@@ -15997,8 +15982,7 @@ function requirePluralizer () {
 	const plurals = {
 	  pronoun: 'they',
 	  is: 'are',
-	  was: 'were',
-	  this: 'these'
+	  was: 'were',	  this: 'these'
 	};
 
 	pluralizer = class Pluralizer {
@@ -16997,8 +16981,7 @@ function requireHeaders () {
 	      value: name,
 	      type: 'header name'
 	    })
-	  } else if (!isValidHeaderValue(value)) {
-	    throw webidl.errors.invalidArgument({
+	  } else if (!isValidHeaderValue(value)) {	    throw webidl.errors.invalidArgument({
 	      prefix: 'Headers.append',
 	      value,
 	      type: 'header value'
@@ -17997,8 +17980,7 @@ function requireResponse () {
 	    // Note: undici does not implement forbidden response-header names
 	    return makeFilteredResponse(response, {
 	      type: 'basic',
-	      headersList: response.headersList
-	    })
+	      headersList: response.headersList	    })
 	  } else if (type === 'cors') {
 	    // A CORS filtered response is a filtered response whose type is "cors"
 	    // and header list excludes any headers in internal response’s header
@@ -18997,8 +18979,7 @@ function requireRequest () {
 
 	    // The isHistoryNavigation getter steps are to return true if this’s request’s
 	    // history-navigation flag is set; otherwise false.
-	    return this[kState].historyNavigation
-	  }
+	    return this[kState].historyNavigation	  }
 
 	  // Returns the signal associated with request, which is an AbortSignal
 	  // object indicating whether or not request has been aborted, and its
@@ -19997,8 +19978,7 @@ function requireFetch () {
 	  // 17. If response is not a network error and any of the following returns
 	  // blocked
 	  // - should internalResponse to request be blocked as mixed content
-	  // - should internalResponse to request be blocked by Content Security Policy
-	  // - should internalResponse to request be blocked due to its MIME type
+	  // - should internalResponse to request be blocked by Content Security Policy	  // - should internalResponse to request be blocked due to its MIME type
 	  // - should internalResponse to request be blocked due to nosniff
 	  // TODO
 
@@ -20997,8 +20977,7 @@ function requireFetch () {
 	  //    `chunked`) to request’s header list.
 
 	  //    4. Set timingInfo’s final network-request start time to the coarsened
-	  //    shared current time given fetchParams’s cross-origin isolated
-	  //    capability.
+	  //    shared current time given fetchParams’s cross-origin isolated	  //    capability.
 
 	  //    5. Set response to the result of making an HTTP request over connection
 	  //    using request with the following caveats:
@@ -21997,8 +21976,7 @@ function requireUtil$4 () {
 	      try {
 	        const { done, value } = await chunkPromise;
 
-	        // 2. If chunkPromise is fulfilled, and isFirstChunk is
-	        //    true, queue a task to fire a progress event called
+	        // 2. If chunkPromise is fulfilled, and isFirstChunk is	        //    true, queue a task to fire a progress event called
 	        //    loadstart at fr.
 	        if (isFirstChunk && !fr[kAborted]) {
 	          queueMicrotask(() => {
@@ -22997,7 +22975,6 @@ function requireCache () {
 	    // 7.7
 	    return cacheJobPromise.promise
 	  }
-
 	  async put (request, response) {
 	    webidl.brandCheck(this, Cache);
 
@@ -23998,7 +23975,6 @@ function requireUtil$2 () {
 	  IMF-fixdate  = day-name "," SP date1 SP time-of-day SP GMT
 	  ; fixed length/zone/capitalization subset of the format
 	  ; see Section 3.3 of [RFC5322]
-
 	  day-name     = %x4D.6F.6E ; "Mon", case-sensitive
 	              / %x54.75.65 ; "Tue", case-sensitive
 	              / %x57.65.64 ; "Wed", case-sensitive
@@ -24997,8 +24973,7 @@ function requireConstants () {
 
 	// This is a Globally Unique Identifier unique used
 	// to validate that the endpoint accepts websocket
-	// connections.
-	// See https://www.rfc-editor.org/rfc/rfc6455.html#section-1.3
+	// connections.	// See https://www.rfc-editor.org/rfc/rfc6455.html#section-1.3
 	const uid = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
 	/** @type {PropertyDescriptor} */
@@ -25997,8 +25972,7 @@ function requirePermessageDeflate () {
 	      this.#inflate[kLength] = 0;
 
 	      callback(null, full);
-	    });
-	  }
+	    });	  }
 	}
 
 	permessageDeflate = { PerMessageDeflate };
@@ -26998,7 +26972,6 @@ function requireWebsocket () {
 
 	    return this.#events.error
 	  }
-
 	  set onerror (fn) {
 	    webidl.brandCheck(this, WebSocket);
 
@@ -27997,8 +27970,7 @@ function requireEventsource () {
 	   * @readonly
 	   * @returns {string}
 	   */
-	  get url () {
-	    return this.#url
+	  get url () {	    return this.#url
 	  }
 
 	  /**
@@ -28997,8 +28969,7 @@ class Directives {
     /**
      * Given a fully resolved tag, returns its printable string form,
      * taking into account current tag prefixes and defaults.
-     */
-    tagString(tag) {
+     */    tagString(tag) {
         for (const [handle, prefix] of Object.entries(this.tags)) {
             if (tag.startsWith(prefix))
                 return handle + escapeTagName(tag.substring(prefix.length));
@@ -29997,8 +29968,7 @@ function plainString(item, ctx, onComment, onChompKeep) {
         // - end with ' ' or ':'
         return implicitKey || inFlow || !value.includes('\n')
             ? quotedString(value, ctx)
-            : blockString(item, ctx, onComment, onChompKeep);
-    }
+            : blockString(item, ctx, onComment, onChompKeep);    }
     if (!implicitKey &&
         !inFlow &&
         type !== Scalar.PLAIN &&
@@ -30997,8 +30967,7 @@ const intResolve$1 = (str, offset, radix, { intAsBigInt }) => (intAsBigInt ? Big
 function intStringify$1(node, radix, prefix) {
     const { value } = node;
     if (intIdentify$2(value) && value >= 0)
-        return prefix + value.toString(radix);
-    return stringifyNumber(node);
+        return prefix + value.toString(radix);    return stringifyNumber(node);
 }
 const intOct$1 = {
     identify: value => intIdentify$2(value) && value >= 0,
@@ -31997,8 +31966,7 @@ class Document {
             : undefined;
     }
     /**
-     * Returns item at `path`, or `undefined` if not found. By default unwraps
-     * scalar values from their surrounding node; to disable set `keepScalar` to
+     * Returns item at `path`, or `undefined` if not found. By default unwraps     * scalar values from their surrounding node; to disable set `keepScalar` to
      * `true` (collections are always returned intact).
      */
     getIn(path, keepScalar) {
@@ -32997,8 +32965,7 @@ function parseBlockScalarHeader({ offset, props }, strict, onError) {
     for (let i = 1; i < source.length; ++i) {
         const ch = source[i];
         if (!chomp && (ch === '-' || ch === '+'))
-            chomp = ch;
-        else {
+            chomp = ch;        else {
             const n = Number(ch);
             if (!indent && n)
                 indent = n;
@@ -33997,8 +33964,7 @@ class Lexer {
         if (this.buffer[end - 1] === '\r')
             end -= 1;
         return this.buffer.substring(this.pos, end);
-    }
-    hasChars(n) {
+    }    hasChars(n) {
         return this.pos + n <= this.buffer.length;
     }
     setNext(state) {
@@ -34997,8 +34963,7 @@ class Parser {
                 this.indent = 0;
                 if (this.onNewLine) {
                     let nl = this.source.indexOf('\n') + 1;
-                    while (nl !== 0) {
-                        this.onNewLine(this.offset + nl);
+                    while (nl !== 0) {                        this.onNewLine(this.offset + nl);
                         nl = this.source.indexOf('\n', nl) + 1;
                     }
                 }
@@ -35997,8 +35962,7 @@ function getRelativePackagePath(workspace, packagePath) {
         relative.startsWith('..') ||
         path.isAbsolute(relative)) {
         throw new Error('Package path must be inside the workspace');
-    }
-    return relative;
+    }    return relative;
 }
 function validateBranchName(branch) {
     if (branch.length === 0 ||
@@ -36072,8 +36036,10 @@ async function run() {
         const configPath = getInput('config') || '.aur-maintainer.yml';
         const config = await loadMaintainerConfig(workspace, configPath);
         const packages = await discoverPackages(workspace, config);
+        const token = getInput('github-token');
         const registryContext = {
-            fetch: (input, init) => fetch(input, init)
+            fetch: (input, init) => fetch(input, init),
+            token: token || undefined
         };
         const registry = createConnectorRegistry(registryContext);
         if (packages.length === 0) {
@@ -36106,7 +36072,6 @@ async function run() {
             }
         }
         setOutput('packages', JSON.stringify(candidates));
-        const token = getInput('github-token');
         if (token && updatedPackages.length > 0) {
             const repository = process.env.GITHUB_REPOSITORY;
             if (!repository)
@@ -36136,4 +36101,4 @@ async function run() {
  */
 /* istanbul ignore next */
 run();
-//# sourceMappingURL=index.js.map
+//# sourceMappingURL=index.js.map//# sourceMappingURL=index.js.map//# sourceMappingURL=index.js.map//# sourceMappingURL=index.js.map
