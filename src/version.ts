@@ -1,4 +1,4 @@
-const INVALID_VERSION_CHARACTER = /[:/\<>=-\s]/
+const INVALID_VERSION_CHARACTER = /[:/<>==-\s]/
 
 export function isSupportedPackageVersion(version: string): boolean {
   return (
