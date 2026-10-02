@@ -9,10 +9,7 @@ describe('package updates', () => {
   it('updates the package file and reports the previous version', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const pkgbuildPath = path.join(directory, 'PKGBUILD')
-    await writeFile(
-      pkgbuildPath,
-      'pkgname=demo\npkgver=1.0.0\npkgrel=1\n'
-    )
+    await writeFile(pkgbuildPath, 'pkgname=demo\npkgver=1.0.0\npkgrel=1\n')
     const pkg = {
       name: 'demo',
       path: directory,
