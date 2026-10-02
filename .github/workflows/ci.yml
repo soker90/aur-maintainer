@@ -58,6 +58,10 @@ jobs:
           arch=('x86_64')
           source=('README.md::https://raw.githubusercontent.com/actions/checkout/main/README.md')
           sha256sums=()
+          package() {
+            install -Dm644 "$srcdir/README.md" \
+              "$pkgdir/usr/share/doc/example-bin/README.md"
+          }
           EOF
           cat > .github/test-fixture/packages/example-bin/update.yml <<'EOF'
           connector: github-release
