@@ -20,7 +20,9 @@ describe('update pull request creation', () => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       if (args[0] === 'rev-parse') return 'abc123\n'
       if (args[0] === 'ls-remote') {
-        const error = new Error('branch not found') as Error & { status: number }
+        const error = new Error('branch not found') as Error & {
+          status: number
+        }
         error.status = 2
         throw error
       }
