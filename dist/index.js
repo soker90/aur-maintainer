@@ -35645,7 +35645,8 @@ async function discoverPackage(packagePath, workspace) {
     };
 }
 async function isPackageDirectory(directory) {
-    return isDirectory(directory) && isFile(path.join(directory, 'PKGBUILD'));
+    return ((await isDirectory(directory)) &&
+        (await isFile(path.join(directory, 'PKGBUILD'))));
 }
 async function isDirectory(filePath) {
     try {
