@@ -16,9 +16,7 @@ export async function run(): Promise<void> {
     }
 
     for (const pkg of packages) {
-      core.info(
-        `Discovered ${pkg.name} (connector: ${pkg.config.connector})`
-      )
+      core.info(`Discovered ${pkg.name} (connector: ${pkg.config.connector})`)
     }
 
     core.setOutput('packages', JSON.stringify(packages.map((pkg) => pkg.name)))

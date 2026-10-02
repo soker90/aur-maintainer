@@ -56,9 +56,7 @@ describe('discoverPackages', () => {
 
     await expect(
       discoverPackages(root, { packages: ['packages/bar-bin'] })
-    ).resolves.toEqual([
-      expect.objectContaining({ name: 'bar-bin' })
-    ])
+    ).resolves.toEqual([expect.objectContaining({ name: 'bar-bin' })])
   })
 
   it('rejects packages outside the workspace', async () => {
@@ -74,8 +72,6 @@ describe('discoverPackages', () => {
     await mkdir(directory, { recursive: true })
     await writeFile(path.join(directory, 'update.yml'), 'connector: custom\n')
 
-    await expect(discoverPackages(root, {})).rejects.toThrow(
-      'has no PKGBUILD'
-    )
+    await expect(discoverPackages(root, {})).rejects.toThrow('has no PKGBUILD')
   })
 })

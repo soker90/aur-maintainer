@@ -1,26 +1,22 @@
 import { access, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { loadPackageConfig } from './config.js'
-import type {
-  MaintainerConfig,
-  PackageDefinition
-} from './types.js'
+import type { MaintainerConfig, PackageDefinition } from './types.js'
 
 export async function discoverPackages(
   workspace: string,
   config: MaintainerConfig
 ): Promise<PackageDefinition[]> {
   const packagePaths =
-    config.packages?.map((packagePath) => path.resolve(workspace, packagePath)) ??
-    (await findDefaultPackagePaths(workspace))
+    config.packages?.map((packagePath) =>
+      path.resolve(workspace, packagePath)
+    ) ?? (await findDefaultPackagePaths(workspace))
 
   const packages = await Promise.all(
     packagePaths.map((packagePath) => discoverPackage(packagePath, workspace))
   )
 
-  return packages.toSorted((left, right) =>
-    left.name.localeCompare(right.name)
-  )
+  return packages.toSorted((left, right) => left.name.localeCompare(right.name))
 }
 
 async function findDefaultPackagePaths(workspace: string): Promise<string[]> {
@@ -91,5 +87,8 @@ async function isFile(filePath: string): Promise<boolean> {
 
 function isWithinWorkspace(packagePath: string, workspace: string): boolean {
   const relative = path.relative(workspace, packagePath)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+  return (
+    relative === '' ||
+    (!relative.startsWith('..') && !path.isAbsolute(relative))
+  )
 }
