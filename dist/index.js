@@ -34,7 +34,7 @@ import 'child_process';
 import 'timers';
 import { readFile, readdir as readdir$1, access as access$1, writeFile as writeFile$1 } from 'node:fs/promises';
 import path from 'node:path';
-import { execFile as execFile$1 } from 'node:child_process';
+import { execFile as execFile$2 } from 'node:child_process';
 
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -35714,21 +35714,21 @@ function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const execFile = promisify(execFile$1);
-const hostCommandRunner = {
+const execFile$1 = promisify(execFile$2);
+const hostCommandRunner$1 = {
     async run(command, args, cwd) {
-        const result = await execFile(command, args, { cwd });
+        const result = await execFile$1(command, args, { cwd });
         return result.stdout;
     }
 };
-async function updatePackageMetadata(pkg, runner = hostCommandRunner) {
+async function updatePackageMetadata(pkg, runner = hostCommandRunner$1) {
     try {
         await runner.run('updpkgsums', ['--nocolor', pkg.pkgbuildPath]);
         const srcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path);
         await writeFile$1(pkg.srcinfoPath, srcinfo);
     }
     catch (error) {
-        if (!isCommandNotFound(error))
+        if (!isCommandNotFound$1(error))
             throw error;
         await updatePackageMetadataWithDocker(pkg);
     }
@@ -35736,7 +35736,7 @@ async function updatePackageMetadata(pkg, runner = hostCommandRunner) {
 async function updatePackageMetadataWithDocker(pkg) {
     const uid = String(process.getuid?.() ?? 1000);
     const gid = String(process.getgid?.() ?? 1000);
-    await execFile('docker', [
+    await execFile$1('docker', [
         'run',
         '--rm',
         '--env',
@@ -35753,7 +35753,7 @@ async function updatePackageMetadataWithDocker(pkg) {
         'pacman -Sy --noconfirm pacman-contrib && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && su - builder -c \'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO\''
     ], { cwd: pkg.path });
 }
-function isCommandNotFound(error) {
+function isCommandNotFound$1(error) {
     return (typeof error === 'object' &&
         error !== null &&
         'code' in error &&
@@ -35795,6 +35795,51 @@ function replacePkgver(content, version) {
     return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version);
 }
 
+const execFile = promisify(execFile$2);
+const hostCommandRunner = {
+    async run(command, args, cwd) {
+        const result = await execFile(command, args, { cwd });
+        return result.stdout;
+    }
+};
+async function validatePackage(pkg, runner = hostCommandRunner) {
+    try {
+        await runner.run('makepkg', ['--nobuild', '--nodeps', '--noconfirm', '--nocolor'], pkg.path);
+        await runner.run('namcap', [pkg.pkgbuildPath]);
+    }
+    catch (error) {
+        if (!isCommandNotFound(error))
+            throw error;
+        await validatePackageWithDocker(pkg);
+    }
+}
+async function validatePackageWithDocker(pkg) {
+    const uid = String(process.getuid?.() ?? 1000);
+    const gid = String(process.getgid?.() ?? 1000);
+    await execFile('docker', [
+        'run',
+        '--rm',
+        '--env',
+        'HOST_UID=' + uid,
+        '--env',
+        'HOST_GID=' + gid,
+        '--volume',
+        pkg.path + ':/pkg:rw',
+        '--workdir',
+        '/pkg',
+        'archlinux:base-devel',
+        'bash',
+        '-c',
+        'pacman -Sy --noconfirm namcap && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && su - builder -c \'cd /pkg && makepkg --nobuild --nodeps --noconfirm --nocolor && namcap PKGBUILD\''
+    ], { cwd: pkg.path });
+}
+function isCommandNotFound(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'ENOENT' || error.code === 127));
+}
+
 async function run() {
     try {
         const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
@@ -35819,6 +35864,7 @@ async function run() {
             candidates.push({ package: pkg.name, candidate, update });
             if (update.changed) {
                 await updatePackageMetadata(pkg);
+                await validatePackage(pkg);
                 info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
             }
             else {
