@@ -7,18 +7,16 @@ branding:
   color: blue
 
 inputs:
-  milliseconds:
+  config:
     description: >-
-      Template input retained temporarily while the Action bootstrap is
-      completed
+      Path to the optional repository configuration file
     required: false
-    default: '1000'
+    default: .aur-maintainer.yml
 
 outputs:
-  time:
+  packages:
     description: >-
-      Template output retained temporarily while the Action bootstrap is
-      completed
+      JSON array containing the discovered package names
 
 runs:
   using: node24
