@@ -28493,11 +28493,11 @@ var HttpCodes;
     HttpCodes[HttpCodes["ServiceUnavailable"] = 503] = "ServiceUnavailable";
     HttpCodes[HttpCodes["GatewayTimeout"] = 504] = "GatewayTimeout";
 })(HttpCodes || (HttpCodes = {}));
-var Headers;
+var Headers$1;
 (function (Headers) {
     Headers["Accept"] = "accept";
     Headers["ContentType"] = "content-type";
-})(Headers || (Headers = {}));
+})(Headers$1 || (Headers$1 = {}));
 var MediaTypes;
 (function (MediaTypes) {
     MediaTypes["ApplicationJson"] = "application/json";
@@ -35688,12 +35688,7 @@ class GithubReleaseConnector {
         if (typeof repository !== 'string' || !/^[^/]+\/[^/]+$/.test(repository)) {
             throw new Error('github-release connector requires config.repository in owner/name form');
         }
-        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
-            headers: {
-                accept: 'application/vnd.github+json',
-                'user-agent': 'aur-maintainer'
-            }
-        });
+        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, githubRequestInit(this.context.token));
         if (!response.ok) {
             throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
         }
@@ -35714,12 +35709,7 @@ class GithubTagConnector {
         const tags = [];
         let page = 1;
         while (true) {
-            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, {
-                headers: {
-                    accept: 'application/vnd.github+json',
-                    'user-agent': 'aur-maintainer'
-                }
-            });
+            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, githubRequestInit(this.context.token));
             if (!response.ok) {
                 throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
             }
@@ -35734,6 +35724,15 @@ class GithubTagConnector {
         }
         return parseLatestTag(repository, tags);
     }
+}
+function githubRequestInit(token) {
+    const headers = new Headers({
+        accept: 'application/vnd.github+json',
+        'user-agent': 'aur-maintainer'
+    });
+    if (token)
+        headers.set('authorization', `Bearer ${token}`);
+    return { headers };
 }
 function parseRelease(repository, value) {
     if (!isRecord(value) || typeof value.tag_name !== 'string') {
