@@ -10,6 +10,7 @@ export interface Connector {
 
 export interface ConnectorContext {
   fetch(input: string | URL, init?: RequestInit): Promise<Response>
+  token?: string
 }
 
 export function createConnectorRegistry(
@@ -41,12 +42,7 @@ class GithubReleaseConnector implements Connector {
 
     const response = await this.context.fetch(
       `https://api.github.com/repos/${repository}/releases/latest`,
-      {
-        headers: {
-          accept: 'application/vnd.github+json',
-          'user-agent': 'aur-maintainer'
-        }
-      }
+      githubRequestInit(this.context.token)
     )
 
     if (!response.ok) {
@@ -81,12 +77,7 @@ class GithubTagConnector implements Connector {
     while (true) {
       const response = await this.context.fetch(
         `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`,
-        {
-          headers: {
-            accept: 'application/vnd.github+json',
-            'user-agent': 'aur-maintainer'
-          }
-        }
+        githubRequestInit(this.context.token)
       )
 
       if (!response.ok) {
@@ -109,6 +100,17 @@ class GithubTagConnector implements Connector {
 
     return parseLatestTag(repository, tags)
   }
+}
+
+function githubRequestInit(token?: string): RequestInit {
+  const headers = new Headers({
+    accept: 'application/vnd.github+json',
+    'user-agent': 'aur-maintainer'
+  })
+
+  if (token) headers.set('authorization', `Bearer ${token}`)
+
+  return { headers }
 }
 
 function parseRelease(repository: string, value: unknown): UpdateCandidate {
