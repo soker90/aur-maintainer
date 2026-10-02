@@ -55,6 +55,9 @@ jobs:
           pkgname=example-bin
           pkgver=1.0.0
           pkgrel=1
+          arch=('x86_64')
+          source=('README.md::https://raw.githubusercontent.com/actions/checkout/main/README.md')
+          sha256sums=()
           EOF
           cat > .github/test-fixture/packages/example-bin/update.yml <<'EOF'
           connector: github-release
@@ -77,6 +80,9 @@ jobs:
             .github/test-fixture/packages/example-bin/PKGBUILD
           test "$(grep '^pkgver=' \
             .github/test-fixture/packages/example-bin/PKGBUILD)" != 'pkgver=1.0.0'
+          test -s .github/test-fixture/packages/example-bin/.SRCINFO
+          grep -Eq '^sha256sums=\(' \
+            .github/test-fixture/packages/example-bin/PKGBUILD
       - name: Print Output
         id: output
         run: echo '${{ steps.test-action.outputs.packages }}'

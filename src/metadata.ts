@@ -1,6 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { promisify } from 'node:util'
 import { writeFile } from 'node:fs/promises'
+import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
 const execFile = promisify(execFileCallback)
@@ -43,7 +43,7 @@ async function updatePackageMetadataWithDocker(
       'run',
       '--rm',
       '--volume',
-      `${pkg.path}:/pkg:rw`,
+      pkg.path + ':/pkg:rw',
       '--workdir',
       '/pkg',
       'archlinux:base-devel',
