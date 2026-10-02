@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, access as access$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, access as access$1, writeFile as writeFile$1 } from 'node:fs/promises';
 import path from 'node:path';
 
 // We use any as a valid input type
@@ -35713,6 +35713,41 @@ function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+async function updatePackage(pkg, candidate) {
+    const content = await readFile(pkg.pkgbuildPath, 'utf8');
+    const currentVersion = readPkgver(content);
+    if (currentVersion === candidate.version) {
+        return { changed: false, currentVersion, version: candidate.version };
+    }
+    const updated = replacePkgver(content, candidate.version);
+    await writeFile$1(pkg.pkgbuildPath, updated);
+    return { changed: true, currentVersion, version: candidate.version };
+}
+function readPkgver(content) {
+    const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)];
+    if (matches.length !== 1) {
+        throw new Error('PKGBUILD must contain exactly one simple pkgver assignment (found ' +
+            matches.length +
+            ')');
+    }
+    const version = matches[0]?.[1]?.trim();
+    if (!version)
+        throw new Error('PKGBUILD pkgver assignment is empty');
+    return version;
+}
+function replacePkgver(content, version) {
+    if (!/^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)) {
+        throw new Error('Unsupported update version "' + version + '"');
+    }
+    const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)];
+    if (matches.length !== 1) {
+        throw new Error('PKGBUILD must contain exactly one simple pkgver assignment (found ' +
+            matches.length +
+            ')');
+    }
+    return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version);
+}
+
 async function run() {
     try {
         const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
@@ -35733,8 +35768,14 @@ async function run() {
             if (!factory)
                 throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`);
             const candidate = await factory(registryContext).detect(pkg, pkg.config.config);
-            candidates.push({ package: pkg.name, candidate });
-            info(`Detected ${candidate.version} for ${pkg.name} using ${pkg.config.connector}`);
+            const update = await updatePackage(pkg, candidate);
+            candidates.push({ package: pkg.name, candidate, update });
+            if (update.changed) {
+                info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
+            }
+            else {
+                info(`Package ${pkg.name} is already at ${update.version}`);
+            }
         }
         setOutput('packages', JSON.stringify(candidates));
     }
