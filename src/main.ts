@@ -1,27 +1,26 @@
 import * as core from '@actions/core'
-import { wait } from './wait.js'
+import { discoverPackages } from './discovery.js'
+import { loadMaintainerConfig } from './config.js'
 
-/**
- * The main function for the action.
- *
- * @returns Resolves when the action is complete.
- */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd()
+    const configPath = core.getInput('config') || '.aur-maintainer.yml'
+    const config = await loadMaintainerConfig(workspace, configPath)
+    const packages = await discoverPackages(workspace, config)
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (packages.length === 0) {
+      core.info('No managed AUR packages found.')
+      return
+    }
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    for (const pkg of packages) {
+      core.info(`Discovered ${pkg.name} (connector: ${pkg.config.connector})`)
+    }
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    core.setOutput('packages', JSON.stringify(packages.map((pkg) => pkg.name)))
   } catch (error) {
-    // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
+    else core.setFailed(String(error))
   }
 }
