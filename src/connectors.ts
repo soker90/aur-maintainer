@@ -129,7 +129,7 @@ function parseRelease(repository: string, value: unknown): UpdateCandidate {
   }
 
   const tag = value.tag_name
-  const version = tag.trim().replace(/^v(?=\\d)/i, '')
+  const version = tag.trim().replace(/^v(?=\d)/i, '')
   if (!isSupportedPackageVersion(version)) {
     throw new Error(
       `GitHub release tag "${tag}" for ${repository} is not a supported version`
@@ -149,7 +149,7 @@ function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
     .filter((tag) => typeof tag.name === 'string')
     .map((tag) => {
       const name = tag.name as string
-      const version = name.trim().replace(/^v(?=\\d)/i, '')
+      const version = name.trim().replace(/^v(?=\d)/i, '')
       return { name, version }
     })
     .filter(({ version }) => isSupportedPackageVersion(version))
