@@ -1,9 +1,9 @@
-const INVALID_VERSION_CHARACTER = /[:/\\<>=-\\s]/
+const INVALID_VERSION_CHARACTER = /[:/\<>=-\s]/
 
 export function isSupportedPackageVersion(version: string): boolean {
   return (
     version.length > 0 &&
-    /^[\\x21-\\x7e]+$/.test(version) &&
+    /^[\x21-\x7e]+$/.test(version) &&
     !INVALID_VERSION_CHARACTER.test(version)
   )
 }
@@ -100,8 +100,8 @@ function compareParts(left: string[], right: string[]): number {
     if (leftPart === undefined) return compareMissingPart(rightPart)
     if (rightPart === undefined) return -compareMissingPart(leftPart)
 
-    const leftNumeric = /^\\d+$/.test(leftPart)
-    const rightNumeric = /^\\d+$/.test(rightPart)
+    const leftNumeric = /^\d+$/.test(leftPart)
+    const rightNumeric = /^\d+$/.test(rightPart)
     if (leftNumeric && rightNumeric) {
       const comparison = compareNumericParts(leftPart, rightPart)
       if (comparison !== 0) return comparison
@@ -117,12 +117,12 @@ function compareParts(left: string[], right: string[]): number {
 
 function compareMissingPart(part: string | undefined): number {
   if (part === undefined) return 0
-  return /^\\d+$/.test(part) ? -1 : 1
+  return /^\d+$/.test(part) ? -1 : 1
 }
 
 function compareNumericParts(left: string, right: string): number {
-  const normalizedLeft = left.replace(/^0+(?=\\d)/, '')
-  const normalizedRight = right.replace(/^0+(?=\\d)/, '')
+  const normalizedLeft = left.replace(/^0+(?=\d)/, '')
+  const normalizedRight = right.replace(/^0+(?=\d)/, '')
   if (normalizedLeft.length !== normalizedRight.length) {
     return normalizedLeft.length - normalizedRight.length
   }
