@@ -156,7 +156,11 @@ function compareVersions(left: string, right: string): number {
   const a = parse(left)
   const b = parse(right)
 
-  for (let index = 0; index < Math.max(a.core.length, b.core.length); index += 1) {
+  for (
+    let index = 0;
+    index < Math.max(a.core.length, b.core.length);
+    index += 1
+  ) {
     const leftPart = a.core[index] ?? 0
     const rightPart = b.core[index] ?? 0
     if (leftPart !== rightPart) return leftPart - rightPart
