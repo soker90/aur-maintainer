@@ -10,7 +10,9 @@ export async function run(): Promise<void> {
     const config = await loadMaintainerConfig(workspace, configPath)
     const packages = await discoverPackages(workspace, config)
 
-    const registryContext = { fetch: (input: string | URL, init?: RequestInit) => fetch(input, init) }
+    const registryContext = {
+      fetch: (input: string | URL, init?: RequestInit) => fetch(input, init)
+    }
     const registry = createConnectorRegistry(registryContext)
 
     if (packages.length === 0) {
@@ -21,10 +23,18 @@ export async function run(): Promise<void> {
     const candidates = []
     for (const pkg of packages) {
       const factory = registry.get(pkg.config.connector)
-      if (!factory) throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`)
-      const candidate = await factory(registryContext).detect(pkg, pkg.config.config)
+      if (!factory)
+        throw new Error(
+          `Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`
+        )
+      const candidate = await factory(registryContext).detect(
+        pkg,
+        pkg.config.config
+      )
       candidates.push({ package: pkg.name, candidate })
-      core.info(`Detected ${candidate.version} for ${pkg.name} using ${pkg.config.connector}`)
+      core.info(
+        `Detected ${candidate.version} for ${pkg.name} using ${pkg.config.connector}`
+      )
     }
 
     core.setOutput('packages', JSON.stringify(candidates))

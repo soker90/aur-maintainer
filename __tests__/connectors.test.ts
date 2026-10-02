@@ -21,38 +21,64 @@ function response(body: unknown, init?: ResponseInit): Response {
 describe('github-release connector', () => {
   it('normalizes a v-prefixed release version', async () => {
     const fetchMock = jest.fn(async () => response({ tag_name: 'v1.4.3' }))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('github-release')!({})
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-release'
+    )!({})
 
-    await expect(connector.detect(pkg, { repository: 'stacklok/toolhive-studio' }))
-      .resolves.toMatchObject({ version: '1.4.3' })
+    await expect(
+      connector.detect(pkg, { repository: 'stacklok/toolhive-studio' })
+    ).resolves.toMatchObject({ version: '1.4.3' })
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.github.com/repos/stacklok/toolhive-studio/releases/latest',
-      expect.objectContaining({ headers: expect.objectContaining({ accept: 'application/vnd.github+json' }) })
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          accept: 'application/vnd.github+json'
+        })
+      })
     )
   })
 
   it('accepts unprefixed versions', async () => {
     const fetchMock = jest.fn(async () => response({ tag_name: '1.2.3' }))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('github-release')!({})
-    await expect(connector.detect(pkg, { repository: 'owner/project' }))
-      .resolves.toMatchObject({ version: '1.2.3' })
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-release'
+    )!({})
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({ version: '1.2.3' })
   })
 
   it('rejects malformed repository configuration', async () => {
-    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('github-release')!({})
-    await expect(connector.detect(pkg, { repository: 'invalid' })).rejects.toThrow('owner/name form')
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get(
+      'github-release'
+    )!({})
+    await expect(
+      connector.detect(pkg, { repository: 'invalid' })
+    ).rejects.toThrow('owner/name form')
   })
 
   it('reports GitHub API errors', async () => {
-    const fetchMock = jest.fn(async () => response({}, { status: 404, statusText: 'Not Found' }))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('github-release')!({})
-    await expect(connector.detect(pkg, { repository: 'owner/project' })).rejects.toThrow('404 Not Found')
+    const fetchMock = jest.fn(async () =>
+      response({}, { status: 404, statusText: 'Not Found' })
+    )
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-release'
+    )!({})
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).rejects.toThrow('404 Not Found')
   })
 
   it('rejects unusable release tags', async () => {
-    const fetchMock = jest.fn(async () => response({ tag_name: 'release-latest' }))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('github-release')!({})
-    await expect(connector.detect(pkg, { repository: 'owner/project' })).rejects.toThrow('not a supported version')
+    const fetchMock = jest.fn(async () =>
+      response({ tag_name: 'release-latest' })
+    )
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-release'
+    )!({})
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).rejects.toThrow('not a supported version')
   })
 })
