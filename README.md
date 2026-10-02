@@ -64,10 +64,8 @@ steps:
       github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-When `github-token` is provided, the Action commits validated package
-updates to `update-branch` and opens an update pull request against
-`base-branch`. Without a token, package updates are still applied to the
-workspace but no pull request is created.
+When `github-token` is provided, the Action commits validated package updates to
+`update-branch` and opens an update pull request against `base-branch`. Without a token, package updates are still applied to the workspace but no pull request is created.
 
 Configuration and the final set of inputs will be documented once the first
 stable implementation is in place.
