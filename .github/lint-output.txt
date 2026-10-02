@@ -1,0 +1,30 @@
+
+> aur-maintainer@0.0.0 lint
+> npx eslint .
+
+
+/home/runner/work/aur-maintainer/aur-maintainer/rollup.config.ts
+  0:0  error  Parsing error: Too many files (>8) have matched the default project.
+
+Having many files run with the default project is known to cause performance issues and slow down linting.
+
+See https://tseslint.com/allowdefaultproject-glob-too-wide
+
+Matching files:
+- /home/runner/work/aur-maintainer/aur-maintainer/__fixtures__/core.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/__fixtures__/wait.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/__tests__/config.test.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/__tests__/discovery.test.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/__tests__/main.test.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/__tests__/wait.test.ts
+- /home/runner/work/aur-maintainer/aur-maintainer/eslint.config.mjs
+- /home/runner/work/aur-maintainer/aur-maintainer/jest.config.js
+- /home/runner/work/aur-maintainer/aur-maintainer/rollup.config.ts
+
+If you absolutely need more files included, set parserOptions.projectService.maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING to a larger value
+
+/home/runner/work/aur-maintainer/aur-maintainer/src/main.ts
+  2:8  error  'path' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (2 errors, 0 warnings)
+
