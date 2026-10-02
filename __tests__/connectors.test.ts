@@ -107,7 +107,33 @@ describe('github-tag connector', () => {
     })
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.github.com/repos/owner/project/tags?per_page=100',
+      'https://api.github.com/repos/owner/project/tags?per_page=100&page=1',
+      expect.anything()
+    )
+  })
+
+  it('fetches subsequent pages when the first page is full', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({
+      name: `1.0.${index}`
+    }))
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(response(firstPage))
+      .mockResolvedValueOnce(response([{ name: '2.0.0' }]))
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
+      'github-tag'
+    )!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({
+      version: '2.0.0',
+      metadata: { tag: '2.0.0' }
+    })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/owner/project/tags?per_page=100&page=2',
       expect.anything()
     )
   })
