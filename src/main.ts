@@ -1,5 +1,4 @@
 import * as core from '@actions/core'
-import path from 'node:path'
 import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
 
