@@ -35803,13 +35803,12 @@ const hostGitRunner = {
     }
 };
 async function createUpdatePullRequest(workspace, options, git = hostGitRunner) {
-    const packagePaths = options.packages.map((pkg) => pkg.path);
-    await git.run('git', ['switch', '-c', options.updateBranch], workspace);
+    validateBranchName(options.updateBranch);
+    const packagePaths = options.packages.map((pkg) => getRelativePackagePath(workspace, pkg.path));
     await git.run('git', ['add', '--', ...packagePaths], workspace);
     const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim()) {
+    if (!changed.trim())
         return null;
-    }
     await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
     await git.run('git', [
         'config',
@@ -35817,9 +35816,28 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner) 
         '41898282+github-actions[bot]@users.noreply.github.com'
     ], workspace);
     await git.run('git', ['commit', '-m', 'chore: update AUR packages'], workspace);
+    const commit = (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim();
+    const remoteBranch = 'refs/heads/' + options.updateBranch;
+    if (await remoteBranchExists(git, workspace, remoteBranch)) {
+        await git.run('git', ['fetch', 'origin', options.updateBranch], workspace);
+        await git.run('git', [
+            'switch',
+            '-c',
+            options.updateBranch,
+            '--track',
+            'origin/' + options.updateBranch
+        ], workspace);
+        await git.run('git', ['cherry-pick', commit], workspace);
+    }
+    else {
+        await git.run('git', ['switch', '-c', options.updateBranch], workspace);
+    }
     await git.run('git', ['push', '--set-upstream', 'origin', options.updateBranch], workspace);
     const [owner, repo] = options.repository.split('/');
-    const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(options.repository.split('/')[0] + ':' + options.updateBranch)}&base=${encodeURIComponent(options.baseBranch)}`);
+    if (!owner || !repo) {
+        throw new Error('GITHUB_REPOSITORY must use owner/name form');
+    }
+    const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + options.updateBranch)}&base=${encodeURIComponent(options.baseBranch)}`);
     const pullRequests = Array.isArray(existing) ? existing : [];
     const current = pullRequests[0];
     if (isPullRequest(current))
@@ -35834,6 +35852,17 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner) 
         throw new Error('GitHub did not return the created pull request URL');
     }
     return created.html_url;
+}
+async function remoteBranchExists(git, workspace, branch) {
+    try {
+        await git.run('git', ['ls-remote', '--exit-code', '--heads', 'origin', branch], workspace);
+        return true;
+    }
+    catch (error) {
+        if (isGitExitCode(error, 2))
+            return false;
+        throw error;
+    }
 }
 async function requestGitHub(token, path, method = 'GET', body) {
     const response = await fetch('https://api.github.com' + path, {
@@ -35850,6 +35879,29 @@ async function requestGitHub(token, path, method = 'GET', body) {
         throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
     }
     return response.json();
+}
+function getRelativePackagePath(workspace, packagePath) {
+    const relative = path.relative(workspace, packagePath);
+    if (relative === '' ||
+        relative.startsWith('..') ||
+        path.isAbsolute(relative)) {
+        throw new Error('Package path must be inside the workspace');
+    }
+    return relative;
+}
+function validateBranchName(branch) {
+    if (branch.length === 0 ||
+        branch.startsWith('-') ||
+        branch.includes('..') ||
+        branch.includes(' ')) {
+        throw new Error('Invalid update branch name');
+    }
+}
+function isGitExitCode(error, code) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        error.status === code);
 }
 function isPullRequest(value) {
     return (typeof value === 'object' &&
