@@ -83,6 +83,13 @@ describe('discoverPackages', () => {
     await expect(discoverPackages(root, {})).resolves.toEqual([])
   })
 
+  it('ignores a packages path that is a file', async () => {
+    const root = await workspace()
+    await writeFile(path.join(root, 'packages'), 'content\n')
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([])
+  })
+
   it('rejects a PKGBUILD path that is a directory', async () => {
     const root = await workspace()
     const directory = path.join(root, 'packages/broken')
