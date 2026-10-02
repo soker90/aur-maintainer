@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, access as access$1, writeFile as writeFile$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$3 } from 'node:child_process';
 
@@ -35650,8 +35650,7 @@ async function isPackageDirectory(directory) {
 }
 async function isDirectory(filePath) {
     try {
-        await access$1(filePath);
-        return true;
+        return (await stat$1(filePath)).isDirectory();
     }
     catch {
         return false;
@@ -35659,8 +35658,7 @@ async function isDirectory(filePath) {
 }
 async function isFile(filePath) {
     try {
-        await access$1(filePath);
-        return true;
+        return (await stat$1(filePath)).isFile();
     }
     catch {
         return false;
