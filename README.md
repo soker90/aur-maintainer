@@ -40,8 +40,8 @@ config:
   repository: stacklok/toolhive-studio
 ```
 
-For repositories that publish versions as Git tags without GitHub Releases,
-use the `github-tag` connector:
+For repositories that publish versions as Git tags without GitHub Releases, use
+the `github-tag` connector:
 
 ```yaml
 connector: github-tag
