@@ -22,11 +22,7 @@ export async function updatePackageMetadata(
 ): Promise<void> {
   try {
     await runner.run('updpkgsums', ['--nocolor', pkg.pkgbuildPath])
-    const srcinfo = await runner.run(
-      'makepkg',
-      ['--printsrcinfo'],
-      pkg.path
-    )
+    const srcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path)
     await writeFile(pkg.srcinfoPath, srcinfo)
   } catch (error) {
     if (!isCommandNotFound(error)) throw error
@@ -56,7 +52,7 @@ async function updatePackageMetadataWithDocker(
       'archlinux:base-devel',
       'bash',
       '-c',
-      "pacman -Sy --noconfirm pacman-contrib && groupadd -o -g \"$HOST_GID\" builder && useradd -o -u \"$HOST_UID\" -g \"$HOST_GID\" --create-home builder && su - builder -c 'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'"
+      'pacman -Sy --noconfirm pacman-contrib && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && su - builder -c \'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO\''
     ],
     { cwd: pkg.path }
   )
