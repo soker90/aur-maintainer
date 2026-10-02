@@ -12,10 +12,7 @@ describe('package validation', () => {
       updateConfigPath: '/workspace/demo/update.yml',
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
-    const run = jest
-      .fn()
-      .mockResolvedValueOnce('')
-      .mockResolvedValueOnce('')
+    const run = jest.fn().mockResolvedValueOnce('').mockResolvedValueOnce('')
 
     await validatePackage(pkg, { run })
 
@@ -25,10 +22,6 @@ describe('package validation', () => {
       ['--nobuild', '--nodeps', '--noconfirm', '--nocolor'],
       pkg.path
     )
-    expect(run).toHaveBeenNthCalledWith(
-      2,
-      'namcap',
-      [pkg.pkgbuildPath]
-    )
+    expect(run).toHaveBeenNthCalledWith(2, 'namcap', [pkg.pkgbuildPath])
   })
 })
