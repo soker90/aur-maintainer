@@ -1,0 +1,29 @@
+name: Build dist for development branch
+
+on:
+  push:
+    branches:
+      - feat/github-release-connector
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run bundle
+      - name: Commit generated dist
+        run: |
+          if git diff --quiet -- dist; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist
+          git commit -m "chore: rebuild dist"
+          git push
