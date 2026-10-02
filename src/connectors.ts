@@ -38,7 +38,11 @@ class GithubReleaseConnector implements Connector {
     config: Record<string, unknown>
   ): Promise<UpdateCandidate> {
     const repository = config.repository
-    if (\n      typeof repository !== 'string' ||\n      repository.split('/').length !== 2 ||\n      repository.split('/').some((part) => !part)\n    ) {
+    if (
+      typeof repository !== 'string' ||
+      repository.split('/').length !== 2 ||
+      repository.split('/').some((part) => !part)
+    ) {
       throw new Error(
         'github-release connector requires config.repository in owner/name form'
       )
