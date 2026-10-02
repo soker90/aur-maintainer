@@ -79,7 +79,8 @@ jobs:
           grep -Eq '^pkgver=[0-9]+' \
             .github/test-fixture/packages/example-bin/PKGBUILD
           test "$(grep '^pkgver=' \
-            .github/test-fixture/packages/example-bin/PKGBUILD)" != 'pkgver=1.0.0'
+            .github/test-fixture/packages/example-bin/PKGBUILD)" \
+            != 'pkgver=1.0.0'
           test -s .github/test-fixture/packages/example-bin/.SRCINFO
           grep -Eq '^sha256sums=\(' \
             .github/test-fixture/packages/example-bin/PKGBUILD
