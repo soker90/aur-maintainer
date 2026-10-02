@@ -97,9 +97,10 @@ describe('github-tag connector', () => {
         { name: '1.10.0+build.1' }
       ])
     )
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get(
-      'github-tag'
-    )!({})
+    const connector = createConnectorRegistry({
+      fetch: fetchMock,
+      token: 'test-token'
+    }).get('github-tag')!({})
 
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
