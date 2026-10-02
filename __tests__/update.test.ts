@@ -34,6 +34,12 @@ describe('package updates', () => {
     )
   })
 
+  it('updates Arch-compatible alphanumeric versions', () => {
+    expect(replacePkgver('pkgver=1.2.3\n', '1.2.3alpha')).toBe(
+      'pkgver=1.2.3alpha\n'
+    )
+  })
+
   it('reads a single pkgver assignment', () => {
     expect(readPkgver('pkgname=demo\npkgver=1.2.3\npkgrel=1\n')).toBe('1.2.3')
   })
