@@ -90,7 +90,9 @@ describe('github-tag connector', () => {
         { name: 'v1.2.0' },
         { name: '1.10.0' },
         { name: 'release' },
-        { name: '1.9.9' }
+        { name: '1.9.9' },
+        { name: '1.10.0-alpha.1' },
+        { name: '1.10.0+build.1' }
       ])
     )
     const connector = createConnectorRegistry({ fetch: fetchMock }).get(
@@ -100,8 +102,8 @@ describe('github-tag connector', () => {
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
     ).resolves.toMatchObject({
-      version: '1.10.0',
-      metadata: { tag: '1.10.0' }
+      version: '1.10.0+build.1',
+      metadata: { tag: '1.10.0+build.1' }
     })
 
     expect(fetchMock).toHaveBeenCalledWith(
