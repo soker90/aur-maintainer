@@ -43,11 +43,7 @@ export async function createUpdatePullRequest(
 
   await git.run(
     'git',
-    [
-      'config',
-      'user.name',
-      'github-actions[bot]'
-    ],
+    ['config', 'user.name', 'github-actions[bot]'],
     workspace
   )
   await git.run(
@@ -127,9 +123,7 @@ async function requestGitHub(
   return response.json()
 }
 
-function isPullRequest(
-  value: unknown
-): value is { html_url: string } {
+function isPullRequest(value: unknown): value is { html_url: string } {
   return (
     typeof value === 'object' &&
     value !== null &&
