@@ -4,6 +4,7 @@ import { loadMaintainerConfig } from './config.js'
 import { createConnectorRegistry } from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
 import { updatePackage } from './update.js'
+import { createUpdatePullRequest } from './pull-request.js'
 import { validatePackage } from './validation.js'
 
 export async function run(): Promise<void> {
@@ -24,6 +25,7 @@ export async function run(): Promise<void> {
     }
 
     const candidates = []
+    const updatedPackages = []
     for (const pkg of packages) {
       const factory = registry.get(pkg.config.connector)
       if (!factory)
@@ -39,6 +41,7 @@ export async function run(): Promise<void> {
       if (update.changed) {
         await updatePackageMetadata(pkg)
         await validatePackage(pkg)
+        updatedPackages.push(pkg)
         core.info(
           `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
         )
@@ -48,6 +51,21 @@ export async function run(): Promise<void> {
     }
 
     core.setOutput('packages', JSON.stringify(candidates))
+
+    const token = core.getInput('github-token')
+    if (token && updatedPackages.length > 0) {
+      const repository = process.env.GITHUB_REPOSITORY
+      if (!repository) throw new Error('GITHUB_REPOSITORY is required')
+      const pullRequest = await createUpdatePullRequest(workspace, {
+        token,
+        repository,
+        baseBranch: core.getInput('base-branch') || 'main',
+        updateBranch:
+          core.getInput('update-branch') || 'aur-maintainer/updates',
+        packages: updatedPackages
+      })
+      if (pullRequest) core.setOutput('pull-request', pullRequest)
+    }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
     else core.setFailed(String(error))
