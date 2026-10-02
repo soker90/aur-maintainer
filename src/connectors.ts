@@ -134,7 +134,7 @@ function parseLatestTag(
     .filter(({ version }) =>
       /^\d+(?:\.\d+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/.test(version)
     )
-    .sort((left, right) => compareVersions(left.version, right.version))
+    .toSorted((left, right) => compareVersions(left.version, right.version))
 
   const latest = candidates.at(-1)
   if (!latest) {
