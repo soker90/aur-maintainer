@@ -18,6 +18,12 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'abc123\n'
+      if (args[0] === 'ls-remote') {
+        const error = new Error('branch not found') as Error & { status: number }
+        error.status = 2
+        throw error
+      }
       return ''
     })
     const fetchMock = jest
@@ -52,6 +58,11 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['add', '--', 'packages/demo'],
+      '/workspace'
+    )
     expect(run).toHaveBeenCalledWith(
       'git',
       ['switch', '-c', 'aur-maintainer/updates'],
