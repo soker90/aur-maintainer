@@ -11,7 +11,7 @@ describe('package updates', () => {
     const pkgbuildPath = path.join(directory, 'PKGBUILD')
     await writeFile(
       pkgbuildPath,
-      'pkgname=demo\\npkgver=1.0.0\\npkgrel=1\\n'
+      'pkgname=demo\npkgver=1.0.0\npkgrel=1\n'
     )
     const pkg = {
       name: 'demo',
