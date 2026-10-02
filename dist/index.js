@@ -35770,6 +35770,14 @@ async function updatePackage(pkg, candidate) {
     await writeFile$1(pkg.pkgbuildPath, updated);
     return { changed: true, currentVersion, version: candidate.version };
 }
+async function rollbackPackageUpdate(pkg, result) {
+    if (!result.changed)
+        return;
+    const content = await readFile(pkg.pkgbuildPath, 'utf8');
+    if (readPkgver(content) !== result.version)
+        return;
+    await writeFile$1(pkg.pkgbuildPath, replacePkgver(content, result.currentVersion));
+}
 function readPkgver(content) {
     const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)];
     if (matches.length !== 1) {
@@ -35979,10 +35987,16 @@ async function run() {
             const update = await updatePackage(pkg, candidate);
             candidates.push({ package: pkg.name, candidate, update });
             if (update.changed) {
-                await updatePackageMetadata(pkg);
-                await validatePackage(pkg);
-                updatedPackages.push(pkg);
-                info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
+                try {
+                    await updatePackageMetadata(pkg);
+                    await validatePackage(pkg);
+                    updatedPackages.push(pkg);
+                    info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
+                }
+                catch (error) {
+                    await rollbackPackageUpdate(pkg, update);
+                    throw error;
+                }
             }
             else {
                 info(`Package ${pkg.name} is already at ${update.version}`);
