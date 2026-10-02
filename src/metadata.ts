@@ -49,7 +49,7 @@ async function updatePackageMetadataWithDocker(
       'archlinux:base-devel',
       'bash',
       '-c',
-      'pacman -Sy --noconfirm pacman-contrib && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'
+      "pacman -Sy --noconfirm pacman-contrib && useradd --create-home builder && chown -R builder:builder /pkg && su - builder -c 'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO'"
     ],
     { cwd: pkg.path }
   )
