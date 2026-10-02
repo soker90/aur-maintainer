@@ -51,14 +51,32 @@ jobs:
         id: fixture
         run: |
           mkdir -p .github/test-fixture/packages/example-bin
-          printf 'pkgname=example-bin\n' > .github/test-fixture/packages/example-bin/PKGBUILD
-          printf 'connector: github-release\nconfig:\n  repository: actions/checkout\n' > .github/test-fixture/packages/example-bin/update.yml
-          printf 'packages:\n  - .github/test-fixture/packages/example-bin\n' > .github/test-fixture/.aur-maintainer.yml
+          cat > .github/test-fixture/packages/example-bin/PKGBUILD <<'EOF'
+          pkgname=example-bin
+          pkgver=1.0.0
+          pkgrel=1
+          EOF
+          cat > .github/test-fixture/packages/example-bin/update.yml <<'EOF'
+          connector: github-release
+          config:
+            repository: actions/checkout
+          EOF
+          cat > .github/test-fixture/.aur-maintainer.yml <<'EOF'
+          packages:
+            - .github/test-fixture/packages/example-bin
+          EOF
       - name: Test Local Action
         id: test-action
         uses: ./
         with:
           config: .github/test-fixture/.aur-maintainer.yml
+      - name: Verify Package Update
+        id: verify-update
+        run: |
+          grep -Eq '^pkgver=[0-9]+' \
+            .github/test-fixture/packages/example-bin/PKGBUILD
+          test "$(grep '^pkgver=' \
+            .github/test-fixture/packages/example-bin/PKGBUILD)" != 'pkgver=1.0.0'
       - name: Print Output
         id: output
         run: echo '${{ steps.test-action.outputs.packages }}'

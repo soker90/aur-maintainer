@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
 import { createConnectorRegistry } from './connectors.js'
+import { updatePackage } from './update.js'
 
 export async function run(): Promise<void> {
   try {
@@ -31,10 +32,15 @@ export async function run(): Promise<void> {
         pkg,
         pkg.config.config
       )
-      candidates.push({ package: pkg.name, candidate })
-      core.info(
-        `Detected ${candidate.version} for ${pkg.name} using ${pkg.config.connector}`
-      )
+      const update = await updatePackage(pkg, candidate)
+      candidates.push({ package: pkg.name, candidate, update })
+      if (update.changed) {
+        core.info(
+          `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
+        )
+      } else {
+        core.info(`Package ${pkg.name} is already at ${update.version}`)
+      }
     }
 
     core.setOutput('packages', JSON.stringify(candidates))
