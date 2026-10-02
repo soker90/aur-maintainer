@@ -177,7 +177,11 @@ async function requestGitHub(
 
 function getRelativePackagePath(workspace: string, packagePath: string): string {
   const relative = path.relative(workspace, packagePath)
-  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+  if (
+    relative === '' ||
+    relative.startsWith('..') ||
+    path.isAbsolute(relative)
+  ) {
     throw new Error('Package path must be inside the workspace')
   }
   return relative
