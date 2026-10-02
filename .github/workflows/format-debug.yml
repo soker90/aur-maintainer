@@ -1,9 +1,7 @@
 name: Format Debug
 
 on:
-  push:
-    branches:
-      - feat/update-package-metadata
+  pull_request:
 
 jobs:
   format:
