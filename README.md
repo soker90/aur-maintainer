@@ -61,7 +61,7 @@ permissions:
 steps:
   - uses: soker90/aur-maintainer@v1
     with:
-      github-token: \${{ secrets.GITHUB_TOKEN }}
+      github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 When `github-token` is provided, the Action commits validated package
