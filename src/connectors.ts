@@ -59,8 +59,6 @@ class GithubReleaseConnector implements Connector {
   }
 }
 
-
-
 class GithubTagConnector implements Connector {
   readonly name = 'github-tag'
 
@@ -114,12 +112,7 @@ function parseRelease(repository: string, value: unknown): UpdateCandidate {
   return { version, metadata: { repository, tag } }
 }
 
-
-
-function parseLatestTag(
-  repository: string,
-  value: unknown
-): UpdateCandidate {
+function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
   if (!Array.isArray(value)) {
     throw new Error(`GitHub tags response for ${repository} is not an array`)
   }
