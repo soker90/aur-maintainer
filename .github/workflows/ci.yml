@@ -29,6 +29,9 @@ jobs:
       - name: Install Dependencies
         id: npm-ci
         run: npm ci
+      - name: Show Prettier Output
+        id: show-prettier
+        run: npx prettier __tests__/update.test.ts
       - name: Check Format
         id: npm-format-check
         run: npm run format:check
@@ -66,4 +69,4 @@ jobs:
           test "$(grep '^pkgver=' .github/test-fixture/packages/example-bin/PKGBUILD)" != 'pkgver=1.0.0'
       - name: Print Output
         id: output
-        run: echo '${{ steps.test-action.outputs.packages }}'
+        run: echo '\${{ steps.test-action.outputs.packages }}'
