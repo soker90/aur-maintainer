@@ -1,4 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
+import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
@@ -28,8 +29,11 @@ export async function createUpdatePullRequest(
   options: PullRequestOptions,
   git: GitRunner = hostGitRunner
 ): Promise<string | null> {
-  const packagePaths = options.packages.map((pkg) => pkg.path)
-  await git.run('git', ['switch', '-c', options.updateBranch], workspace)
+  validateBranchName(options.updateBranch)
+  const packagePaths = options.packages.map((pkg) =>
+    getRelativePackagePath(workspace, pkg.path)
+  )
+
   await git.run('git', ['add', '--', ...packagePaths], workspace)
 
   const changed = await git.run(
@@ -37,9 +41,7 @@ export async function createUpdatePullRequest(
     ['diff', '--cached', '--name-only'],
     workspace
   )
-  if (!changed.trim()) {
-    return null
-  }
+  if (!changed.trim()) return null
 
   await git.run(
     'git',
@@ -60,6 +62,34 @@ export async function createUpdatePullRequest(
     ['commit', '-m', 'chore: update AUR packages'],
     workspace
   )
+
+  const commit = (
+    await git.run('git', ['rev-parse', 'HEAD'], workspace)
+  ).trim()
+  const remoteBranch = 'refs/heads/' + options.updateBranch
+
+  if (await remoteBranchExists(git, workspace, remoteBranch)) {
+    await git.run('git', ['fetch', 'origin', options.updateBranch], workspace)
+    await git.run(
+      'git',
+      [
+        'switch',
+        '-c',
+        options.updateBranch,
+        '--track',
+        'origin/' + options.updateBranch
+      ],
+      workspace
+    )
+    await git.run('git', ['cherry-pick', commit], workspace)
+  } else {
+    await git.run(
+      'git',
+      ['switch', '-c', options.updateBranch],
+      workspace
+    )
+  }
+
   await git.run(
     'git',
     ['push', '--set-upstream', 'origin', options.updateBranch],
@@ -67,10 +97,14 @@ export async function createUpdatePullRequest(
   )
 
   const [owner, repo] = options.repository.split('/')
+  if (!owner || !repo) {
+    throw new Error('GITHUB_REPOSITORY must use owner/name form')
+  }
+
   const existing = await requestGitHub(
     options.token,
     `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(
-      options.repository.split('/')[0] + ':' + options.updateBranch
+      owner + ':' + options.updateBranch
     )}&base=${encodeURIComponent(options.baseBranch)}`
   )
 
@@ -97,6 +131,24 @@ export async function createUpdatePullRequest(
   return created.html_url
 }
 
+async function remoteBranchExists(
+  git: GitRunner,
+  workspace: string,
+  branch: string
+): Promise<boolean> {
+  try {
+    await git.run(
+      'git',
+      ['ls-remote', '--exit-code', '--heads', 'origin', branch],
+      workspace
+    )
+    return true
+  } catch (error) {
+    if (isGitExitCode(error, 2)) return false
+    throw error
+  }
+}
+
 async function requestGitHub(
   token: string,
   path: string,
@@ -121,6 +173,34 @@ async function requestGitHub(
   }
 
   return response.json()
+}
+
+function getRelativePackagePath(workspace: string, packagePath: string): string {
+  const relative = path.relative(workspace, packagePath)
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) {
+    throw new Error('Package path must be inside the workspace')
+  }
+  return relative
+}
+
+function validateBranchName(branch: string): void {
+  if (
+    branch.length === 0 ||
+    branch.startsWith('-') ||
+    branch.includes('..') ||
+    branch.includes(' ')
+  ) {
+    throw new Error('Invalid update branch name')
+  }
+}
+
+function isGitExitCode(error: unknown, code: number): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    error.status === code
+  )
 }
 
 function isPullRequest(value: unknown): value is { html_url: string } {
