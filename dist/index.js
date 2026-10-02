@@ -35728,7 +35728,8 @@ class GithubTagConnector {
 function githubRequestInit(token) {
     const headers = {
         accept: 'application/vnd.github+json',
-        'user-agent': 'aur-maintainer'
+        'user-agent': 'aur-maintainer',
+        'x-github-api-version': '2026-03-10'
     };
     if (token)
         headers.authorization = `Bearer ${token}`;
