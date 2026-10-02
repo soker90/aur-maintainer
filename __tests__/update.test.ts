@@ -2,9 +2,8 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from '@jest/globals'
-import { updatePackage } from '../src/update.js'
 import type { PackageDefinition } from '../src/types.js'
-import { readPkgver, replacePkgver } from '../src/update.js'
+import { readPkgver, replacePkgver, updatePackage } from '../src/update.js'
 
 describe('package updates', () => {
   it('updates the package file and reports the previous version', async () => {
@@ -27,7 +26,9 @@ describe('package updates', () => {
       currentVersion: '1.0.0',
       version: '1.1.0'
     })
-    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toContain('pkgver=1.1.0')
+    await expect(
+      readFile(pkgbuildPath, 'utf8')
+    ).resolves.toContain('pkgver=1.1.0')
   })
   it('reads a single pkgver assignment', () => {
     expect(readPkgver('pkgname=demo\npkgver=1.2.3\npkgrel=1\n')).toBe(
