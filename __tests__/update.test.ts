@@ -41,13 +41,15 @@ describe('package updates', () => {
       'source=("demo-$pkgver.tar.gz")',
       ''
     ].join('\n')
-    expect(replacePkgver(content, '1.3.0')).toBe([
-      'pkgname=demo',
-      'pkgver=1.3.0',
-      'pkgrel=1',
-      'source=("demo-$pkgver.tar.gz")',
-      ''
-    ].join('\n'))
+    expect(replacePkgver(content, '1.3.0')).toBe(
+      [
+        'pkgname=demo',
+        'pkgver=1.3.0',
+        'pkgrel=1',
+        'source=("demo-$pkgver.tar.gz")',
+        ''
+      ].join('\n')
+    )
   })
 
   it('rejects multiple pkgver assignments', () => {
