@@ -26,9 +26,8 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
-      .mockResolvedValueOnce(
-        directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst\n'
-      )
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(artifactPath + '\n')
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('')
 
