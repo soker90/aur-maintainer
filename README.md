@@ -24,16 +24,10 @@ The intended user-facing model is deliberately small:
 repository/
 ├── .aur-maintainer.yml       # optional global configuration
 ├── packages/                 # optional; packages may also live at root
-│   ├── example-bin/          # generic connector
-│   │   ├── PKGBUILD
-│   │   ├── .SRCINFO
-│   │   └── update.yml
-│   └── custom-bin/           # package-local custom connector
+│   └── example-bin/
 │       ├── PKGBUILD
 │       ├── .SRCINFO
-│       └── connector/
-│           ├── update.yml
-│           └── detect.sh
+│       └── update.yml
 └── connectors/               # optional repository-local connectors
     └── example/
 ```
@@ -54,23 +48,6 @@ connector: github-tag
 config:
   repository: owner/project
 ```
-
-For a package that needs custom detection logic, keep that logic inside the
-package. In that case the package has no root `update.yml`: the only package
-configuration is `connector/update.yml`, which selects the `custom` connector.
-
-The custom connector is an executable shell script at
-`connector/detect.sh`. It must print exactly these standard fields:
-
-```text
-version=...
-source=...
-sha256=...
-```
-
-The Action executes the script from the package directory and consumes its
-standard update candidate. The script should use an official, reproducible
-upstream source and fail rather than guessing when the upstream format changes.
 
 The global configuration can restrict which package directories are managed:
 
