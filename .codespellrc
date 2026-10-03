@@ -1,0 +1,3 @@
+[codespell]
+skip = ./README_ES.md
+ignore-words-list = FO,inicial,utiliza,conector
