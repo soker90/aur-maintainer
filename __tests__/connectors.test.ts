@@ -201,7 +201,15 @@ describe('repository-local connectors', () => {
   it('loads an ESM connector from its repository directory', async () => {
     const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
     temporaryWorkspaces.push(workspace)
+    await writeFile(
+      path.join(workspace, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
+    await writeFile(
+      path.join(workspace, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'index.js'),
@@ -232,6 +240,10 @@ describe('repository-local connectors', () => {
   it('rejects a connector directory without index.js', async () => {
     const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
     temporaryWorkspaces.push(workspace)
+    await writeFile(
+      path.join(workspace, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
     await mkdir(path.join(workspace, 'connectors', 'custom'), {
       recursive: true
     })
@@ -243,6 +255,7 @@ describe('repository-local connectors', () => {
 
   it('rejects a repository connector that conflicts with a built-in', async () => {
     const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+    temporaryWorkspaces.push(workspace)
     const connectorDirectory = path.join(
       workspace,
       'connectors',
