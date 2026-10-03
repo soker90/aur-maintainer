@@ -253,7 +253,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       path: packageDirectory,
       config: { connector: 'custom', config: {} }
     }
-    const connector = loadPackageConnector(package)({ fetch })
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
     await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'must output version, source and sha256'
@@ -276,7 +276,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       path: packageDirectory,
       config: { connector: 'custom', config: {} }
     }
-    const connector = loadPackageConnector(package)({ fetch })
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
     await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'produced unknown output "extra"'
@@ -294,7 +294,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       path: packageDirectory,
       config: { connector: 'custom', config: {} }
     }
-    const connector = loadPackageConnector(package)({ fetch })
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
     await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'must provide connector/detect.sh'
