@@ -69,12 +69,23 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      'connector: custom\\ntimeout: 90\\n'
+      'connector: custom\ntimeout: 90\n'
     )
     await expect(loadPackageConfig(packagePath)).resolves.toMatchObject({
       connector: 'custom',
       timeout: 90
     })
+  })
+
+  it('rejects a non-positive connector timeout', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\\ntimeout: 0\\n'
+    )
+    await expect(loadPackageConfig(packagePath)).rejects.toThrow(
+      '"timeout" must be a positive integer number of seconds'
+    )
   })
 
   it('rejects unsupported package metadata mappings', async () => {
