@@ -205,11 +205,11 @@ describe('repository-local connectors', () => {
       path.join(workspace, 'package.json'),
       JSON.stringify({ type: 'module' })
     )
-    const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await writeFile(
       path.join(workspace, 'package.json'),
       JSON.stringify({ type: 'module' })
     )
+    const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'index.js'),
@@ -256,6 +256,10 @@ describe('repository-local connectors', () => {
   it('rejects a repository connector that conflicts with a built-in', async () => {
     const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
     temporaryWorkspaces.push(workspace)
+    await writeFile(
+      path.join(workspace, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
     const connectorDirectory = path.join(
       workspace,
       'connectors',
