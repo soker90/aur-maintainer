@@ -2,7 +2,10 @@ import * as core from '@actions/core'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
-import { loadRepositoryConnectors } from './connectors.js'
+import {
+  loadPackageConnector,
+  loadRepositoryConnectors
+} from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
 import { rollbackPackageUpdate, updatePackage } from './update.js'
 import { createUpdatePullRequest } from './pull-request.js'
@@ -39,7 +42,10 @@ export async function run(): Promise<void> {
     const candidates = []
     const updatedPackages = []
     for (const pkg of packages) {
-      const factory = registry.get(pkg.config.connector)
+      const factory =
+        pkg.config.connector === 'custom'
+          ? loadPackageConnector(pkg)
+          : registry.get(pkg.config.connector)
       if (!factory)
         throw new Error(
           `Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`
