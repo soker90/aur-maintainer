@@ -25,7 +25,7 @@ import require$$1$2 from 'node:zlib';
 import require$$5$1 from 'node:perf_hooks';
 import require$$8$1 from 'node:util/types';
 import require$$1$1 from 'node:worker_threads';
-import require$$1$3 from 'node:url';
+import require$$1$3, { pathToFileURL } from 'node:url';
 import require$$5$2 from 'node:async_hooks';
 import require$$1$4 from 'node:console';
 import require$$1$5 from 'node:dns';
@@ -35615,7 +35615,7 @@ async function findDefaultPackagePaths(workspace) {
     if (await isPackageDirectory(workspace))
         candidates.push(workspace);
     const packagesDirectory = path.join(workspace, 'packages');
-    if (await isDirectory(packagesDirectory)) {
+    if (await isDirectory$1(packagesDirectory)) {
         const entries = await readdir$1(packagesDirectory, { withFileTypes: true });
         for (const entry of entries) {
             if (entry.isDirectory()) {
@@ -35630,7 +35630,7 @@ async function discoverPackage(packagePath, workspace) {
         throw new Error(`Package path is outside the workspace: ${packagePath}`);
     }
     const pkgbuildPath = path.join(packagePath, 'PKGBUILD');
-    if (!(await isFile(pkgbuildPath))) {
+    if (!(await isFile$1(pkgbuildPath))) {
         throw new Error(`Package directory has no PKGBUILD: ${packagePath}`);
     }
     const config = await loadPackageConfig(packagePath);
@@ -35645,10 +35645,10 @@ async function discoverPackage(packagePath, workspace) {
     };
 }
 async function isPackageDirectory(directory) {
-    return ((await isDirectory(directory)) &&
-        (await isFile(path.join(directory, 'PKGBUILD'))));
+    return ((await isDirectory$1(directory)) &&
+        (await isFile$1(path.join(directory, 'PKGBUILD'))));
 }
-async function isDirectory(filePath) {
+async function isDirectory$1(filePath) {
     try {
         return (await stat$1(filePath)).isDirectory();
     }
@@ -35656,7 +35656,7 @@ async function isDirectory(filePath) {
         return false;
     }
 }
-async function isFile(filePath) {
+async function isFile$1(filePath) {
     try {
         return (await stat$1(filePath)).isFile();
     }
@@ -35805,6 +35805,51 @@ function createConnectorRegistry(context) {
         ['github-tag', () => new GithubTagConnector(context)]
     ]);
 }
+async function loadRepositoryConnectors(workspace, context) {
+    const registry = createConnectorRegistry(context);
+    const directory = path.resolve(workspace, 'connectors');
+    if (!(await isDirectory(directory)))
+        return registry;
+    const entries = await readdir$1(directory, { withFileTypes: true });
+    for (const entry of entries.toSorted((left, right) => left.name.localeCompare(right.name))) {
+        if (!entry.isDirectory())
+            continue;
+        const name = entry.name;
+        if (registry.has(name)) {
+            throw new Error(`Repository connector "${name}" conflicts with a built-in connector`);
+        }
+        const modulePath = path.join(directory, name, 'index.js');
+        if (!(await isFile(modulePath))) {
+            throw new Error(`Repository connector "${name}" must provide connectors/${name}/index.js`);
+        }
+        const factory = await loadConnectorFactory(modulePath, name);
+        registry.set(name, factory);
+    }
+    return registry;
+}
+async function loadConnectorFactory(modulePath, name) {
+    const module = (await import(pathToFileURL(modulePath).href));
+    if (typeof module.default !== 'function') {
+        throw new Error(`Repository connector "${name}" must default-export a connector factory`);
+    }
+    const factory = module.default;
+    const connector = factory({
+        fetch,
+        token: undefined
+    });
+    if (!isConnector(connector) || connector.name !== name) {
+        throw new Error(`Repository connector "${name}" factory must return a connector named "${name}"`);
+    }
+    return factory;
+}
+function isConnector(value) {
+    return (typeof value === 'object' &&
+        value !== null &&
+        'name' in value &&
+        typeof value.name === 'string' &&
+        'detect' in value &&
+        typeof value.detect === 'function');
+}
 class GithubReleaseConnector {
     context;
     name = 'github-release';
@@ -35900,6 +35945,22 @@ function parseLatestTag(repository, value) {
         version: latest.version,
         metadata: { repository, tag: latest.name }
     };
+}
+async function isDirectory(filePath) {
+    try {
+        return (await stat$1(filePath)).isDirectory();
+    }
+    catch {
+        return false;
+    }
+}
+async function isFile(filePath) {
+    try {
+        return (await stat$1(filePath)).isFile();
+    }
+    catch {
+        return false;
+    }
 }
 function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -36173,7 +36234,7 @@ async function run() {
             fetch: (input, init) => fetch(input, init),
             token: token || undefined
         };
-        const registry = createConnectorRegistry(registryContext);
+        const registry = await loadRepositoryConnectors(workspace, registryContext);
         if (packages.length === 0) {
             info('No managed AUR packages found.');
             return;
