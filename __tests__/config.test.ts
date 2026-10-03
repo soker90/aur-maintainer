@@ -43,7 +43,8 @@ describe('config', () => {
     )
     await expect(loadPackageConfig(packagePath)).resolves.toEqual({
       connector: 'github-release',
-      config: { repository: 'example/project' }
+      config: { repository: 'example/project' },
+      updates: {}
     })
   })
 })
