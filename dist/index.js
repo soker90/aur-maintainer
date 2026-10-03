@@ -36198,13 +36198,14 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             .map((entry) => entry.trim())
             .filter(Boolean)
             .map((entry) => path.basename(entry));
+        const entries = new Set(await readdir$1(pkg.path));
         const artifacts = [];
         for (const entry of expectedArtifacts) {
             const artifactPath = path.isAbsolute(entry)
                 ? entry
                 : path.join(pkg.path, entry);
             try {
-                if ((await stat$1(artifactPath)).isFile()) {
+                if (entries.has(entry) && (await stat$1(artifactPath)).isFile()) {
                     artifacts.push(artifactPath);
                 }
             }
@@ -36380,4 +36381,3 @@ function isMissingFile(error) {
  */
 /* istanbul ignore next */
 run();
-
