@@ -131,16 +131,17 @@ async function detectWithScript(
 }
 
 function isTimeoutError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'ETIMEDOUT' ||
-    ((error as { killed?: unknown; signal?: unknown }).killed === true &&
-      (error as { killed?: unknown; signal?: unknown }).signal === 'SIGTERM')
-  )
-}
+  if (typeof error !== 'object' || error === null) return false
 
+  const candidate = error as {
+    code?: unknown
+    killed?: unknown
+    signal?: unknown
+  }
+
+  if (candidate.code === 'ETIMEDOUT') return true
+  return candidate.killed === true && candidate.signal === 'SIGTERM'
+}
 function parseCustomConnectorOutput(
   packageName: string,
   output: string
