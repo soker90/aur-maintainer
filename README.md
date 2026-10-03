@@ -56,8 +56,43 @@ packages:
   - packages/example-bin
 ```
 
-Package-specific custom connectors can live alongside the package in a
-`connector/` directory. Generic connectors will be provided by this Action.
+Repository-local custom connectors live under `connectors/`. Each connector
+uses a directory named after the connector and an ESM module at
+`connectors/<name>/index.js`:
+
+```text
+connectors/
+└── example/
+    └── index.js
+```
+
+The module must default-export a factory that receives the same connector context
+as the built-in connectors and returns a connector with a matching `name`:
+
+```js
+export default (context) => ({
+  name: 'example',
+  detect: async (pkg, config) => {
+    const response = await context.fetch(config.url)
+    const data = await response.json()
+
+    return { version: data.version }
+  }
+})
+```
+
+The package selects it normally from `update.yml`:
+
+```yaml
+connector: example
+config:
+  url: https://example.com/releases/latest.json
+```
+
+Repository-local connectors are loaded only from the repository's
+`connectors/<name>/index.js` directories. A local connector cannot replace a
+built-in connector with the same name, and its returned connector name must match
+the directory name. Generic connectors continue to be provided by this Action.
 
 ## Usage
 
