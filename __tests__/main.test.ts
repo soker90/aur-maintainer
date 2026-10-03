@@ -94,6 +94,37 @@ describe('main.ts', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
+  it('rolls back a package when snapshot completion fails', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const packagePath = path.join(directory, 'example')
+    const pkgbuildPath = path.join(packagePath, 'PKGBUILD')
+    const srcinfoPath = path.join(packagePath, '.SRCINFO')
+
+    await mkdir(packagePath, { recursive: true })
+    await writeFile(pkgbuildPath, 'pkgname=example\npkgver=1.0.0\n')
+
+    discoverPackages.mockResolvedValue([
+      { ...pkg, path: packagePath, pkgbuildPath, srcinfoPath }
+    ])
+    updatePackage.mockImplementation(async (item) => {
+      await writeFile(item.pkgbuildPath, 'pkgname=example\npkgver=1.1.0\n')
+      return {
+        changed: true,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
+      }
+    })
+    jest.spyOn(await import('node:fs/promises'), 'readFile')
+
+    await run()
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      'pkgname=example\npkgver=1.0.0\n'
+    )
+    expect(core.setFailed).toHaveBeenCalled()
+  })
+
   it('rolls back all modified packages when a later package fails', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const packages = ['first', 'second'].map((name) => ({
