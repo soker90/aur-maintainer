@@ -56,8 +56,8 @@ packages:
   - packages/example-bin
 ```
 
-Repository-local custom connectors live under `connectors/`. Each connector
-uses a directory named after the connector and an ESM module at
+Repository-local custom connectors live under `connectors/`. Each connector uses
+a directory named after the connector and an ESM module at
 `connectors/<name>/index.js`:
 
 ```text
@@ -92,9 +92,9 @@ config:
 
 Repository-local connectors are loaded only from the repository's
 `connectors/<name>/index.js` directories. A local connector cannot replace a
-built-in connector with the same name, and its returned connector name
-must match the directory name. Generic connectors continue to be provided by
-this Action.
+built-in connector with the same name, and its returned connector name must
+match the directory name. Generic connectors continue to be provided by this
+Action.
 
 ## Usage
 
