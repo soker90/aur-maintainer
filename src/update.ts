@@ -1,5 +1,9 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import type { PackageDefinition, UpdateCandidate } from './types.js'
+import type {
+  PackageConfig,
+  PackageDefinition,
+  UpdateCandidate
+} from './types.js'
 import { assertSupportedPackageVersion } from './version.js'
 
 export interface PackageUpdateResult {
