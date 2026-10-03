@@ -214,9 +214,13 @@ describe('package-local custom connectors', () => {
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      `printf 'version=2.4.0\\nsource=%s\\nsha256=%s\\n' \\\
-        "https://example.test/$AUR_MAINTAINER_PACKAGE/archive.tar.gz" \\\
-        "$AUR_MAINTAINER_PACKAGE_PATH"`
+      [
+        "printf 'version=2.4.0\\\\n'",
+        "printf 'source=https://example.test/%s/archive.tar.gz\\\\n' \\\\",
+        '  "$AUR_MAINTAINER_PACKAGE"',
+        "printf 'sha256=%s\\\\n' \\\\",
+        '  "$AUR_MAINTAINER_PACKAGE_PATH"'
+      ].join('\\n')
     )
 
     const pkgDefinition = {
@@ -241,7 +245,10 @@ describe('package-local custom connectors', () => {
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nversion=2.4.1\\n'`
+      [
+        "printf 'version=2.4.0\\\\nsource=https://example.test\\\\n'",
+        "printf 'sha256=abc123\\\\nversion=2.4.1\\\\n'"
+      ].join('\\n')
     )
 
     const pkgDefinition = {
@@ -256,7 +263,6 @@ describe('package-local custom connectors', () => {
       'produced duplicate output "version"'
     )
   })
-
 
   it('runs connector/detect.sh and parses the standard update output', async () => {
     const workspace = await createConnectorWorkspace()
