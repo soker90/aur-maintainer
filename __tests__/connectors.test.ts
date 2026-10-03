@@ -1,5 +1,12 @@
-import { describe, expect, it, jest } from '@jest/globals'
-import { createConnectorRegistry } from '../src/connectors.js'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import path from 'node:path'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
+import {
+  createConnectorRegistry,
+  loadRepositoryConnectors
+} from '../src/connectors.js'
+
+const temporaryWorkspaces: string[] = []
 
 const pkg = {
   name: 'example-bin',
@@ -8,6 +15,22 @@ const pkg = {
   srcinfoPath: '/workspace/example-bin/.SRCINFO',
   updateConfigPath: '/workspace/example-bin/update.yml',
   config: { connector: 'github-release', config: {} }
+}
+
+afterEach(async () => {
+  for (const workspace of temporaryWorkspaces.splice(0)) {
+    await rm(workspace, { recursive: true, force: true })
+  }
+})
+
+async function createConnectorWorkspace(): Promise<string> {
+  const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+  temporaryWorkspaces.push(workspace)
+  await writeFile(
+    path.join(workspace, 'package.json'),
+    JSON.stringify({ type: 'module' })
+  )
+  return workspace
 }
 
 function response(body: unknown, init?: ResponseInit): Response {
@@ -179,5 +202,86 @@ describe('github-tag connector', () => {
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
     ).rejects.toThrow('contain no supported versions')
+  })
+})
+
+describe('repository-local connectors', () => {
+  it('loads an ESM connector from its repository directory', async () => {
+    const workspace = await createConnectorWorkspace()
+    const connectorDirectory = path.join(workspace, 'connectors', 'custom')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'index.js'),
+      `export default (context) => ({
+  name: 'custom',
+  detect: async (_pkg, config) => ({
+    version: String(config.version),
+    metadata: { token: context.token ?? 'missing' }
+  })
+})`
+    )
+
+    const registry = await loadRepositoryConnectors(workspace, {
+      fetch,
+      token: 'test-token'
+    })
+    const connector = registry.get('custom')!({
+      fetch,
+      token: 'test-token'
+    })
+
+    await expect(connector.detect(pkg, { version: '2.4.0' })).resolves.toEqual({
+      version: '2.4.0',
+      metadata: { token: 'test-token' }
+    })
+  })
+
+  it('rejects a connector directory without index.js', async () => {
+    const workspace = await createConnectorWorkspace()
+    await mkdir(path.join(workspace, 'connectors', 'custom'), {
+      recursive: true
+    })
+
+    await expect(
+      loadRepositoryConnectors(workspace, { fetch })
+    ).rejects.toThrow('must provide connectors/custom/index.js')
+  })
+
+  it('rejects a local connector that conflicts with a built-in', async () => {
+    const workspace = await createConnectorWorkspace()
+    const connectorDirectory = path.join(
+      workspace,
+      'connectors',
+      'github-release'
+    )
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'index.js'),
+      `export default () => ({
+  name: 'github-release',
+  detect: async () => ({ version: '1.0.0' })
+})`
+    )
+
+    await expect(
+      loadRepositoryConnectors(workspace, { fetch })
+    ).rejects.toThrow('conflicts with a built-in connector')
+  })
+
+  it('rejects a connector without a matching name', async () => {
+    const workspace = await createConnectorWorkspace()
+    const connectorDirectory = path.join(workspace, 'connectors', 'custom')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'index.js'),
+      `export default () => ({
+  name: 'other',
+  detect: async () => ({ version: '1.0.0' })
+})`
+    )
+
+    await expect(
+      loadRepositoryConnectors(workspace, { fetch })
+    ).rejects.toThrow('factory must return a connector named "custom"')
   })
 })

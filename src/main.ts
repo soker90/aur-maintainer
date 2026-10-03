@@ -2,7 +2,7 @@ import * as core from '@actions/core'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
-import { createConnectorRegistry } from './connectors.js'
+import { loadRepositoryConnectors } from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
 import { rollbackPackageUpdate, updatePackage } from './update.js'
 import { createUpdatePullRequest } from './pull-request.js'
@@ -29,7 +29,7 @@ export async function run(): Promise<void> {
       fetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
       token: token || undefined
     }
-    const registry = createConnectorRegistry(registryContext)
+    const registry = await loadRepositoryConnectors(workspace, registryContext)
 
     if (packages.length === 0) {
       core.info('No managed AUR packages found.')

@@ -7,7 +7,7 @@ import type { PackageDefinition } from '../src/types.js'
 
 const discoverPackages = jest.fn()
 const loadMaintainerConfig = jest.fn()
-const createConnectorRegistry = jest.fn()
+const loadRepositoryConnectors = jest.fn()
 const updatePackage = jest.fn()
 const rollbackPackageUpdate = jest.fn()
 const updatePackageMetadata = jest.fn()
@@ -17,7 +17,7 @@ jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
 jest.unstable_mockModule('../src/config.js', () => ({ loadMaintainerConfig }))
 jest.unstable_mockModule('../src/connectors.js', () => ({
-  createConnectorRegistry
+  loadRepositoryConnectors
 }))
 jest.unstable_mockModule('../src/update.js', () => ({
   updatePackage,
@@ -62,7 +62,7 @@ describe('main.ts', () => {
       currentVersion: '1.0.0',
       version: '1.0.0'
     })
-    createConnectorRegistry.mockReturnValue(
+    loadRepositoryConnectors.mockResolvedValue(
       new Map([
         [
           'github-tag',
@@ -89,7 +89,8 @@ describe('main.ts', () => {
   it('passes the GitHub token to connector detection', async () => {
     await run()
 
-    expect(createConnectorRegistry).toHaveBeenCalledWith(
+    expect(loadRepositoryConnectors).toHaveBeenCalledWith(
+      '/workspace',
       expect.objectContaining({ token: 'test-token' })
     )
     expect(core.setFailed).not.toHaveBeenCalled()
@@ -146,7 +147,7 @@ describe('main.ts', () => {
     }
 
     discoverPackages.mockResolvedValue(packages)
-    createConnectorRegistry.mockReturnValue(
+    loadRepositoryConnectors.mockResolvedValue(
       new Map([
         [
           'github-tag',
