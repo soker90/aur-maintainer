@@ -34,6 +34,6 @@ jobs:
 
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add dist README.md __tests__/connectors.test.ts src
+          git add dist README.md __tests__/connectors.test.ts src .github/workflows/generate-dist-pr.yml
           git commit -m "build: regenerate dist"
           git push origin "HEAD:$BRANCH"
