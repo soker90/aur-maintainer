@@ -64,7 +64,7 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
 
   const updates = (value.updates as Record<string, unknown> | undefined) ?? {}
   for (const [key, template] of Object.entries(updates)) {
-    if (!['version', 'source', 'sha256'].includes(key)) {
+    if (!['source', 'sha256'].includes(key)) {
       throw new Error(`${filePath}: "updates.${key}" is not supported`)
     }
     if (typeof template !== 'string' || template.trim() === '') {
