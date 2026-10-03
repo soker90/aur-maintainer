@@ -9,6 +9,7 @@ const discoverPackages = jest.fn()
 const loadMaintainerConfig = jest.fn()
 const createConnectorRegistry = jest.fn()
 const updatePackage = jest.fn()
+const rollbackPackageUpdate = jest.fn()
 const updatePackageMetadata = jest.fn()
 const validatePackage = jest.fn()
 
@@ -20,7 +21,7 @@ jest.unstable_mockModule('../src/connectors.js', () => ({
 }))
 jest.unstable_mockModule('../src/update.js', () => ({
   updatePackage,
-  rollbackPackageUpdate: jest.fn()
+  rollbackPackageUpdate
 }))
 jest.unstable_mockModule('../src/metadata.js', () => ({
   updatePackageMetadata
@@ -107,6 +108,9 @@ describe('main.ts', () => {
     discoverPackages.mockResolvedValue([
       { ...pkg, path: packagePath, pkgbuildPath, srcinfoPath }
     ])
+    rollbackPackageUpdate.mockImplementation(async (item, result) => {
+      await writeFile(item.pkgbuildPath, result.previousPkgbuild)
+    })
     updatePackage.mockImplementation(async (item) => {
       await writeFile(item.pkgbuildPath, 'pkgname=example\npkgver=1.1.0\n')
       return {
