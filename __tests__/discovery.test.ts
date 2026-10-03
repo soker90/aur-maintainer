@@ -65,7 +65,7 @@ describe('discoverPackages', () => {
           'connector',
           'update.yml'
         ),
-        config: { connector: 'custom', config: {}, updates: {} }
+        config: { connector: 'custom', config: {}, updates: {}, timeout: 30 }
       })
     ])
   })
