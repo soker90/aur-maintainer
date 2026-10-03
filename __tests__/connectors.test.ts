@@ -254,25 +254,25 @@ describe('repository-local connectors', () => {
   it(
     'rejects a repository connector that conflicts with a built-in',
     async () => {
-    const workspace = await createConnectorWorkspace()
-    const connectorDirectory = path.join(
-      workspace,
-      'connectors',
-      'github-release'
-    )
-    await mkdir(connectorDirectory, { recursive: true })
-    await writeFile(
-      path.join(connectorDirectory, 'index.js'),
-      `export default () => ({
-  name: 'github-release',
-  detect: async () => ({ version: '1.0.0' })
-})`
-    )
+      const workspace = await createConnectorWorkspace()
+      const connectorDirectory = path.join(
+        workspace,
+        'connectors',
+        'github-release'
+      )
+      await mkdir(connectorDirectory, { recursive: true })
+      await writeFile(
+        path.join(connectorDirectory, 'index.js'),
+        `export default () => ({
+    name: 'github-release',
+    detect: async () => ({ version: '1.0.0' })
+  })`
+      )
 
-    await expect(
-      loadRepositoryConnectors(workspace, { fetch })
-    ).rejects.toThrow('conflicts with a built-in connector')
-  })
+      await expect(
+        loadRepositoryConnectors(workspace, { fetch })
+      ).rejects.toThrow('conflicts with a built-in connector')
+  )
 
   it('rejects a connector without a matching name', async () => {
     const workspace = await createConnectorWorkspace()
