@@ -32,6 +32,6 @@ jobs:
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add -A
+          git add dist/
           git commit -m "style: apply ESLint fixes"
           git push
