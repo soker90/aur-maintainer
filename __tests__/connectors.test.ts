@@ -25,6 +25,16 @@ afterEach(async () => {
   )
 })
 
+async function createConnectorWorkspace(): Promise<string> {
+  const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+  temporaryWorkspaces.push(workspace)
+  await writeFile(
+    path.join(workspace, 'package.json'),
+    JSON.stringify({ type: 'module' })
+  )
+  return workspace
+}
+
 function response(body: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(body), {
     status: 200,
@@ -199,16 +209,7 @@ describe('github-tag connector', () => {
 
 describe('repository-local connectors', () => {
   it('loads an ESM connector from its repository directory', async () => {
-    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
-    temporaryWorkspaces.push(workspace)
-    await writeFile(
-      path.join(workspace, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
-    await writeFile(
-      path.join(workspace, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
+    const workspace = await createConnectorWorkspace()
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
@@ -238,12 +239,7 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a connector directory without index.js', async () => {
-    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
-    temporaryWorkspaces.push(workspace)
-    await writeFile(
-      path.join(workspace, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
+    const workspace = await createConnectorWorkspace()
     await mkdir(path.join(workspace, 'connectors', 'custom'), {
       recursive: true
     })
@@ -254,12 +250,7 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a repository connector that conflicts with a built-in', async () => {
-    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
-    temporaryWorkspaces.push(workspace)
-    await writeFile(
-      path.join(workspace, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
+    const workspace = await createConnectorWorkspace()
     const connectorDirectory = path.join(
       workspace,
       'connectors',
@@ -280,8 +271,7 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a connector without a matching name', async () => {
-    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
-    temporaryWorkspaces.push(workspace)
+    const workspace = await createConnectorWorkspace()
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
