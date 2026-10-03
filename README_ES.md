@@ -107,10 +107,17 @@ los paquetes puede variar:
 ```yaml
 connector: custom
 config: {}
+timeout: 60 # sobrescribe el valor predeterminado de 30 segundos
 updates:
   source: 'source=("vega-${version}.tar.gz::${source}")'
   sha256: '_sha256=${sha256}'
 ```
+
+Los conectores locales tienen un tiempo máximo de ejecución de 30 segundos por
+defecto. Puedes sobrescribirlo con `timeout`, expresado en segundos. Debe ser un
+entero positivo. Si se alcanza, la Action indica el paquete afectado y conserva
+la causa original para facilitar el diagnóstico y conservar el contexto del
+error.
 
 Cada mapeo es una plantilla completa de asignación de PKGBUILD. Los placeholders
 admitidos son `${version}`, `${source}` y `${sha256}`. Esto mantiene explícita

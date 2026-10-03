@@ -240,6 +240,31 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     })
   })
 
+  it('times out a blocked custom connector', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `sleep 2
+printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\n'
+`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {}, updates: {}, timeout: 1 }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
+      'timed out after 1 seconds'
+    )
+  })
+
   it('rejects custom connector output with missing fields', async () => {
     const workspace = await createConnectorWorkspace()
     const packageDirectory = path.join(workspace, 'example-bin')

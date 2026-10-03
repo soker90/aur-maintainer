@@ -126,10 +126,15 @@ checksum fields are opt-in because package layouts differ:
 ```yaml
 connector: custom
 config: {}
+timeout: 60 # override the 30-second default
 updates:
   source: 'source=("vega-${version}.tar.gz::${source}")'
   sha256: '_sha256=${sha256}'
 ```
+
+Package-local connectors have a 30-second execution timeout by default. Override
+it with `timeout`, expressed in seconds. It must be a positive integer. When the
+timeout is reached, the Action reports the affected package.
 
 Each mapping is a complete PKGBUILD assignment template. The supported
 placeholders are `${version}`, `${source}`, and `${sha256}`. This keeps

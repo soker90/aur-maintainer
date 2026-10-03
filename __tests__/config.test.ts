@@ -44,7 +44,8 @@ describe('config', () => {
     await expect(loadPackageConfig(packagePath)).resolves.toEqual({
       connector: 'github-release',
       config: { repository: 'example/project' },
-      updates: {}
+      updates: {},
+      timeout: 30
     })
   })
   it('loads package metadata update mappings', async () => {
@@ -59,8 +60,32 @@ describe('config', () => {
       updates: {
         source: 'source=("${source}")',
         sha256: '_sha256=${sha256}'
-      }
+      },
+      timeout: 30
     })
+  })
+
+  it('loads a custom connector timeout override', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\ntimeout: 90\n'
+    )
+    await expect(loadPackageConfig(packagePath)).resolves.toMatchObject({
+      connector: 'custom',
+      timeout: 90
+    })
+  })
+
+  it('rejects a non-positive connector timeout', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\ntimeout: 0\n'
+    )
+    await expect(loadPackageConfig(packagePath)).rejects.toThrow(
+      '"timeout" must be a positive integer number of seconds'
+    )
   })
 
   it('rejects unsupported package metadata mappings', async () => {

@@ -35547,6 +35547,7 @@ function parse(src, reviver, options) {
     return doc.toJS(Object.assign({ reviver: _reviver }, options));
 }
 
+const DEFAULT_PACKAGE_CONNECTOR_TIMEOUT = 30;
 async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml') {
     const filePath = path.resolve(workspace, configPath);
     try {
@@ -35587,6 +35588,9 @@ function parsePackageConfig(value, filePath) {
     if (value.config !== undefined && !isRecord$1(value.config)) {
         throw new Error(`${filePath}: "config" must be an object`);
     }
+    if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
+        throw new Error(`${filePath}: "timeout" must be a positive integer number of seconds`);
+    }
     if (value.updates !== undefined && !isRecord$1(value.updates)) {
         throw new Error(`${filePath}: "updates" must be an object`);
     }
@@ -35602,11 +35606,15 @@ function parsePackageConfig(value, filePath) {
     return {
         connector: value.connector,
         config: value.config ?? {},
-        updates: updates
+        updates: updates,
+        timeout: value.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
     };
 }
 function isRecord$1(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function isPositiveInteger(value) {
+    return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 function isStringArray(value) {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
@@ -35872,16 +35880,35 @@ async function detectWithScript(pkg, scriptPath) {
     if (!(await isFile(scriptPath))) {
         throw new Error(`Package "${pkg.name}" custom connector must provide connector/detect.sh`);
     }
-    const result = await execFile$3('bash', [scriptPath], {
-        cwd: pkg.path,
-        env: {
-            ...process.env,
-            AUR_MAINTAINER_PACKAGE: pkg.name,
-            AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
-            AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
+    let result;
+    try {
+        result = await execFile$3('bash', [scriptPath], {
+            cwd: pkg.path,
+            timeout: (pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT) * 1000,
+            killSignal: 'SIGTERM',
+            env: {
+                ...process.env,
+                AUR_MAINTAINER_PACKAGE: pkg.name,
+                AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
+                AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
+            }
+        });
+    }
+    catch (error) {
+        if (isTimeoutError(error)) {
+            throw new Error(`Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`, { cause: error });
         }
-    });
+        throw error;
+    }
     return parseCustomConnectorOutput(pkg.name, result.stdout);
+}
+function isTimeoutError(error) {
+    if (typeof error !== 'object' || error === null)
+        return false;
+    const candidate = error;
+    if (candidate.code === 'ETIMEDOUT')
+        return true;
+    return candidate.killed === true && candidate.signal === 'SIGTERM';
 }
 function parseCustomConnectorOutput(packageName, output) {
     const values = new Map();
