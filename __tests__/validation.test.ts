@@ -36,38 +36,15 @@ describe('package validation', () => {
 
     await validatePackage(pkg, { run })
 
-    expect(run).toHaveBeenNthCalledWith(1, 'namcap', [pkg.pkgbuildPath])
-    expect(run).toHaveBeenNthCalledWith(
-      2,
-      'makepkg',
-      ['--verifysource'],
-      pkg.path
-    )
-    expect(run).toHaveBeenNthCalledWith(
-      3,
-      'makepkg',
-      ['--printsrcinfo'],
-      pkg.path
-    )
-    expect(run).toHaveBeenNthCalledWith(
-      4,
-      'makepkg',
-      ['-sf', '--noconfirm'],
-      pkg.path
-    )
-    expect(run).toHaveBeenNthCalledWith(
-      5,
-      'makepkg',
-      ['--packagelist'],
-      pkg.path
-    )
-    expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
-    expect(run).toHaveBeenNthCalledWith(
-      7,
-      'sudo',
-      ['-n', 'pacman', '-U', '--noconfirm', artifact],
-      pkg.path
-    )
+    expect(run.mock.calls).toEqual([
+      ['namcap', [pkg.pkgbuildPath]],
+      ['makepkg', ['--verifysource'], pkg.path],
+      ['makepkg', ['--printsrcinfo'], pkg.path],
+      ['makepkg', ['-sf', '--noconfirm'], pkg.path],
+      ['makepkg', ['--packagelist'], pkg.path],
+      ['namcap', [artifactPath], pkg.path],
+      ['sudo', ['-n', 'pacman', '-U', '--noconfirm', artifact], pkg.path]
+    ])
   })
 
   it('rejects an out-of-sync .SRCINFO', async () => {
