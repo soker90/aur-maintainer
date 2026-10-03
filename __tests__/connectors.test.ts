@@ -264,6 +264,10 @@ describe('repository-local connectors', () => {
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
+      path.join(connectorDirectory, 'package.json'),
+      JSON.stringify({ type: 'module' })
+    )
+    await writeFile(
       path.join(connectorDirectory, 'index.js'),
       `export default () => ({
   name: 'other',
