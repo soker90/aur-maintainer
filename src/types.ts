@@ -5,6 +5,13 @@ export interface MaintainerConfig {
 export interface PackageConfig {
   connector: string
   config: Record<string, unknown>
+  updates: PackageUpdateConfig
+}
+
+export interface PackageUpdateConfig {
+  version?: string
+  source?: string
+  sha256?: string
 }
 
 export interface PackageDefinition {
