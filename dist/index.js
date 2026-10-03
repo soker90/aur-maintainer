@@ -36171,8 +36171,20 @@ async function run() {
             const update = await updatePackage(pkg, candidate);
             candidates.push({ package: pkg.name, candidate, update });
             if (update.changed) {
-                const snapshot = await snapshotPackage(pkg, update.previousPkgbuild);
+                const snapshot = {
+                    pkg,
+                    pkgbuild: update.previousPkgbuild ?? '',
+                    srcinfo: undefined
+                };
                 snapshots.push(snapshot);
+                try {
+                    await completePackageSnapshot(snapshot);
+                }
+                catch (error) {
+                    await rollbackPackageUpdate(pkg, update);
+                    snapshots.pop();
+                    throw error;
+                }
                 try {
                     await updatePackageMetadata(pkg);
                     await validatePackage(pkg);
@@ -36212,7 +36224,8 @@ async function run() {
             setFailed(String(error));
     }
 }
-async function snapshotPackage(pkg, pkgbuild) {
+async function completePackageSnapshot(snapshot) {
+    const pkg = snapshot.pkg;
     let srcinfo;
     try {
         srcinfo = await readFile(pkg.srcinfoPath, 'utf8');
@@ -36221,11 +36234,7 @@ async function snapshotPackage(pkg, pkgbuild) {
         if (!isMissingFile(error))
             throw error;
     }
-    return {
-        pkg,
-        pkgbuild: pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
-        srcinfo
-    };
+    snapshot.srcinfo = srcinfo;
 }
 async function rollbackSnapshots(snapshots) {
     for (const snapshot of snapshots.toReversed()) {
