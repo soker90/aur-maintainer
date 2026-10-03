@@ -247,7 +247,9 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      'sleep 2\\nprintf \'version=2.4.0\\\\nsource=https://example.test\\\\nsha256=abc123\\\\n\'\\n'
+      `sleep 2
+printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\n'
+`
     )
 
     const pkgDefinition = {
