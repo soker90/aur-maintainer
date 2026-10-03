@@ -21,6 +21,7 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - run: npm run format:write
       - run: npm run package
 
       - name: Commit generated dist
