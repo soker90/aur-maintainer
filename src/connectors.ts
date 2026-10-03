@@ -58,7 +58,7 @@ export async function loadRepositoryConnectors(
       )
     }
 
-    const factory = await loadConnectorFactory(modulePath, name)
+    const factory = await loadConnectorFactory(modulePath, name, context)
     registry.set(name, factory)
   }
 
