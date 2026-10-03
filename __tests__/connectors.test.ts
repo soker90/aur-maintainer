@@ -216,7 +216,7 @@ describe('package-local custom connectors', () => {
       path.join(connectorDirectory, 'detect.sh'),
       `#!/usr/bin/env bash
 set -euo pipefail
-[[ "${AUR_MAINTAINER_CONFIG_JSON}" == '{"channel":"stable","region":"eu"}' ]]
+[[ "\${AUR_MAINTAINER_CONFIG_JSON}" == '{"channel":"stable","region":"eu"}' ]]
 printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc123\\n'
 `
     )
