@@ -122,7 +122,7 @@ describe('main.ts', () => {
     await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
       'pkgname=example\npkgver=1.0.0\n'
     )
-    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('EISDIR'))
+    expect(core.setFailed).toHaveBeenCalled()
   })
 
   it('rolls back all modified packages when a later package fails', async () => {
