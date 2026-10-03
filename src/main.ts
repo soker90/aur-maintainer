@@ -90,7 +90,9 @@ export async function run(): Promise<void> {
   }
 }
 
-async function snapshotPackage(pkg: PackageDefinition): Promise<PackageSnapshot> {
+async function snapshotPackage(
+  pkg: PackageDefinition
+): Promise<PackageSnapshot> {
   let srcinfo: string | undefined
   try {
     srcinfo = await readFile(pkg.srcinfoPath, 'utf8')
