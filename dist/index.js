@@ -36181,7 +36181,6 @@ const hostCommandRunner = {
         return result.stdout;
     }
 };
-/** Validate an AUR package on the host, falling back to an Arch container when needed. */
 async function validatePackage(pkg, runner = hostCommandRunner) {
     try {
         await runner.run('namcap', [pkg.pkgbuildPath]);
@@ -36199,26 +36198,13 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             .filter(Boolean)
             .map((entry) => path.basename(entry));
         const entries = new Set(await readdir$1(pkg.path));
-        const artifacts = [];
-        for (const entry of expectedArtifacts) {
-            const artifactPath = path.isAbsolute(entry)
-                ? entry
-                : path.join(pkg.path, entry);
-            try {
-                if (entries.has(entry) && (await stat$1(artifactPath)).isFile()) {
-                    artifacts.push(artifactPath);
-                }
-            }
-            catch (error) {
-                if (!isFileNotFound(error))
-                    throw error;
-            }
-        }
+        const artifacts = expectedArtifacts.filter((entry) => entries.has(entry));
         if (artifacts.length === 0) {
             throw new Error(`No package artifact was produced for ${pkg.name}`);
         }
         for (const artifact of artifacts) {
-            await runner.run('namcap', [artifact], pkg.path);
+            const artifactPath = path.join(pkg.path, artifact);
+            await runner.run('namcap', [artifactPath], pkg.path);
         }
         await runner.run('sudo', ['-n', 'pacman', '-U', '--noconfirm', ...artifacts], pkg.path);
     }
@@ -36228,7 +36214,6 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
         await validatePackageWithDocker(pkg);
     }
 }
-/** Validate an AUR package inside an Arch Linux Docker container. */
 async function validatePackageWithDocker(pkg) {
     const uid = String(process.getuid?.() ?? 1000);
     const gid = String(process.getgid?.() ?? 1000);
@@ -36246,14 +36231,8 @@ async function validatePackageWithDocker(pkg) {
         'archlinux:latest',
         'bash',
         '-c',
-        'echo "DisableSandbox" >> /etc/pacman.conf && pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && find /pkg -maxdepth 1 -type f -name "*.pkg.tar.*" -delete && sudo -u builder env PKGDEST=/pkg makepkg -sf --noconfirm && mapfile -t packages < <(find /pkg -maxdepth 1 -type f -name "*.pkg.tar.*" -print) && [[ -n "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && mkdir -p /tmp/aur-packages && cp -- "${packages[@]}" /tmp/aur-packages/ && pacman -U --noconfirm --nodeps /tmp/aur-packages/*.pkg.tar.*'
+        'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && mapfile -t package_list < <(sudo -u builder makepkg --packagelist) && sudo -u builder makepkg -sf --noconfirm && packages=() && for package in "${package_list[@]}"; do [[ -f "$package" ]] && packages+=( "$(basename "$package")" ); done && [[ -n "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ], { cwd: pkg.path });
-}
-function isFileNotFound(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'ENOENT');
 }
 function isCommandNotFound(error) {
     return (typeof error === 'object' &&
@@ -36381,3 +36360,4 @@ function isMissingFile(error) {
  */
 /* istanbul ignore next */
 run();
+//# sourceMappingURL=index.js.map
