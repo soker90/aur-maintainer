@@ -214,7 +214,10 @@ describe('package-local custom connectors', () => {
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      '#!/usr/bin/env bash\nset -euo pipefail\nprintf \'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc123\\n\'\n'
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc123\\n'
+`
     )
 
     const package = {
@@ -241,7 +244,8 @@ describe('package-local custom connectors', () => {
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      'printf \'version=2.4.0\\n\'\n'
+      `printf 'version=2.4.0\\n'`
+
     )
 
     const package = {
@@ -264,7 +268,8 @@ describe('package-local custom connectors', () => {
     await mkdir(connectorDirectory, { recursive: true })
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
-      'printf \'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nextra=value\\n\'\n'
+      `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nextra=value\\n'`
+
     )
 
     const package = {
