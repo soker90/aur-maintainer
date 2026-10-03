@@ -120,7 +120,8 @@ async function detectWithScript(
       throw new Error(
         `Package "${pkg.name}" custom connector timed out after ${
           pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
-        } seconds`
+        } seconds`,
+        { cause: error }
       )
     }
     throw error
