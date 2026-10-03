@@ -11,6 +11,7 @@ import type { PackageDefinition } from './types.js'
 
 interface PackageSnapshot {
   pkg: PackageDefinition
+  pkgbuild: string
   srcinfo: string | undefined
 }
 
@@ -50,7 +51,10 @@ export async function run(): Promise<void> {
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
-        const snapshot = await snapshotPackage(pkg)
+        const snapshot = await snapshotPackage(
+          pkg,
+          update.previousPkgbuild
+        )
         snapshots.push(snapshot)
         try {
           await updatePackageMetadata(pkg)
@@ -91,7 +95,8 @@ export async function run(): Promise<void> {
 }
 
 async function snapshotPackage(
-  pkg: PackageDefinition
+  pkg: PackageDefinition,
+  pkgbuild: string | undefined
 ): Promise<PackageSnapshot> {
   let srcinfo: string | undefined
   try {
@@ -100,11 +105,17 @@ async function snapshotPackage(
     if (!isMissingFile(error)) throw error
   }
 
-  return { pkg, srcinfo }
+  return {
+    pkg,
+    pkgbuild:
+      pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
+    srcinfo
+  }
 }
 
 async function rollbackSnapshots(snapshots: PackageSnapshot[]): Promise<void> {
   for (const snapshot of snapshots.toReversed()) {
+    await writeFile(snapshot.pkg.pkgbuildPath, snapshot.pkgbuild)
     if (snapshot.srcinfo === undefined) {
       await unlink(snapshot.pkg.srcinfoPath).catch((error: unknown) => {
         if (!isMissingFile(error)) throw error
