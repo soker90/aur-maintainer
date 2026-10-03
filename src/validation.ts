@@ -31,7 +31,7 @@ export async function validatePackage(
     )
     const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8')
     if (generatedSrcinfo !== currentSrcinfo) {
-      throw new Error(\`Generated .SRCINFO does not match \${pkg.srcinfoPath}\`)
+      throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`)
     }
 
     await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
@@ -53,7 +53,7 @@ export async function validatePackage(
     }
 
     if (artifacts.length === 0) {
-      throw new Error(\`No package artifact was produced for \${pkg.name}\`)
+      throw new Error(`No package artifact was produced for ${pkg.name}`)
     }
 
     for (const artifact of artifacts) {
@@ -93,7 +93,7 @@ async function validatePackageWithDocker(
       'archlinux:latest',
       'bash',
       '-c',
-      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && package_list=$(sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg --packagelist) && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=() && while IFS= read -r package; do [[ -f "$package" ]] && packages+=( "$package" ); done <<< "$package_list" && [[ -n "\${packages[0]}" ]] && for package in "\${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "\${packages[@]}"'
+      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && package_list=$(sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg --packagelist) && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=() && while IFS= read -r package; do [[ -f "$package" ]] && packages+=( "$package" ); done <<< "$package_list" && [[ -n "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ],
     { cwd: pkg.path }
   )
