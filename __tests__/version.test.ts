@@ -32,9 +32,40 @@ describe('package versions', () => {
     )
   })
 
-  it('compares numeric and alphanumeric versions', () => {
+  it('matches ALPM numeric and alphanumeric ordering', () => {
+    const orderedVersions = [
+      '1.0a',
+      '1.0b',
+      '1.0beta',
+      '1.0p',
+      '1.0pre',
+      '1.0rc',
+      '1.0',
+      '1.0.a',
+      '1.0.1'
+    ]
+
+    for (let index = 1; index < orderedVersions.length; index += 1) {
+      expect(
+        comparePackageVersions(
+          orderedVersions[index - 1]!,
+          orderedVersions[index]!
+        )
+      ).toBeLessThan(0)
+    }
+  })
+
+  it('compares numeric and alphanumeric sub-segments correctly', () => {
     expect(comparePackageVersions('1.10.0', '1.9.9')).toBeGreaterThan(0)
     expect(comparePackageVersions('1.0.0', '1.0.0alpha')).toBeGreaterThan(0)
     expect(comparePackageVersions('1.0.0alpha', '1.0.0beta')).toBeLessThan(0)
+    expect(comparePackageVersions('1.0alpha', '1.0.1')).toBeLessThan(0)
+    expect(comparePackageVersions('1.0', '1.0foo.2')).toBeGreaterThan(0)
+    expect(comparePackageVersions('1.foo', '1.foo2')).toBeLessThan(0)
+  })
+
+  it('handles delimiter counts and trailing delimiters', () => {
+    expect(comparePackageVersions('1...0', '1.2')).toBeGreaterThan(0)
+    expect(comparePackageVersions('1...', '1.')).toBe(0)
   })
 })
