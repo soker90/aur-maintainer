@@ -1,6 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { readFile, readdir, stat } from 'node:fs/promises'
-import path from 'node:path'
+import { access, readFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
@@ -17,7 +16,6 @@ const hostCommandRunner: CommandRunner = {
   }
 }
 
-/** Validate an AUR package on the host, falling back to an Arch container when needed. */
 export async function validatePackage(
   pkg: PackageDefinition,
   runner: CommandRunner = hostCommandRunner
@@ -33,7 +31,7 @@ export async function validatePackage(
     )
     const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8')
     if (generatedSrcinfo !== currentSrcinfo) {
-      throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`)
+      throw new Error(\`Generated .SRCINFO does not match \${pkg.srcinfoPath}\`)
     }
 
     await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
@@ -43,24 +41,19 @@ export async function validatePackage(
       .split('\n')
       .map((entry) => entry.trim())
       .filter(Boolean)
-      .map((entry) => path.basename(entry))
-    const entries = new Set(await readdir(pkg.path))
-    const artifacts = []
-    for (const entry of expectedArtifacts) {
-      const artifactPath = path.isAbsolute(entry)
-        ? entry
-        : path.join(pkg.path, entry)
+    const artifacts: string[] = []
+
+    for (const artifact of expectedArtifacts) {
       try {
-        if (entries.has(entry) && (await stat(artifactPath)).isFile()) {
-          artifacts.push(artifactPath)
-        }
-      } catch (error) {
-        if (!isFileNotFound(error)) throw error
+        await access(artifact)
+        artifacts.push(artifact)
+      } catch {
+        // The package was expected but was not produced.
       }
     }
 
     if (artifacts.length === 0) {
-      throw new Error(`No package artifact was produced for ${pkg.name}`)
+      throw new Error(\`No package artifact was produced for \${pkg.name}\`)
     }
 
     for (const artifact of artifacts) {
@@ -78,7 +71,6 @@ export async function validatePackage(
   }
 }
 
-/** Validate an AUR package inside an Arch Linux Docker container. */
 async function validatePackageWithDocker(
   pkg: PackageDefinition
 ): Promise<void> {
@@ -101,18 +93,9 @@ async function validatePackageWithDocker(
       'archlinux:latest',
       'bash',
       '-c',
-      'echo "DisableSandbox" >> /etc/pacman.conf && pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && find /pkg -maxdepth 1 -type f -name "*.pkg.tar.*" -delete && sudo -u builder env PKGDEST=/pkg makepkg -sf --noconfirm && mapfile -t packages < <(find /pkg -maxdepth 1 -type f -name "*.pkg.tar.*" -print) && [[ -n "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && mkdir -p /tmp/aur-packages && cp -- "${packages[@]}" /tmp/aur-packages/ && pacman -U --noconfirm --nodeps /tmp/aur-packages/*.pkg.tar.*'
+      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && export PKGDEST=/tmp/aur-maintainer-pkgdest && package_list=$(sudo -u builder makepkg --packagelist) && sudo -u builder makepkg -sf --noconfirm && packages=() && while IFS= read -r package; do [[ -f "$package" ]] && packages+=( "$package" ); done <<< "$package_list" && [[ -n "\${packages[0]}" ]] && for package in "\${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "\${packages[@]}"'
     ],
     { cwd: pkg.path }
-  )
-}
-
-function isFileNotFound(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === 'ENOENT'
   )
 }
 
