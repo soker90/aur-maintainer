@@ -127,7 +127,8 @@ describe('main.ts', () => {
       return {
         changed: true,
         currentVersion: '1.0.0',
-        version: '1.1.0'
+        version: '1.1.0',
+        previousPkgbuild: `pkgname=${item.name}\npkgver=1.0.0\n`
       }
     })
     updatePackageMetadata.mockImplementation(async (item) => {
