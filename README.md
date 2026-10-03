@@ -56,6 +56,36 @@ packages:
   - packages/example-bin
 ```
 
+Package-specific connectors use a `connector/` directory. Its configuration
+replaces the package-root `update.yml` and the detector must be named
+`detect.sh`:
+
+```text
+packages/example-bin/
+├── PKGBUILD
+├── .SRCINFO
+└── connector/
+    ├── update.yml
+    └── detect.sh
+```
+
+The detector is executed with the package directory as its working directory.
+It receives `AUR_MAINTAINER_PACKAGE` and `AUR_MAINTAINER_PACKAGE_PATH` in its
+environment and must write exactly one non-empty value for each of these
+fields to standard output:
+
+```text
+version=1.2.3
+source=https://example.com/archive.tar.gz
+sha256=0123456789abcdef...
+```
+
+Unknown fields, duplicate fields, malformed lines, empty values, or missing
+fields are rejected. The three values form the package-local connector
+contract; `update.yml` controls how source and checksum values are applied to
+the package's PKGBUILD. A package must not define both `update.yml` and
+`connector/update.yml`.
+
 Repository-local custom connectors live under `connectors/`. Each connector uses
 a directory named after the connector and an ESM module at
 `connectors/<name>/index.js`:
