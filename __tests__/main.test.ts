@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { jest } from '@jest/globals'
@@ -105,11 +105,15 @@ describe('main.ts', () => {
     }))
     await Promise.all(
       packages.map(async (item) => {
-        await (await import('node:fs/promises')).mkdir(item.path, {
-          recursive: true
-        })
-        await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
-        await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
+        await mkdir(item.path, { recursive: true })
+        await writeFile(
+          item.pkgbuildPath,
+          `pkgname=${item.name}\npkgver=1.0.0\n`
+        )
+        await writeFile(
+          item.srcinfoPath,
+          `pkgname=${item.name}\npkgver=1.0.0\n`
+        )
       })
     )
 
@@ -126,7 +130,10 @@ describe('main.ts', () => {
       ])
     )
     updatePackage.mockImplementation(async (item) => {
-      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
+      await writeFile(
+        item.pkgbuildPath,
+        `pkgname=${item.name}\npkgver=1.1.0\n`
+      )
       return {
         changed: true,
         currentVersion: '1.0.0',
@@ -134,8 +141,14 @@ describe('main.ts', () => {
       }
     })
     updatePackageMetadata.mockImplementation(async (item) => {
-      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.1.0\nsha256sums=('changed')\n`)
-      await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
+      await writeFile(
+        item.pkgbuildPath,
+        `pkgname=${item.name}\npkgver=1.1.0\nsha256sums=('changed')\n`
+      )
+      await writeFile(
+        item.srcinfoPath,
+        `pkgname=${item.name}\npkgver=1.1.0\n`
+      )
     })
     validatePackage.mockResolvedValueOnce(undefined).mockRejectedValueOnce(
       new Error('validation failed')
