@@ -35896,7 +35896,7 @@ async function detectWithScript(pkg, scriptPath) {
     }
     catch (error) {
         if (isTimeoutError(error)) {
-            throw new Error(`Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`);
+            throw new Error(`Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`, { cause: error });
         }
         throw error;
     }
