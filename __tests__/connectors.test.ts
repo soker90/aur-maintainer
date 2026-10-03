@@ -232,7 +232,9 @@ describe('repository-local connectors', () => {
       token: 'test-token'
     })
 
-    await expect(connector.detect(pkg, { version: '2.4.0' })).resolves.toEqual({
+    await expect(
+      connector.detect(pkg, { version: '2.4.0' })
+    ).resolves.toEqual({
       version: '2.4.0',
       metadata: { token: 'test-token' }
     })
