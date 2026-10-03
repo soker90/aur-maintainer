@@ -1,3 +1,6 @@
+import { readdir, stat } from 'node:fs/promises'
+import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
 import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
 
@@ -14,6 +17,8 @@ export interface ConnectorContext {
   token?: string
 }
 
+export type ConnectorFactory = (context: ConnectorContext) => Connector
+
 export function createConnectorRegistry(
   context: ConnectorContext
 ): Map<string, ConnectorFactory> {
@@ -23,7 +28,82 @@ export function createConnectorRegistry(
   ])
 }
 
-type ConnectorFactory = (context: ConnectorContext) => Connector
+export async function loadRepositoryConnectors(
+  workspace: string,
+  context: ConnectorContext
+): Promise<Map<string, ConnectorFactory>> {
+  const registry = createConnectorRegistry(context)
+  const directory = path.resolve(workspace, 'connectors')
+
+  if (!(await isDirectory(directory))) return registry
+
+  const entries = await readdir(directory, { withFileTypes: true })
+
+  for (const entry of entries.toSorted((left, right) =>
+    left.name.localeCompare(right.name)
+  )) {
+    if (!entry.isDirectory()) continue
+
+    const name = entry.name
+    if (registry.has(name)) {
+      throw new Error(
+        `Repository connector "${name}" conflicts with a built-in connector`
+      )
+    }
+
+    const modulePath = path.join(directory, name, 'index.js')
+    if (!(await isFile(modulePath))) {
+      throw new Error(
+        `Repository connector "${name}" must provide connectors/${name}/index.js`
+      )
+    }
+
+    const factory = await loadConnectorFactory(modulePath, name)
+    registry.set(name, factory)
+  }
+
+  return registry
+}
+
+async function loadConnectorFactory(
+  modulePath: string,
+  name: string
+): Promise<ConnectorFactory> {
+  const module = (await import(pathToFileURL(modulePath).href)) as {
+    default?: unknown
+  }
+
+  if (typeof module.default !== 'function') {
+    throw new Error(
+      `Repository connector "${name}" must default-export a connector factory`
+    )
+  }
+
+  const factory = module.default as ConnectorFactory
+  const connector = factory({
+    fetch,
+    token: undefined
+  })
+
+  if (!isConnector(connector) || connector.name !== name) {
+    throw new Error(
+      `Repository connector "${name}" factory must return a connector named "${name}"`
+    )
+  }
+
+  return factory
+}
+
+function isConnector(value: unknown): value is Connector {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    'detect' in value &&
+    typeof value.detect === 'function'
+  )
+}
 
 class GithubReleaseConnector implements Connector {
   readonly name = 'github-release'
@@ -167,6 +247,22 @@ function parseLatestTag(repository: string, value: unknown): UpdateCandidate {
   return {
     version: latest.version,
     metadata: { repository, tag: latest.name }
+  }
+}
+
+async function isDirectory(filePath: string): Promise<boolean> {
+  try {
+    return (await stat(filePath)).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+async function isFile(filePath: string): Promise<boolean> {
+  try {
+    return (await stat(filePath)).isFile()
+  } catch {
+    return false
   }
 }
 
