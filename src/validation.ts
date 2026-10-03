@@ -58,7 +58,7 @@ export async function validatePackage(
 
     await runner.run(
       'sudo',
-      ['-n', 'pacman', '-U', '--noconfirm', ...artifacts],
+      ['-n', 'pacman', '-U', '--noconfirm', '--nodeps', ...artifacts],
       pkg.path
     )
   } catch (error) {
