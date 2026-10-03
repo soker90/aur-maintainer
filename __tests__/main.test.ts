@@ -95,7 +95,9 @@ describe('main.ts', () => {
   })
 
   it('rolls back all modified packages when a later package fails', async () => {
-    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const directory = await mkdtemp(
+      path.join(os.tmpdir(), 'aur-maintainer-')
+    )
     const packages = ['first', 'second'].map((name) => ({
       ...pkg,
       name,
@@ -103,19 +105,18 @@ describe('main.ts', () => {
       pkgbuildPath: path.join(directory, name, 'PKGBUILD'),
       srcinfoPath: path.join(directory, name, '.SRCINFO')
     }))
-    await Promise.all(
-      packages.map(async (item) => {
-        await mkdir(item.path, { recursive: true })
-        await writeFile(
-          item.pkgbuildPath,
-          `pkgname=${item.name}\npkgver=1.0.0\n`
-        )
-        await writeFile(
-          item.srcinfoPath,
-          `pkgname=${item.name}\npkgver=1.0.0\n`
-        )
-      })
-    )
+
+    for (const item of packages) {
+      await mkdir(item.path, { recursive: true })
+      await writeFile(
+        item.pkgbuildPath,
+        `pkgname=${item.name}\npkgver=1.0.0\n`
+      )
+      await writeFile(
+        item.srcinfoPath,
+        `pkgname=${item.name}\npkgver=1.0.0\n`
+      )
+    }
 
     discoverPackages.mockResolvedValue(packages)
     createConnectorRegistry.mockReturnValue(
@@ -150,9 +151,9 @@ describe('main.ts', () => {
         `pkgname=${item.name}\npkgver=1.1.0\n`
       )
     })
-    validatePackage.mockResolvedValueOnce(undefined).mockRejectedValueOnce(
-      new Error('validation failed')
-    )
+    validatePackage.mockImplementation(async (item) => {
+      if (item.name === 'second') throw new Error('validation failed')
+    })
 
     await run()
 
