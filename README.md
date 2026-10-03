@@ -96,6 +96,22 @@ built-in connector with the same name, and its returned connector name must
 match the directory name. Generic connectors continue to be provided by this
 Action.
 
+Package-local custom connectors run `connector/detect.sh` with the package
+directory as the working directory. The Action exposes the package name and path
+through `AUR_MAINTAINER_PACKAGE` and `AUR_MAINTAINER_PACKAGE_PATH`. The package's
+`config:` object is passed as JSON in `AUR_MAINTAINER_CONFIG_JSON`, so the
+detector can use package-specific settings without parsing `update.yml` itself:
+
+```yaml
+connector: custom
+config:
+  channel: stable
+  region: eu
+```
+
+The detector receives `AUR_MAINTAINER_CONFIG_JSON='{"channel":"stable","region":"eu"}'`
+and must still emit the standard `version`, `source`, and `sha256` fields.
+
 A package can optionally map connector metadata to PKGBUILD assignments with the
 `updates` section. The `version` field always updates `pkgver`; source and
 checksum fields are opt-in because package layouts differ:
