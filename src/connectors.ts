@@ -106,7 +106,8 @@ async function detectWithScript(
     env: {
       ...process.env,
       AUR_MAINTAINER_PACKAGE: pkg.name,
-      AUR_MAINTAINER_PACKAGE_PATH: pkg.path
+      AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
+      AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
     }
   })
 
