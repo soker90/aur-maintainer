@@ -35547,6 +35547,7 @@ function parse(src, reviver, options) {
     return doc.toJS(Object.assign({ reviver: _reviver }, options));
 }
 
+const DEFAULT_PACKAGE_CONNECTOR_TIMEOUT = 30;
 async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml') {
     const filePath = path.resolve(workspace, configPath);
     try {
@@ -35606,7 +35607,7 @@ function parsePackageConfig(value, filePath) {
         connector: value.connector,
         config: value.config ?? {},
         updates: updates,
-        timeout: value.timeout ?? 30
+        timeout: value.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
     };
 }
 function isPositiveInteger(value) {
@@ -35883,7 +35884,7 @@ async function detectWithScript(pkg, scriptPath) {
     try {
         result = await execFile$3('bash', [scriptPath], {
             cwd: pkg.path,
-            timeout: (pkg.config.timeout ?? 30) * 1000,
+            timeout: (pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT) * 1000,
             killSignal: 'SIGTERM',
             env: {
                 ...process.env,
@@ -35895,7 +35896,7 @@ async function detectWithScript(pkg, scriptPath) {
     }
     catch (error) {
         if (isTimeoutError(error)) {
-            throw new Error(`Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? 30} seconds`);
+            throw new Error(`Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`);
         }
         throw error;
     }
