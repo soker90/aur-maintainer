@@ -8,6 +8,7 @@ import type { PackageDefinition } from '../src/types.js'
 const discoverPackages = jest.fn()
 const loadMaintainerConfig = jest.fn()
 const loadPackageConnector = jest.fn()
+const PACKAGE_LOCAL_CONNECTOR = 'custom'
 const loadRepositoryConnectors = jest.fn()
 const updatePackage = jest.fn()
 const rollbackPackageUpdate = jest.fn()
@@ -19,7 +20,8 @@ jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
 jest.unstable_mockModule('../src/config.js', () => ({ loadMaintainerConfig }))
 jest.unstable_mockModule('../src/connectors.js', () => ({
   loadPackageConnector,
-  loadRepositoryConnectors
+  loadRepositoryConnectors,
+  PACKAGE_LOCAL_CONNECTOR
 }))
 jest.unstable_mockModule('../src/update.js', () => ({
   updatePackage,
