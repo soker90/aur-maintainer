@@ -16,6 +16,14 @@ export interface Connector {
   ): Promise<UpdateCandidate>
 }
 
+export const PACKAGE_LOCAL_CONNECTOR = 'custom' as const
+
+export interface PackageLocalConnectorOutput {
+  version: string
+  source: string
+  sha256: string
+}
+
 export interface ConnectorContext {
   fetch(input: string | URL, init?: RequestInit): Promise<Response>
   token?: string
