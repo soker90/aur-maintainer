@@ -96,9 +96,10 @@ export async function run(): Promise<void> {
   }
 }
 
-async function completePackageSnapshot(snapshot: PackageSnapshot): Promise<void> {
+async function completePackageSnapshot(
+  snapshot: PackageSnapshot
+): Promise<void> {
   const pkg = snapshot.pkg
-  let srcinfo: string | undefined
   let srcinfo: string | undefined
   try {
     srcinfo = await readFile(pkg.srcinfoPath, 'utf8')
