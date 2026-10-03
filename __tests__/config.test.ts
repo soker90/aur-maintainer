@@ -47,4 +47,30 @@ describe('config', () => {
       updates: {}
     })
   })
+  it('loads package metadata update mappings', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\nupdates:\n  source: \'source=("${source}")\'\n  sha256: \'_sha256=${sha256}\'\n'
+    )
+    await expect(loadPackageConfig(packagePath)).resolves.toEqual({
+      connector: 'custom',
+      config: {},
+      updates: {
+        source: 'source=("${source}")',
+        sha256: '_sha256=${sha256}'
+      }
+    })
+  })
+
+  it('rejects unsupported package metadata mappings', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\nupdates:\n  version: pkgver=${version}\n'
+    )
+    await expect(loadPackageConfig(packagePath)).rejects.toThrow(
+      '"updates.version" is not supported'
+    )
+  })
 })
