@@ -9,7 +9,6 @@ export interface PackageConfig {
 }
 
 export interface PackageUpdateConfig {
-  version?: string
   source?: string
   sha256?: string
 }
