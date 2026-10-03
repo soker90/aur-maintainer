@@ -17,7 +17,10 @@ describe('package validation', () => {
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
     await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
-    await writeFile(directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst', '')
+    await writeFile(
+      directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst',
+      ''
+    )
     await writeFile(directory + '/demo-1.0.0-1-x86_64.pkg.tar.zst', '')
 
     const run = jest
