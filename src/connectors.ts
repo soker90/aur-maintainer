@@ -67,7 +67,8 @@ export async function loadRepositoryConnectors(
 
 async function loadConnectorFactory(
   modulePath: string,
-  name: string
+  name: string,
+  context: ConnectorContext
 ): Promise<ConnectorFactory> {
   const module = (await import(pathToFileURL(modulePath).href)) as {
     default?: unknown
@@ -80,10 +81,7 @@ async function loadConnectorFactory(
   }
 
   const factory = module.default as ConnectorFactory
-  const connector = factory({
-    fetch,
-    token: undefined
-  })
+  const connector = factory(context)
 
   if (!isConnector(connector) || connector.name !== name) {
     throw new Error(
