@@ -86,7 +86,8 @@ contract; `update.yml` controls how source and checksum values are applied to
 the package's PKGBUILD. A package must not define both `update.yml` and
 `connector/update.yml`.
 
-Repository-local custom connectors live under `connectors/`. Each connector uses
+Repository-local custom connectors live under `connectors/`. Each connector
+uses
 a directory named after the connector and an ESM module at
 `connectors/<name>/index.js`:
 
