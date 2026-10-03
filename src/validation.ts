@@ -37,11 +37,7 @@ export async function validatePackage(
 
     await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
 
-    const packageList = await runner.run(
-      'makepkg',
-      ['--packagelist'],
-      pkg.path
-    )
+    const packageList = await runner.run('makepkg', ['--packagelist'], pkg.path)
     const expectedArtifacts = packageList
       .split('\n')
       .map((entry) => entry.trim())
