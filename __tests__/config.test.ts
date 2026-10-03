@@ -51,7 +51,7 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      'connector: custom\nupdates:\n  source: \'source=("${source}")\'\n  sha256: \'_sha256=${sha256}\'\n'
+      "connector: custom\nupdates:\n  source: 'source=(\"${source}\")'\n  sha256: '_sha256=${sha256}'\n"
     )
     await expect(loadPackageConfig(packagePath)).resolves.toEqual({
       connector: 'custom',
