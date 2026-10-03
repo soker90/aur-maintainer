@@ -16,9 +16,11 @@ describe('package validation', () => {
       updateConfigPath: path.join(directory, 'update.yml'),
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
+    const artifact = 'demo-1.1.0-1-x86_64.pkg.tar.zst'
+    const staleArtifact = 'demo-1.0.0-1-x86_64.pkg.tar.zst'
     await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
-    await writeFile(directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst', '')
-    await writeFile(directory + '/demo-1.0.0-1-x86_64.pkg.tar.zst', '')
+    await writeFile(path.join(directory, artifact), '')
+    await writeFile(path.join(directory, staleArtifact), '')
 
     const run = jest
       .fn()
@@ -27,7 +29,7 @@ describe('package validation', () => {
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce(
-        path.join(directory, 'demo-1.1.0-1-x86_64.pkg.tar.zst') + '\n'
+        path.join(directory, artifact) + '\n'
       )
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('')
@@ -62,13 +64,13 @@ describe('package validation', () => {
     expect(run).toHaveBeenNthCalledWith(
       6,
       'namcap',
-      [path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')],
+      [path.join(pkg.path, artifact)],
       pkg.path
     )
     expect(run).toHaveBeenNthCalledWith(
       7,
       'sudo',
-      ['-n', 'pacman', '-U', '--noconfirm', 'demo-1.1.0-1-x86_64.pkg.tar.zst'],
+      ['-n', 'pacman', '-U', '--noconfirm', artifact],
       pkg.path
     )
   })
