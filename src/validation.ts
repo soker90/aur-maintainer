@@ -1,4 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
+import { access, readFile } from 'node:fs/promises'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
@@ -20,12 +21,50 @@ export async function validatePackage(
   runner: CommandRunner = hostCommandRunner
 ): Promise<void> {
   try {
-    await runner.run(
+    await runner.run('namcap', [pkg.pkgbuildPath])
+    await runner.run('makepkg', ['--verifysource'], pkg.path)
+
+    const generatedSrcinfo = await runner.run(
       'makepkg',
-      ['--nobuild', '--nodeps', '--noconfirm', '--nocolor'],
+      ['--printsrcinfo'],
       pkg.path
     )
-    await runner.run('namcap', [pkg.pkgbuildPath])
+    const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8')
+    if (generatedSrcinfo !== currentSrcinfo) {
+      throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`)
+    }
+
+    await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
+
+    const packageList = await runner.run('makepkg', ['--packagelist'], pkg.path)
+    const expectedArtifacts = packageList
+      .split('\n')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+    const artifacts: string[] = []
+
+    for (const artifact of expectedArtifacts) {
+      try {
+        await access(artifact)
+        artifacts.push(artifact)
+      } catch {
+        // The package was expected but was not produced.
+      }
+    }
+
+    if (artifacts.length === 0) {
+      throw new Error(`No package artifact was produced for ${pkg.name}`)
+    }
+
+    for (const artifact of artifacts) {
+      await runner.run('namcap', [artifact], pkg.path)
+    }
+
+    await runner.run(
+      'sudo',
+      ['-n', 'pacman', '-U', '--noconfirm', ...artifacts],
+      pkg.path
+    )
   } catch (error) {
     if (!isCommandNotFound(error)) throw error
     await validatePackageWithDocker(pkg)
@@ -48,13 +87,13 @@ async function validatePackageWithDocker(
       '--env',
       'HOST_GID=' + gid,
       '--volume',
-      pkg.path + ':/pkg:rw',
+      pkg.path + ':/pkg',
       '--workdir',
       '/pkg',
-      'archlinux:base-devel',
+      'archlinux:latest',
       'bash',
       '-c',
-      'pacman -Sy --noconfirm namcap && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && su - builder -c \'cd /pkg && makepkg --nobuild --nodeps --noconfirm --nocolor && namcap PKGBUILD\''
+      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ],
     { cwd: pkg.path }
   )
