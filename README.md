@@ -96,6 +96,23 @@ built-in connector with the same name, and its returned connector name must
 match the directory name. Generic connectors continue to be provided by this
 Action.
 
+A package can optionally map connector metadata to PKGBUILD assignments with the
+`updates` section. The `version` field always updates `pkgver`; source and
+checksum fields are opt-in because package layouts differ:
+
+```yaml
+connector: custom
+config: {}
+updates:
+  source: 'source=("vega-${version}.tar.gz::${source}")'
+  sha256: '_sha256=${sha256}'
+```
+
+Each mapping is a complete PKGBUILD assignment template. The supported
+placeholders are `${version}`, `${source}`, and `${sha256}`. This keeps
+package-specific source naming explicit instead of making the Action infer
+PKGBUILD structure.
+
 ## Usage
 
 The intended interface is a single Action:

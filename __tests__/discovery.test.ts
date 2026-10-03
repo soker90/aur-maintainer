@@ -43,11 +43,11 @@ describe('discoverPackages', () => {
     await expect(discoverPackages(root, {})).resolves.toEqual([
       expect.objectContaining({
         name: 'alpha-bin',
-        config: { connector: 'github-release', config: {} }
+        config: { connector: 'github-release', config: {}, updates: {} }
       }),
       expect.objectContaining({
         name: 'zeta-bin',
-        config: { connector: 'custom', config: {} }
+        config: { connector: 'custom', config: {}, updates: {} }
       })
     ])
   })
@@ -65,7 +65,7 @@ describe('discoverPackages', () => {
           'connector',
           'update.yml'
         ),
-        config: { connector: 'custom', config: {} }
+        config: { connector: 'custom', config: {}, updates: {} }
       })
     ])
   })

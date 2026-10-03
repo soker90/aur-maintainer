@@ -58,9 +58,26 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
     throw new Error(`${filePath}: "config" must be an object`)
   }
 
+  if (value.updates !== undefined && !isRecord(value.updates)) {
+    throw new Error(`${filePath}: "updates" must be an object`)
+  }
+
+  const updates = (value.updates as Record<string, unknown> | undefined) ?? {}
+  for (const [key, template] of Object.entries(updates)) {
+    if (!['source', 'sha256'].includes(key)) {
+      throw new Error(`${filePath}: "updates.${key}" is not supported`)
+    }
+    if (typeof template !== 'string' || template.trim() === '') {
+      throw new Error(
+        `${filePath}: "updates.${key}" must be a non-empty string`
+      )
+    }
+  }
+
   return {
     connector: value.connector,
-    config: (value.config as Record<string, unknown> | undefined) ?? {}
+    config: (value.config as Record<string, unknown> | undefined) ?? {},
+    updates: updates as PackageConfig['updates']
   }
 }
 

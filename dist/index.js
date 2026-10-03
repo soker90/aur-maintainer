@@ -35587,9 +35587,22 @@ function parsePackageConfig(value, filePath) {
     if (value.config !== undefined && !isRecord$1(value.config)) {
         throw new Error(`${filePath}: "config" must be an object`);
     }
+    if (value.updates !== undefined && !isRecord$1(value.updates)) {
+        throw new Error(`${filePath}: "updates" must be an object`);
+    }
+    const updates = value.updates ?? {};
+    for (const [key, template] of Object.entries(updates)) {
+        if (!['source', 'sha256'].includes(key)) {
+            throw new Error(`${filePath}: "updates.${key}" is not supported`);
+        }
+        if (typeof template !== 'string' || template.trim() === '') {
+            throw new Error(`${filePath}: "updates.${key}" must be a non-empty string`);
+        }
+    }
     return {
         connector: value.connector,
-        config: value.config ?? {}
+        config: value.config ?? {},
+        updates: updates
     };
 }
 function isRecord$1(value) {
@@ -36083,10 +36096,10 @@ function isCommandNotFound$1(error) {
 async function updatePackage(pkg, candidate) {
     const content = await readFile(pkg.pkgbuildPath, 'utf8');
     const currentVersion = readPkgver(content);
-    if (currentVersion === candidate.version) {
+    const updated = applyPackageUpdates(content, pkg.config.updates, candidate);
+    if (updated === content) {
         return { changed: false, currentVersion, version: candidate.version };
     }
-    const updated = replacePkgver(content, candidate.version);
     await writeFile$1(pkg.pkgbuildPath, updated);
     return {
         changed: true,
@@ -36128,6 +36141,42 @@ function replacePkgver(content, version) {
             ')');
     }
     return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version);
+}
+function applyPackageUpdates(content, updates, candidate) {
+    const fields = {
+        version: candidate.version,
+        source: candidate.source,
+        sha256: candidate.sha256
+    };
+    let updated = replaceAssignment(content, 'pkgver', `pkgver=${candidate.version}`);
+    for (const field of ['source', 'sha256']) {
+        const template = updates[field];
+        const value = fields[field];
+        if (template === undefined || value === undefined)
+            continue;
+        const rendered = renderUpdateTemplate(template, {
+            version: candidate.version,
+            source: candidate.source,
+            sha256: candidate.sha256
+        });
+        const assignment = rendered.match(/^([A-Za-z_][A-Za-z0-9_]*)=/)?.[1];
+        if (!assignment) {
+            throw new Error(`Package update template for "${field}" must start with a PKGBUILD assignment`);
+        }
+        updated = replaceAssignment(updated, assignment, rendered);
+    }
+    return updated;
+}
+function renderUpdateTemplate(template, values) {
+    return template.replace(/\$\{(version|source|sha256)\}/g, (_, key) => values[key] ?? '');
+}
+function replaceAssignment(content, name, replacement) {
+    const pattern = new RegExp(`^${name}=.*$`, 'm');
+    const matches = content.match(pattern);
+    if (!matches) {
+        throw new Error(`PKGBUILD must contain a "${name}" assignment`);
+    }
+    return content.replace(pattern, replacement);
 }
 
 const execFile$1 = promisify(execFile$4);
