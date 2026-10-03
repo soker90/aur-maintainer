@@ -220,17 +220,17 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
 `
     )
 
-    const package = {
+    const pkgDefinition = {
       ...pkg,
       name: 'example-bin',
       path: packageDirectory
     }
     const connector = loadPackageConnector({
-      ...package,
+      ...pkgDefinition,
       config: { connector: 'custom', config: {} }
     })({ fetch })
 
-    await expect(connector.detect(package, {})).resolves.toEqual({
+    await expect(connector.detect(pkgDefinition, {})).resolves.toEqual({
       version: '2.4.0',
       source: 'https://example.test/archive.tar.gz',
       sha256: 'abc123'
@@ -247,7 +247,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       `printf 'version=2.4.0\\n'`
     )
 
-    const package = {
+    const pkgDefinition = {
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
@@ -255,7 +255,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     }
     const connector = loadPackageConnector(package)({ fetch })
 
-    await expect(connector.detect(package, {})).rejects.toThrow(
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'must output version, source and sha256'
     )
   })
@@ -270,7 +270,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nextra=value\\n'`
     )
 
-    const package = {
+    const pkgDefinition = {
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
@@ -278,7 +278,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     }
     const connector = loadPackageConnector(package)({ fetch })
 
-    await expect(connector.detect(package, {})).rejects.toThrow(
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'produced unknown output "extra"'
     )
   })
@@ -288,7 +288,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     const packageDirectory = path.join(workspace, 'example-bin')
     await mkdir(path.join(packageDirectory, 'connector'), { recursive: true })
 
-    const package = {
+    const pkgDefinition = {
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
@@ -296,7 +296,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     }
     const connector = loadPackageConnector(package)({ fetch })
 
-    await expect(connector.detect(package, {})).rejects.toThrow(
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
       'must provide connector/detect.sh'
     )
   })
