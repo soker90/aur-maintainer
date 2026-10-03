@@ -27,7 +27,8 @@ describe('package updates', () => {
     await expect(updatePackage(pkg, { version: '1.1.0' })).resolves.toEqual({
       changed: true,
       currentVersion: '1.0.0',
-      version: '1.1.0'
+      version: '1.1.0',
+      previousPkgbuild: 'pkgname=demo\npkgver=1.0.0\npkgrel=1\n'
     })
     await expect(readFile(pkgbuildPath, 'utf8')).resolves.toContain(
       'pkgver=1.1.0'

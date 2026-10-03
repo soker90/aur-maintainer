@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$3 } from 'node:child_process';
 
@@ -35554,7 +35554,7 @@ async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml
         return parseMaintainerConfig(parse(content), filePath);
     }
     catch (error) {
-        if (isMissingFile(error))
+        if (isMissingFile$1(error))
             return {};
         throw error;
     }
@@ -35598,7 +35598,7 @@ function isRecord$1(value) {
 function isStringArray(value) {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
-function isMissingFile(error) {
+function isMissingFile$1(error) {
     return (typeof error === 'object' &&
         error !== null &&
         'code' in error &&
@@ -35942,11 +35942,20 @@ async function updatePackage(pkg, candidate) {
     }
     const updated = replacePkgver(content, candidate.version);
     await writeFile$1(pkg.pkgbuildPath, updated);
-    return { changed: true, currentVersion, version: candidate.version };
+    return {
+        changed: true,
+        currentVersion,
+        version: candidate.version,
+        previousPkgbuild: content
+    };
 }
 async function rollbackPackageUpdate(pkg, result) {
     if (!result.changed)
         return;
+    if (result.previousPkgbuild !== undefined) {
+        await writeFile$1(pkg.pkgbuildPath, result.previousPkgbuild);
+        return;
+    }
     const content = await readFile(pkg.pkgbuildPath, 'utf8');
     if (readPkgver(content) !== result.version)
         return;
@@ -36136,6 +36145,7 @@ function isCommandNotFound(error) {
 }
 
 async function run() {
+    const snapshots = [];
     try {
         const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
         const configPath = getInput('config') || '.aur-maintainer.yml';
@@ -36161,6 +36171,8 @@ async function run() {
             const update = await updatePackage(pkg, candidate);
             candidates.push({ package: pkg.name, candidate, update });
             if (update.changed) {
+                const snapshot = await snapshotPackage(pkg, update.previousPkgbuild);
+                snapshots.push(snapshot);
                 try {
                     await updatePackageMetadata(pkg);
                     await validatePackage(pkg);
@@ -36193,11 +36205,47 @@ async function run() {
         }
     }
     catch (error) {
+        await rollbackSnapshots(snapshots);
         if (error instanceof Error)
             setFailed(error.message);
         else
             setFailed(String(error));
     }
+}
+async function snapshotPackage(pkg, pkgbuild) {
+    let srcinfo;
+    try {
+        srcinfo = await readFile(pkg.srcinfoPath, 'utf8');
+    }
+    catch (error) {
+        if (!isMissingFile(error))
+            throw error;
+    }
+    return {
+        pkg,
+        pkgbuild: pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
+        srcinfo
+    };
+}
+async function rollbackSnapshots(snapshots) {
+    for (const snapshot of snapshots.toReversed()) {
+        await writeFile$1(snapshot.pkg.pkgbuildPath, snapshot.pkgbuild);
+        if (snapshot.srcinfo === undefined) {
+            await unlink$1(snapshot.pkg.srcinfoPath).catch((error) => {
+                if (!isMissingFile(error))
+                    throw error;
+            });
+        }
+        else {
+            await writeFile$1(snapshot.pkg.srcinfoPath, snapshot.srcinfo);
+        }
+    }
+}
+function isMissingFile(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT');
 }
 
 /**

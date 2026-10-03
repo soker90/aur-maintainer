@@ -6,6 +6,7 @@ export interface PackageUpdateResult {
   changed: boolean
   currentVersion: string
   version: string
+  previousPkgbuild?: string
 }
 
 export async function updatePackage(
@@ -21,7 +22,12 @@ export async function updatePackage(
 
   const updated = replacePkgver(content, candidate.version)
   await writeFile(pkg.pkgbuildPath, updated)
-  return { changed: true, currentVersion, version: candidate.version }
+  return {
+    changed: true,
+    currentVersion,
+    version: candidate.version,
+    previousPkgbuild: content
+  }
 }
 
 export async function rollbackPackageUpdate(
@@ -29,6 +35,11 @@ export async function rollbackPackageUpdate(
   result: PackageUpdateResult
 ): Promise<void> {
   if (!result.changed) return
+
+  if (result.previousPkgbuild !== undefined) {
+    await writeFile(pkg.pkgbuildPath, result.previousPkgbuild)
+    return
+  }
 
   const content = await readFile(pkg.pkgbuildPath, 'utf8')
   if (readPkgver(content) !== result.version) return
