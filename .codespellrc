@@ -1,2 +1,3 @@
 [codespell]
-skip = README_ES.md
+skip = ./README_ES.md
+ignore-words-list = inicial,utiliza,conector
