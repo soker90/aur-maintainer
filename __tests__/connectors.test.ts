@@ -262,14 +262,15 @@ describe('repository-local connectors', () => {
       await writeFile(
         path.join(connectorDirectory, 'index.js'),
         `export default () => ({
-    name: 'github-release',
-    detect: async () => ({ version: '1.0.0' })
-  })`
+  name: 'github-release',
+  detect: async () => ({ version: '1.0.0' })
+})`
       )
 
       await expect(
         loadRepositoryConnectors(workspace, { fetch })
       ).rejects.toThrow('conflicts with a built-in connector')
+    }
   )
 
   it('rejects a connector without a matching name', async () => {
