@@ -216,6 +216,7 @@ describe('package-local custom connectors', () => {
       path.join(connectorDirectory, 'detect.sh'),
       `#!/usr/bin/env bash
 set -euo pipefail
+[[ "\${AUR_MAINTAINER_CONFIG_JSON}" == '{"channel":"stable","region":"eu"}' ]]
 printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc123\\n'
 `
     )
@@ -223,12 +224,14 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     const pkgDefinition = {
       ...pkg,
       name: 'example-bin',
-      path: packageDirectory
+      path: packageDirectory,
+      config: {
+        connector: 'custom',
+        config: { channel: 'stable', region: 'eu' },
+        updates: {}
+      }
     }
-    const connector = loadPackageConnector({
-      ...pkgDefinition,
-      config: { connector: 'custom', config: {}, updates: {} }
-    })({ fetch })
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
     await expect(connector.detect(pkgDefinition, {})).resolves.toEqual({
       version: '2.4.0',
