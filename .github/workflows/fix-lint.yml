@@ -37,13 +37,51 @@ jobs:
           path: jest-report.json
       - name: Build dist
         run: npm run bundle
-      - name: Commit fixes
+      - name: Commit generated dist through Git API
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet; then
+          if git diff --quiet -- dist/; then
             exit 0
           fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add dist/
-          git commit -m "style: apply ESLint fixes"
-          git push
+          python - <<'PY'
+          import base64
+          import json
+          from pathlib import Path
+
+          content = base64.b64encode(Path('dist/index.js').read_bytes()).decode()
+          Path('/tmp/blob.json').write_text(
+              json.dumps({'content': content, 'encoding': 'base64'})
+          )
+          PY
+          blob_sha=$(gh api repos/${GITHUB_REPOSITORY}/git/blobs --method POST --input /tmp/blob.json --jq .sha)
+          base_tree=$(git rev-parse HEAD^{tree})
+          python - "$blob_sha" "$base_tree" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          Path('/tmp/tree.json').write_text(json.dumps({
+              'base_tree': sys.argv[2],
+              'tree': [{
+                  'path': 'dist/index.js',
+                  'mode': '100644',
+                  'type': 'blob',
+                  'sha': sys.argv[1]
+              }]
+          }))
+          PY
+          tree_sha=$(gh api repos/${GITHUB_REPOSITORY}/git/trees --method POST --input /tmp/tree.json --jq .sha)
+          python - "$tree_sha" "$(git rev-parse HEAD)" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          Path('/tmp/commit.json').write_text(json.dumps({
+              'message': 'build: regenerate bundled action',
+              'tree': sys.argv[1],
+              'parents': [sys.argv[2]]
+          }))
+          PY
+          commit_sha=$(gh api repos/${GITHUB_REPOSITORY}/git/commits --method POST --input /tmp/commit.json --jq .sha)
+          gh api repos/${GITHUB_REPOSITORY}/git/refs/heads/${GITHUB_REF_NAME} --method PATCH -f sha="${commit_sha}"
