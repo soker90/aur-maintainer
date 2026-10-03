@@ -28,12 +28,12 @@ jobs:
         env:
           BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          if git diff --quiet -- dist; then
+          if git diff --quiet; then
             exit 0
           fi
 
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add dist
+          git add dist README.md __tests__/connectors.test.ts src
           git commit -m "build: regenerate dist"
           git push origin "HEAD:$BRANCH"
