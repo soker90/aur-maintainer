@@ -6,6 +6,7 @@ export interface PackageConfig {
   connector: string
   config: Record<string, unknown>
   updates: PackageUpdateConfig
+  timeout: number
 }
 
 export interface PackageUpdateConfig {
