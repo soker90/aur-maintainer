@@ -109,16 +109,18 @@ async function detectWithScript(
       timeout: (pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT) * 1000,
       killSignal: 'SIGTERM',
       env: {
-      ...process.env,
-      AUR_MAINTAINER_PACKAGE: pkg.name,
-      AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
-      AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
+        ...process.env,
+        AUR_MAINTAINER_PACKAGE: pkg.name,
+        AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
+        AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
       }
     })
   } catch (error) {
     if (isTimeoutError(error)) {
       throw new Error(
-        `Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`
+        `Package "${pkg.name}" custom connector timed out after ${
+          pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
+        } seconds`
       )
     }
     throw error
