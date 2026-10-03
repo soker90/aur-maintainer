@@ -216,11 +216,9 @@ describe('package-local custom connectors', () => {
       path.join(connectorDirectory, 'detect.sh'),
       [
         "printf 'version=2.4.0\\n'",
-        "printf 'source=https://example.test/%s/archive.tar.gz\\n' \\\\",
-        '  "$AUR_MAINTAINER_PACKAGE"',
-        "printf 'sha256=%s\\n' \\\\",
-        '  "$AUR_MAINTAINER_PACKAGE_PATH"'
-      ].join('\\n')
+        "printf 'source=https://example.test/%s/archive.tar.gz\\n' \"$AUR_MAINTAINER_PACKAGE\"",
+        "printf 'sha256=%s\\n' \"$AUR_MAINTAINER_PACKAGE_PATH\""
+      ].join('\n')
     )
 
     const pkgDefinition = {
