@@ -207,6 +207,57 @@ describe('github-tag connector', () => {
 })
 
 describe('package-local custom connectors', () => {
+  it('passes package identity through the connector environment', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `printf 'version=2.4.0\\nsource=%s\\nsha256=%s\\n' \\\
+        "https://example.test/$AUR_MAINTAINER_PACKAGE/archive.tar.gz" \\\
+        "$AUR_MAINTAINER_PACKAGE_PATH"`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {}, updates: {} }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).resolves.toEqual({
+      version: '2.4.0',
+      source: 'https://example.test/example-bin/archive.tar.gz',
+      sha256: packageDirectory
+    })
+  })
+
+  it('rejects duplicate connector output fields', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nversion=2.4.1\\n'`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {}, updates: {} }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
+      'produced duplicate output "version"'
+    )
+  })
+
+
   it('runs connector/detect.sh and parses the standard update output', async () => {
     const workspace = await createConnectorWorkspace()
     const packageDirectory = path.join(workspace, 'example-bin')
