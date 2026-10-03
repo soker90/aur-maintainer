@@ -21,13 +21,10 @@ jobs:
           cache: npm
       - name: Install Dependencies
         run: npm ci
-      - name: Report ESLint
-        run: npx eslint . --format json > eslint-report.json || true
-      - name: Upload ESLint report
-        uses: actions/upload-artifact@v7
-        with:
-          name: eslint-report
-          path: eslint-report.json
+      - name: Check ESLint
+        run: npm run lint
+      - name: Build dist
+        run: npm run bundle
       - name: Commit fixes
         run: |
           if git diff --quiet; then
