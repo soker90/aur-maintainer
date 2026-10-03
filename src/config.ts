@@ -3,6 +3,8 @@ import path from 'node:path'
 import { parse } from 'yaml'
 import type { MaintainerConfig, PackageConfig } from './types.js'
 
+export const DEFAULT_PACKAGE_CONNECTOR_TIMEOUT = 30
+
 export async function loadMaintainerConfig(
   workspace: string,
   configPath = '.aur-maintainer.yml'
@@ -58,6 +60,10 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
     throw new Error(`${filePath}: "config" must be an object`)
   }
 
+  if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
+    throw new Error(`${filePath}: "timeout" must be a positive integer number of seconds`)
+  }
+
   if (value.updates !== undefined && !isRecord(value.updates)) {
     throw new Error(`${filePath}: "updates" must be an object`)
   }
@@ -77,12 +83,17 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
   return {
     connector: value.connector,
     config: (value.config as Record<string, unknown> | undefined) ?? {},
-    updates: updates as PackageConfig['updates']
+    updates: updates as PackageConfig['updates'],
+    timeout: (value.timeout as number | undefined) ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
   }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
 function isStringArray(value: unknown): value is string[] {
