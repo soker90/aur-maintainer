@@ -1,10 +1,10 @@
-const INVALID_VERSION_CHARACTER = /[-:/<>=\\s]/
+const INVALID_VERSION_CHARACTER = /[-:/<>=\s]/
 
 export function isSupportedPackageVersion(version: string): boolean {
   return (
-    /\\d/.test(version) &&
+    /\d/.test(version) &&
     version.length > 0 &&
-    /^[\\x21-\\x7e]+$/.test(version) &&
+    /^[\x21-\x7e]+$/.test(version) &&
     !INVALID_VERSION_CHARACTER.test(version)
   )
 }
@@ -61,44 +61,43 @@ function splitVersion(version: string): VersionSegment[] {
   const segments: VersionSegment[] = []
   let delimiters = 0
   let segment = ''
+  let parts: string[] = []
 
   for (const character of version) {
     if (/^[A-Za-z0-9]$/.test(character)) {
-      const previousIsAlpha = /[A-Za-z]$/.test(segment)
-      const currentIsAlpha = /[A-Za-z]$/.test(character)
-      if (segment && previousIsAlpha !== currentIsAlpha) {
-        segments.push({
-          parts: [segment],
-          delimiters
-        })
-        delimiters = 0
+      if (
+        segment &&
+        /[A-Za-z]$/.test(segment) !== /[A-Za-z]$/.test(character)
+      ) {
+        parts.push(segment)
         segment = ''
       }
       segment += character
     } else {
       if (segment) {
-        segments.push({
-          parts: [segment],
-          delimiters
-        })
-        delimiters = 0
+        parts.push(segment)
         segment = ''
       }
-      delimiters += 1
+
+      if (parts.length > 0) {
+        segments.push({ parts, delimiters })
+        parts = []
+        delimiters = 1
+      } else {
+        delimiters += 1
+      }
     }
   }
 
-  if (segment || delimiters) {
+  if (segment) parts.push(segment)
+  if (parts.length || delimiters) {
     segments.push({
-      parts: segment ? [segment] : [''],
+      parts: parts.flatMap(splitAlphaNumeric),
       delimiters
     })
   }
 
-  return segments.map((item) => ({
-    ...item,
-    parts: item.parts.flatMap(splitAlphaNumeric)
-  }))
+  return segments
 }
 
 function splitAlphaNumeric(segment: string): string[] {
