@@ -69,9 +69,7 @@ export async function loadRepositoryConnectors(
   return registry
 }
 
-export function loadPackageConnector(
-  pkg: PackageDefinition
-): ConnectorFactory {
+export function loadPackageConnector(pkg: PackageDefinition): ConnectorFactory {
   if (pkg.config.connector !== 'custom') {
     throw new Error(
       `Package connector "${pkg.config.connector}" is not a package-local custom connector`
