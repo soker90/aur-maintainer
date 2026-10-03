@@ -136,8 +136,8 @@ function isTimeoutError(error: unknown): boolean {
     error !== null &&
     'code' in error &&
     (error as { code?: unknown }).code === 'ETIMEDOUT' ||
-    (error as { killed?: unknown; signal?: unknown }).killed === true &&
-      (error as { killed?: unknown; signal?: unknown }).signal === 'SIGTERM'
+    ((error as { killed?: unknown; signal?: unknown }).killed === true &&
+      (error as { killed?: unknown; signal?: unknown }).signal === 'SIGTERM')
   )
 }
 
