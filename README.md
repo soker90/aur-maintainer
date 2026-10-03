@@ -98,9 +98,10 @@ Action.
 
 Package-local custom connectors run `connector/detect.sh` with the package
 directory as the working directory. The Action exposes the package name and path
-through `AUR_MAINTAINER_PACKAGE` and `AUR_MAINTAINER_PACKAGE_PATH`. The package's
-`config:` object is passed as JSON in `AUR_MAINTAINER_CONFIG_JSON`, so the
-detector can use package-specific settings without parsing `update.yml` itself:
+through `AUR_MAINTAINER_PACKAGE` and `AUR_MAINTAINER_PACKAGE_PATH`. The
+package's `config:` object is passed as JSON in `AUR_MAINTAINER_CONFIG_JSON`, so
+the detector can use package-specific settings without parsing `update.yml`
+itself:
 
 ```yaml
 connector: custom
@@ -109,8 +110,8 @@ config:
   region: eu
 ```
 
-The detector receives the JSON configuration in
-`AUR_MAINTAINER_CONFIG_JSON`, for example:
+The detector receives the JSON configuration in `AUR_MAINTAINER_CONFIG_JSON`,
+for example:
 
 ```text
 AUR_MAINTAINER_CONFIG_JSON='{"channel":"stable","region":"eu"}'
