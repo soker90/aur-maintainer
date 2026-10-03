@@ -93,7 +93,8 @@ config:
 Repository-local connectors are loaded only from the repository's
 `connectors/<name>/index.js` directories. A local connector cannot replace a
 built-in connector with the same name, and its returned connector name
-must match the directory name. Generic connectors continue to be provided by this Action.
+must match the directory name. Generic connectors continue to be provided by
+this Action.
 
 ## Usage
 
