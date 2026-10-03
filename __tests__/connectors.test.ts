@@ -245,7 +245,6 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
       `printf 'version=2.4.0\\n'`
-
     )
 
     const package = {
@@ -269,7 +268,6 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
       `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nextra=value\\n'`
-
     )
 
     const package = {
