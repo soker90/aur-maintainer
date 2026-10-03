@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { discoverPackages } from './discovery.js'
 import { loadMaintainerConfig } from './config.js'
 import { createConnectorRegistry } from './connectors.js'
@@ -6,8 +7,17 @@ import { updatePackageMetadata } from './metadata.js'
 import { rollbackPackageUpdate, updatePackage } from './update.js'
 import { createUpdatePullRequest } from './pull-request.js'
 import { validatePackage } from './validation.js'
+import type { PackageDefinition } from './types.js'
+
+interface PackageSnapshot {
+  pkg: PackageDefinition
+  pkgbuild: string
+  srcinfo: string | undefined
+}
 
 export async function run(): Promise<void> {
+  const snapshots: PackageSnapshot[] = []
+
   try {
     const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd()
     const configPath = core.getInput('config') || '.aur-maintainer.yml'
@@ -38,9 +48,11 @@ export async function run(): Promise<void> {
         pkg,
         pkg.config.config
       )
+      const snapshot = await snapshotPackage(pkg)
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
+        snapshots.push(snapshot)
         try {
           await updatePackageMetadata(pkg)
           await validatePackage(pkg)
@@ -73,7 +85,45 @@ export async function run(): Promise<void> {
       if (pullRequest) core.setOutput('pull-request', pullRequest)
     }
   } catch (error) {
+    await rollbackSnapshots(snapshots)
     if (error instanceof Error) core.setFailed(error.message)
     else core.setFailed(String(error))
   }
+}
+
+async function snapshotPackage(pkg: PackageDefinition): Promise<PackageSnapshot> {
+  let srcinfo: string | undefined
+  try {
+    srcinfo = await readFile(pkg.srcinfoPath, 'utf8')
+  } catch (error) {
+    if (!isMissingFile(error)) throw error
+  }
+
+  return {
+    pkg,
+    pkgbuild: await readFile(pkg.pkgbuildPath, 'utf8'),
+    srcinfo
+  }
+}
+
+async function rollbackSnapshots(snapshots: PackageSnapshot[]): Promise<void> {
+  for (const snapshot of snapshots.toReversed()) {
+    await writeFile(snapshot.pkg.pkgbuildPath, snapshot.pkgbuild)
+    if (snapshot.srcinfo === undefined) {
+      await unlink(snapshot.pkg.srcinfoPath).catch((error: unknown) => {
+        if (!isMissingFile(error)) throw error
+      })
+    } else {
+      await writeFile(snapshot.pkg.srcinfoPath, snapshot.srcinfo)
+    }
+  }
+}
+
+function isMissingFile(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'ENOENT'
+  )
 }
