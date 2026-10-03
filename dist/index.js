@@ -36181,6 +36181,7 @@ const hostCommandRunner = {
         return result.stdout;
     }
 };
+/** Validate an AUR package on the host, falling back to an Arch container when needed. */
 async function validatePackage(pkg, runner = hostCommandRunner) {
     try {
         await runner.run('namcap', [pkg.pkgbuildPath]);
@@ -36214,6 +36215,7 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
         await validatePackageWithDocker(pkg);
     }
 }
+/** Validate an AUR package inside an Arch Linux Docker container. */
 async function validatePackageWithDocker(pkg) {
     const uid = String(process.getuid?.() ?? 1000);
     const gid = String(process.getgid?.() ?? 1000);
