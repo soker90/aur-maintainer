@@ -3,6 +3,7 @@ import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
+import { DEFAULT_PACKAGE_CONNECTOR_TIMEOUT } from './config.js'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
 import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
 
@@ -101,17 +102,38 @@ async function detectWithScript(
     )
   }
 
-  const result = await execFile('bash', [scriptPath], {
-    cwd: pkg.path,
-    env: {
+  let result: { stdout: string }
+  try {
+    result = await execFile('bash', [scriptPath], {
+      cwd: pkg.path,
+      timeout: pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT,
+      killSignal: 'SIGTERM',
+      env: {
       ...process.env,
       AUR_MAINTAINER_PACKAGE: pkg.name,
       AUR_MAINTAINER_PACKAGE_PATH: pkg.path,
       AUR_MAINTAINER_CONFIG_JSON: JSON.stringify(pkg.config.config)
+      }
+    })
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new Error(
+        `Package "${pkg.name}" custom connector timed out after ${pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT} seconds`
+      )
     }
-  })
+    throw error
+  }
 
   return parseCustomConnectorOutput(pkg.name, result.stdout)
+}
+
+function isTimeoutError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as { code?: unknown }).code === 'ETIMEDOUT'
+  )
 }
 
 function parseCustomConnectorOutput(
