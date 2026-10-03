@@ -71,7 +71,13 @@ describe('package validation', () => {
     expect(run).toHaveBeenNthCalledWith(
       7,
       'sudo',
-      ['-n', 'pacman', '-U', '--noconfirm', 'demo-1.1.0-1-x86_64.pkg.tar.zst'],
+      [
+        '-n',
+        'pacman',
+        '-U',
+        '--noconfirm',
+        path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')
+      ],
       pkg.path
     )
   })
