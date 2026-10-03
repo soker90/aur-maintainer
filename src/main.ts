@@ -11,7 +11,6 @@ import type { PackageDefinition } from './types.js'
 
 interface PackageSnapshot {
   pkg: PackageDefinition
-  pkgbuild: string
   srcinfo: string | undefined
 }
 
@@ -48,10 +47,10 @@ export async function run(): Promise<void> {
         pkg,
         pkg.config.config
       )
-      const snapshot = await snapshotPackage(pkg)
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
+        const snapshot = await snapshotPackage(pkg)
         snapshots.push(snapshot)
         try {
           await updatePackageMetadata(pkg)
@@ -91,9 +90,7 @@ export async function run(): Promise<void> {
   }
 }
 
-async function snapshotPackage(
-  pkg: PackageDefinition
-): Promise<PackageSnapshot> {
+async function snapshotPackage(pkg: PackageDefinition): Promise<PackageSnapshot> {
   let srcinfo: string | undefined
   try {
     srcinfo = await readFile(pkg.srcinfoPath, 'utf8')
@@ -101,16 +98,11 @@ async function snapshotPackage(
     if (!isMissingFile(error)) throw error
   }
 
-  return {
-    pkg,
-    pkgbuild: await readFile(pkg.pkgbuildPath, 'utf8'),
-    srcinfo
-  }
+  return { pkg, srcinfo }
 }
 
 async function rollbackSnapshots(snapshots: PackageSnapshot[]): Promise<void> {
   for (const snapshot of snapshots.toReversed()) {
-    await writeFile(snapshot.pkg.pkgbuildPath, snapshot.pkgbuild)
     if (snapshot.srcinfo === undefined) {
       await unlink(snapshot.pkg.srcinfoPath).catch((error: unknown) => {
         if (!isMissingFile(error)) throw error
