@@ -215,10 +215,10 @@ describe('package-local custom connectors', () => {
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
       [
-        "printf 'version=2.4.0\\\\n'",
-        "printf 'source=https://example.test/%s/archive.tar.gz\\\\n' \\\\",
+        "printf 'version=2.4.0\\n'",
+        "printf 'source=https://example.test/%s/archive.tar.gz\\n' \\\\",
         '  "$AUR_MAINTAINER_PACKAGE"',
-        "printf 'sha256=%s\\\\n' \\\\",
+        "printf 'sha256=%s\\n' \\\\",
         '  "$AUR_MAINTAINER_PACKAGE_PATH"'
       ].join('\\n')
     )
@@ -246,8 +246,8 @@ describe('package-local custom connectors', () => {
     await writeFile(
       path.join(connectorDirectory, 'detect.sh'),
       [
-        "printf 'version=2.4.0\\\\nsource=https://example.test\\\\n'",
-        "printf 'sha256=abc123\\\\nversion=2.4.1\\\\n'"
+        "printf 'version=2.4.0\\nsource=https://example.test\\n'",
+        "printf 'sha256=abc123\\nversion=2.4.1\\n'"
       ].join('\\n')
     )
 
