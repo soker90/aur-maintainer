@@ -24,9 +24,7 @@ afterEach(async () => {
 })
 
 async function createConnectorWorkspace(): Promise<string> {
-  const workspace = await mkdtemp(
-    path.join(process.cwd(), '.aur-connectors-')
-  )
+  const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
   temporaryWorkspaces.push(workspace)
   await writeFile(
     path.join(workspace, 'package.json'),
