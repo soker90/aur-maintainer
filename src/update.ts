@@ -6,6 +6,7 @@ export interface PackageUpdateResult {
   changed: boolean
   currentVersion: string
   version: string
+  previousPkgbuild?: string
 }
 
 export async function updatePackage(
@@ -21,7 +22,12 @@ export async function updatePackage(
 
   const updated = replacePkgver(content, candidate.version)
   await writeFile(pkg.pkgbuildPath, updated)
-  return { changed: true, currentVersion, version: candidate.version }
+  return {
+    changed: true,
+    currentVersion,
+    version: candidate.version,
+    previousPkgbuild: content
+  }
 }
 
 export async function rollbackPackageUpdate(
@@ -29,6 +35,11 @@ export async function rollbackPackageUpdate(
   result: PackageUpdateResult
 ): Promise<void> {
   if (!result.changed) return
+
+  if (result.previousPkgbuild !== undefined) {
+    await writeFile(pkg.pkgbuildPath, result.previousPkgbuild)
+    return
+  }
 
   const content = await readFile(pkg.pkgbuildPath, 'utf8')
   if (readPkgver(content) !== result.version) return
@@ -40,7 +51,8 @@ export async function rollbackPackageUpdate(
 }
 
 export function readPkgver(content: string): string {
-  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
+  const matches = [...content.matchAll(/^pkgver=([^
+]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -55,7 +67,8 @@ export function readPkgver(content: string): string {
 
 export function replacePkgver(content: string, version: string): string {
   assertSupportedPackageVersion(version)
-  const matches = [...content.matchAll(/^pkgver=([^\n\r]+)$/gm)]
+  const matches = [...content.matchAll(/^pkgver=([^
+]+)$/gm)]
   if (matches.length !== 1) {
     throw new Error(
       'PKGBUILD must contain exactly one simple pkgver assignment (found ' +
@@ -63,5 +76,6 @@ export function replacePkgver(content: string, version: string): string {
         ')'
     )
   }
-  return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version)
+  return content.replace(/^pkgver=[^
+]+$/m, 'pkgver=' + version)
 }
