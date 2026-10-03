@@ -109,8 +109,14 @@ config:
   region: eu
 ```
 
-The detector receives `AUR_MAINTAINER_CONFIG_JSON='{"channel":"stable","region":"eu"}'`
-and must still emit the standard `version`, `source`, and `sha256` fields.
+The detector receives the JSON configuration in
+`AUR_MAINTAINER_CONFIG_JSON`, for example:
+
+```text
+AUR_MAINTAINER_CONFIG_JSON='{"channel":"stable","region":"eu"}'
+```
+
+It must still emit the standard `version`, `source`, and `sha256` fields.
 
 A package can optionally map connector metadata to PKGBUILD assignments with the
 `updates` section. The `version` field always updates `pkgver`; source and
