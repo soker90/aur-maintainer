@@ -133,7 +133,7 @@ updates:
 ```
 
 Package-local connectors have a 30-second execution timeout by default. Override
-it with `timeout`, expressed in seconds. It must be a positive integer.
+it with `timeout`, expressed in seconds. It must be a positive integer. When the timeout is reached, the Action reports the affected package.
 
 Each mapping is a complete PKGBUILD assignment template. The supported
 placeholders are `${version}`, `${source}`, and `${sha256}`. This keeps
