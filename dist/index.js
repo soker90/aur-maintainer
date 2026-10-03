@@ -35881,6 +35881,7 @@ async function detectWithScript(pkg, scriptPath) {
     });
     return parseCustomConnectorOutput(pkg.name, result.stdout);
 }
+const PACKAGE_LOCAL_CONNECTOR = 'custom';
 function parseCustomConnectorOutput(packageName, output) {
     const values = new Map();
     for (const line of output.split(/\r?\n/)) {
@@ -35909,7 +35910,8 @@ function parseCustomConnectorOutput(packageName, output) {
     if (!version || !source || !sha256) {
         throw new Error(`Package "${packageName}" custom connector must output version, source and sha256`);
     }
-    return { version, source, sha256 };
+    const result = { version, source, sha256 };
+    return result;
 }
 async function loadConnectorFactory(modulePath, name, context) {
     const module = (await import(pathToFileURL(modulePath).href));
@@ -36387,7 +36389,7 @@ async function run() {
         const candidates = [];
         const updatedPackages = [];
         for (const pkg of packages) {
-            const factory = pkg.config.connector === 'custom'
+            const factory = pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
                 ? loadPackageConnector(pkg)
                 : registry.get(pkg.config.connector);
             if (!factory)
