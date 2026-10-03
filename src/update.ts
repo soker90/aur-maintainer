@@ -81,7 +81,6 @@ export function replacePkgver(content: string, version: string): string {
   return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version)
 }
 
-
 export function applyPackageUpdates(
   content: string,
   updates: PackageConfig['updates'],
@@ -93,7 +92,11 @@ export function applyPackageUpdates(
     sha256: candidate.sha256
   }
 
-  let updated = replaceAssignment(content, 'pkgver', `pkgver=${candidate.version}`)
+  let updated = replaceAssignment(
+    content,
+    'pkgver',
+    `pkgver=${candidate.version}`
+  )
   for (const field of ['source', 'sha256'] as const) {
     const template = updates[field]
     const value = fields[field]
