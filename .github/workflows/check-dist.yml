@@ -31,8 +31,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Checkout Feature Branch
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'chore/bump-babel-core-7.29.7' }}
-        run: git fetch origin "refs/heads/${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}" && git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          git fetch origin "refs/heads/${GITHUB_HEAD_REF}:refs/remotes/origin/${GITHUB_HEAD_REF}"
+          git checkout -B "${GITHUB_HEAD_REF}" "origin/${GITHUB_HEAD_REF}"
 
       - name: Setup Node.js
         id: setup-node
