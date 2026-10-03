@@ -147,7 +147,7 @@ describe('main.ts', () => {
     }
 
     discoverPackages.mockResolvedValue(packages)
-    createConnectorRegistry.mockReturnValue(
+    loadRepositoryConnectors.mockResolvedValue(
       new Map([
         [
           'github-tag',
