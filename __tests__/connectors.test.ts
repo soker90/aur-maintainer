@@ -15,7 +15,7 @@ const pkg = {
   pkgbuildPath: '/workspace/example-bin/PKGBUILD',
   srcinfoPath: '/workspace/example-bin/.SRCINFO',
   updateConfigPath: '/workspace/example-bin/update.yml',
-  config: { connector: 'github-release', config: {} }
+  config: { connector: 'github-release', config: {}, updates: {} }
 }
 
 afterEach(async () => {
@@ -227,7 +227,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
     }
     const connector = loadPackageConnector({
       ...pkgDefinition,
-      config: { connector: 'custom', config: {} }
+      config: { connector: 'custom', config: {}, updates: {} }
     })({ fetch })
 
     await expect(connector.detect(pkgDefinition, {})).resolves.toEqual({
@@ -251,7 +251,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
-      config: { connector: 'custom', config: {} }
+      config: { connector: 'custom', config: {}, updates: {} }
     }
     const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
@@ -274,7 +274,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
-      config: { connector: 'custom', config: {} }
+      config: { connector: 'custom', config: {}, updates: {} }
     }
     const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
@@ -292,7 +292,7 @@ printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc1
       ...pkg,
       name: 'example-bin',
       path: packageDirectory,
-      config: { connector: 'custom', config: {} }
+      config: { connector: 'custom', config: {}, updates: {} }
     }
     const connector = loadPackageConnector(pkgDefinition)({ fetch })
 
