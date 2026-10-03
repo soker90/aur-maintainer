@@ -81,7 +81,7 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      'connector: custom\\ntimeout: 0\\n'
+      'connector: custom\ntimeout: 0\n'
     )
     await expect(loadPackageConfig(packagePath)).rejects.toThrow(
       '"timeout" must be a positive integer number of seconds'
