@@ -146,7 +146,7 @@ function compareParts(left: string, right: string): number {
 
 function compareMissingPart(part: string | undefined): number {
   if (part === undefined) return 0
-  return /^\\d+$/.test(part) ? 1 : -1
+  return /^\\d+$/.test(part) ? -1 : 1
 }
 
 function compareNumericParts(left: string, right: string): number {
