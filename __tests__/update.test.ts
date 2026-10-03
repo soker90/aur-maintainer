@@ -21,7 +21,7 @@ describe('package updates', () => {
       pkgbuildPath,
       srcinfoPath: path.join(directory, '.SRCINFO'),
       updateConfigPath: path.join(directory, 'update.yml'),
-      config: { connector: 'github-release', config: {} }
+      config: { connector: 'github-release', config: {}, updates: {} }
     } satisfies PackageDefinition
 
     await expect(updatePackage(pkg, { version: '1.1.0' })).resolves.toEqual({
@@ -35,6 +35,83 @@ describe('package updates', () => {
     )
   })
 
+  it('updates source and checksum fields from connector metadata', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    await writeFile(
+      pkgbuildPath,
+      [
+        'pkgname=demo',
+        'pkgver=1.0.0',
+        '_sha256=old',
+        'source=("demo-1.0.0.tar.gz::https://example.test/old.tar.gz")',
+        ''
+      ].join('\n')
+    )
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: {
+        connector: 'custom',
+        config: {},
+        updates: {
+          source: 'source=("demo-${version}.tar.gz::${source}")',
+          sha256: '_sha256=${sha256}'
+        }
+      }
+    } satisfies PackageDefinition
+
+    await expect(
+      updatePackage(pkg, {
+        version: '1.0.0',
+        source: 'https://example.test/demo-1.0.0.tar.gz',
+        sha256: 'new'
+      })
+    ).resolves.toMatchObject({
+      changed: true,
+      currentVersion: '1.0.0',
+      version: '1.0.0'
+    })
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      [
+        'pkgname=demo',
+        'pkgver=1.0.0',
+        '_sha256=new',
+        'source=("demo-1.0.0.tar.gz::https://example.test/demo-1.0.0.tar.gz")',
+        ''
+      ].join('\n')
+    )
+  })
+
+  it('ignores optional connector metadata without update mappings', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    await writeFile(pkgbuildPath, 'pkgname=demo\npkgver=1.0.0\n')
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { connector: 'custom', config: {}, updates: {} }
+    } satisfies PackageDefinition
+
+    await expect(
+      updatePackage(pkg, {
+        version: '1.0.0',
+        source: 'https://example.test/demo.tar.gz',
+        sha256: 'new'
+      })
+    ).resolves.toEqual({
+      changed: false,
+      currentVersion: '1.0.0',
+      version: '1.0.0'
+    })
+  })
   it('updates Arch-compatible alphanumeric versions', () => {
     expect(replacePkgver('pkgver=1.2.3\n', '1.2.3alpha')).toBe(
       'pkgver=1.2.3alpha\n'
