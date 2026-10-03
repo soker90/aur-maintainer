@@ -101,6 +101,7 @@ describe('main.ts', () => {
     const srcinfoPath = path.join(packagePath, '.SRCINFO')
 
     await mkdir(packagePath, { recursive: true })
+    await mkdir(srcinfoPath)
     await writeFile(pkgbuildPath, 'pkgname=example\npkgver=1.0.0\n')
 
     discoverPackages.mockResolvedValue([
@@ -115,14 +116,13 @@ describe('main.ts', () => {
         previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
       }
     })
-    jest.spyOn(await import('node:fs/promises'), 'readFile')
 
     await run()
 
     await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
       'pkgname=example\npkgver=1.0.0\n'
     )
-    expect(core.setFailed).toHaveBeenCalled()
+    expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('EISDIR'))
   })
 
   it('rolls back all modified packages when a later package fails', async () => {
