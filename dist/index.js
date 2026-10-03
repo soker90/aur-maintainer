@@ -36207,7 +36207,7 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             const artifactPath = path.join(pkg.path, artifact);
             await runner.run('namcap', [artifactPath], pkg.path);
         }
-        await runner.run('sudo', ['-n', 'pacman', '-U', '--noconfirm', ...artifacts], pkg.path);
+        await runner.run('sudo', ['-n', 'pacman', '-U', '--noconfirm', '--nodeps', ...artifacts], pkg.path);
     }
     catch (error) {
         if (!isCommandNotFound(error))
