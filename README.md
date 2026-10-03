@@ -55,8 +55,6 @@ config:
   repository: owner/project
 ```
 
-
-
 For a package that needs custom detection logic, keep that logic inside the
 package. In that case the package has no root `update.yml`: the only package
 configuration is `connector/update.yml`, which selects the `custom` connector.
