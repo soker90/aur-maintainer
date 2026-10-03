@@ -1,5 +1,5 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { readFile, stat } from 'node:fs/promises'
+import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
@@ -44,13 +44,14 @@ export async function validatePackage(
       .map((entry) => entry.trim())
       .filter(Boolean)
       .map((entry) => path.basename(entry))
+    const entries = new Set(await readdir(pkg.path))
     const artifacts = []
     for (const entry of expectedArtifacts) {
       const artifactPath = path.isAbsolute(entry)
         ? entry
         : path.join(pkg.path, entry)
       try {
-        if ((await stat(artifactPath)).isFile()) {
+        if (entries.has(entry) && (await stat(artifactPath)).isFile()) {
           artifacts.push(artifactPath)
         }
       } catch (error) {
