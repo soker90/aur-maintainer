@@ -1,11 +1,12 @@
-import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
-import os from 'node:os'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { describe, expect, it, jest } from '@jest/globals'
+import { afterEach, describe, expect, it, jest } from '@jest/globals'
 import {
   createConnectorRegistry,
   loadRepositoryConnectors
 } from '../src/connectors.js'
+
+const temporaryWorkspaces: string[] = []
 
 const pkg = {
   name: 'example-bin',
@@ -15,6 +16,14 @@ const pkg = {
   updateConfigPath: '/workspace/example-bin/update.yml',
   config: { connector: 'github-release', config: {} }
 }
+
+afterEach(async () => {
+  await Promise.all(
+    temporaryWorkspaces.splice(0).map((workspace) =>
+      rm(workspace, { recursive: true, force: true })
+    )
+  )
+})
 
 function response(body: unknown, init?: ResponseInit): Response {
   return new Response(JSON.stringify(body), {
@@ -190,13 +199,10 @@ describe('github-tag connector', () => {
 
 describe('repository-local connectors', () => {
   it('loads an ESM connector from its repository directory', async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), 'aur-connectors-'))
+    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+    temporaryWorkspaces.push(workspace)
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
-    await writeFile(
-      path.join(connectorDirectory, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
     await writeFile(
       path.join(connectorDirectory, 'index.js'),
       `export default (context) => ({
@@ -224,7 +230,8 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a connector directory without index.js', async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), 'aur-connectors-'))
+    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+    temporaryWorkspaces.push(workspace)
     await mkdir(path.join(workspace, 'connectors', 'custom'), {
       recursive: true
     })
@@ -235,17 +242,13 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a repository connector that conflicts with a built-in', async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), 'aur-connectors-'))
+    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
     const connectorDirectory = path.join(
       workspace,
       'connectors',
       'github-release'
     )
     await mkdir(connectorDirectory, { recursive: true })
-    await writeFile(
-      path.join(connectorDirectory, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
     await writeFile(
       path.join(connectorDirectory, 'index.js'),
       `export default () => ({
@@ -260,13 +263,10 @@ describe('repository-local connectors', () => {
   })
 
   it('rejects a connector without a matching name', async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), 'aur-connectors-'))
+    const workspace = await mkdtemp(path.join(process.cwd(), '.aur-connectors-'))
+    temporaryWorkspaces.push(workspace)
     const connectorDirectory = path.join(workspace, 'connectors', 'custom')
     await mkdir(connectorDirectory, { recursive: true })
-    await writeFile(
-      path.join(connectorDirectory, 'package.json'),
-      JSON.stringify({ type: 'module' })
-    )
     await writeFile(
       path.join(connectorDirectory, 'index.js'),
       `export default () => ({
