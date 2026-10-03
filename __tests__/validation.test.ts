@@ -8,6 +8,10 @@ import { validatePackage } from '../src/validation.js'
 describe('package validation', () => {
   it('runs the complete Arch validation pipeline', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
+    const artifact = 'demo-1.1.0-1-x86_64.pkg.tar.zst'
+    const staleArtifact = 'demo-1.0.0-1-x86_64.pkg.tar.zst'
+    const artifactPath = path.join(directory, artifact)
+    const staleArtifactPath = path.join(directory, staleArtifact)
     const pkg = {
       name: 'demo',
       path: directory,
@@ -16,11 +20,9 @@ describe('package validation', () => {
       updateConfigPath: path.join(directory, 'update.yml'),
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
-    const artifact = 'demo-1.1.0-1-x86_64.pkg.tar.zst'
-    const staleArtifact = 'demo-1.0.0-1-x86_64.pkg.tar.zst'
     await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
-    await writeFile(path.join(directory, artifact), '')
-    await writeFile(path.join(directory, staleArtifact), '')
+    await writeFile(artifactPath, '')
+    await writeFile(staleArtifactPath, '')
 
     const run = jest
       .fn()
@@ -28,9 +30,7 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
-      .mockResolvedValueOnce(
-        path.join(directory, artifact) + '\n'
-      )
+      .mockResolvedValueOnce(artifactPath + '\n')
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('')
 
@@ -61,12 +61,7 @@ describe('package validation', () => {
       ['--packagelist'],
       pkg.path
     )
-    expect(run).toHaveBeenNthCalledWith(
-      6,
-      'namcap',
-      [path.join(pkg.path, artifact)],
-      pkg.path
-    )
+    expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
     expect(run).toHaveBeenNthCalledWith(
       7,
       'sudo',
