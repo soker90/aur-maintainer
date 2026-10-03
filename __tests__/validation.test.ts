@@ -8,10 +8,7 @@ import { validatePackage } from '../src/validation.js'
 describe('package validation', () => {
   it('runs the complete Arch validation pipeline', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
-    const artifactPath = path.join(
-      directory,
-      'demo-1.1.0-1-x86_64.pkg.tar.zst'
-    )
+    const artifactPath = path.join(directory, 'demo-1.1.0-1-x86_64.pkg.tar.zst')
     const staleArtifactPath = path.join(
       directory,
       'demo-1.0.0-1-x86_64.pkg.tar.zst'
