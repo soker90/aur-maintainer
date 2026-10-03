@@ -35610,11 +35610,11 @@ function parsePackageConfig(value, filePath) {
         timeout: value.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
     };
 }
-function isPositiveInteger(value) {
-    return typeof value === 'number' && Number.isInteger(value) && value > 0;
-}
 function isRecord$1(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function isPositiveInteger(value) {
+    return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 function isStringArray(value) {
     return Array.isArray(value) && value.every((item) => typeof item === 'string');
