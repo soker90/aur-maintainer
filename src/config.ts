@@ -61,7 +61,9 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
   }
 
   if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
-    throw new Error(`${filePath}: "timeout" must be a positive integer number of seconds`)
+    throw new Error(
+      `${filePath}: "timeout" must be a positive integer number of seconds`
+    )
   }
 
   if (value.updates !== undefined && !isRecord(value.updates)) {
@@ -84,7 +86,8 @@ function parsePackageConfig(value: unknown, filePath: string): PackageConfig {
     connector: value.connector,
     config: (value.config as Record<string, unknown> | undefined) ?? {},
     updates: updates as PackageConfig['updates'],
-    timeout: (value.timeout as number | undefined) ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
+    timeout:
+      (value.timeout as number | undefined) ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
   }
 }
 
