@@ -1,6 +1,7 @@
 # AUR Maintainer
 
-Una GitHub Action para automatizar el mantenimiento de paquetes de Arch Linux en AUR.
+Una GitHub Action para automatizar el mantenimiento de paquetes de Arch Linux en
+AUR.
 
 > **Estado:** desarrollo inicial. La API pública y el formato de configuración
 > todavía no son estables.
@@ -40,8 +41,8 @@ config:
   repository: stacklok/toolhive-studio
 ```
 
-Para repositorios que publican versiones como Git tags sin GitHub Releases, utiliza
-el conector `github-tag`:
+Para repositorios que publican versiones como Git tags sin GitHub Releases,
+utiliza el conector `github-tag`:
 
 ```yaml
 connector: github-tag
@@ -49,16 +50,17 @@ config:
   repository: owner/project
 ```
 
-La configuración global puede restringir qué directorios de paquetes se gestionan:
+La configuración global puede restringir qué directorios de paquetes se
+gestionan:
 
 ```yaml
 packages:
   - packages/example-bin
 ```
 
-Los conectores personalizados locales del repositorio se encuentran en `connectors/`.
-Cada conector utiliza un directorio con el nombre del conector y un módulo ESM en
-`connectors/<name>/index.js`:
+Los conectores personalizados locales del repositorio se encuentran en
+`connectors/`. Cada conector utiliza un directorio con el nombre del conector y
+un módulo ESM en `connectors/<name>/index.js`:
 
 ```text
 connectors/
@@ -96,10 +98,10 @@ sustituir a un conector integrado con el mismo nombre, y el nombre del conector
 devuelto debe coincidir con el nombre del directorio. Los conectores genéricos
 siguen siendo proporcionados por esta Action.
 
-Un paquete puede mapear opcionalmente los metadatos del conector a asignaciones de
-PKGBUILD mediante la sección `updates`. El campo `version` siempre actualiza
-`pkgver`; los campos de origen y checksum son opcionales porque la estructura
-de los paquetes puede variar:
+Un paquete puede mapear opcionalmente los metadatos del conector a asignaciones
+de PKGBUILD mediante la sección `updates`. El campo `version` siempre actualiza
+`pkgver`; los campos de origen y checksum son opcionales porque la estructura de
+los paquetes puede variar:
 
 ```yaml
 connector: custom
@@ -110,9 +112,9 @@ updates:
 ```
 
 Cada mapeo es una plantilla completa de asignación de PKGBUILD. Los placeholders
-admitidos son `${version}`, `${source}` y `${sha256}`. Esto mantiene
-explícita la nomenclatura de los sources específica de cada paquete, en lugar de
-hacer que la Action tenga que inferir la estructura del PKGBUILD.
+admitidos son `${version}`, `${source}` y `${sha256}`. Esto mantiene explícita
+la nomenclatura de los sources específica de cada paquete, en lugar de hacer que
+la Action tenga que inferir la estructura del PKGBUILD.
 
 ## Uso
 
@@ -130,9 +132,9 @@ steps:
 ```
 
 Cuando se proporciona `github-token`, la Action confirma las actualizaciones de
-los paquetes validadas en `update-branch` y abre un pull request de actualización
-contra `base-branch`. Sin un token, las actualizaciones de los paquetes siguen
-aplicándose al workspace, pero no se crea ningún pull request.
+los paquetes validadas en `update-branch` y abre un pull request de
+actualización contra `base-branch`. Sin un token, las actualizaciones de los
+paquetes siguen aplicándose al workspace, pero no se crea ningún pull request.
 
 La configuración y el conjunto final de inputs se documentarán cuando esté lista
 la primera implementación estable.
@@ -155,5 +157,6 @@ El bundle distribuible se genera con:
 npm run bundle
 ```
 
-El directorio generado `dist/` se incluye en el repositorio porque GitHub ejecuta
-las JavaScript Actions directamente desde el bundle incluido en el repositorio.
+El directorio generado `dist/` se incluye en el repositorio porque GitHub
+ejecuta las JavaScript Actions directamente desde el bundle incluido en el
+repositorio.
