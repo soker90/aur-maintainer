@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { readFile, readdir } from 'node:fs/promises'
+import { access, readFile, readdir } from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
@@ -36,19 +37,33 @@ export async function validatePackage(
 
     await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
 
-    const artifacts = (await readdir(pkg.path)).filter((entry) =>
-      /\.pkg\.tar\.[^.]+$/.test(entry)
+    const packageList = await runner.run(
+      'makepkg',
+      ['--packagelist'],
+      pkg.path
     )
+    const expectedArtifacts = packageList
+      .split('\n')
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+      .map((entry) => path.basename(entry))
+    const entries = new Set(await readdir(pkg.path))
+    const artifacts = expectedArtifacts.filter((entry) => entries.has(entry))
+
     if (artifacts.length === 0) {
       throw new Error(`No package artifact was produced for ${pkg.name}`)
     }
 
     for (const artifact of artifacts) {
-      const artifactPath = `${pkg.path}/${artifact}`
+      const artifactPath = path.join(pkg.path, artifact)
       await runner.run('namcap', [artifactPath], pkg.path)
     }
 
-    await runner.run('pacman', ['-U', '--noconfirm', ...artifacts], pkg.path)
+    await runner.run(
+      'sudo',
+      ['-n', 'pacman', '-U', '--noconfirm', ...artifacts],
+      pkg.path
+    )
   } catch (error) {
     if (!isCommandNotFound(error)) throw error
     await validatePackageWithDocker(pkg)
@@ -58,11 +73,18 @@ export async function validatePackage(
 async function validatePackageWithDocker(
   pkg: PackageDefinition
 ): Promise<void> {
+  const uid = String(process.getuid?.() ?? 1000)
+  const gid = String(process.getgid?.() ?? 1000)
+
   await execFile(
     'docker',
     [
       'run',
       '--rm',
+      '--env',
+      'HOST_UID=' + uid,
+      '--env',
+      'HOST_GID=' + gid,
       '--volume',
       pkg.path + ':/pkg',
       '--workdir',
@@ -70,7 +92,7 @@ async function validatePackageWithDocker(
       'archlinux:latest',
       'bash',
       '-c',
-      'pacman -Syu --noconfirm --needed base-devel namcap sudo && useradd -m builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && chown -R builder:builder /pkg && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder makepkg -sf --noconfirm && packages=( *.pkg.tar.* ) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
+      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder makepkg -sf --noconfirm && mapfile -t packages < <(sudo -u builder makepkg --packagelist) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ],
     { cwd: pkg.path }
   )
