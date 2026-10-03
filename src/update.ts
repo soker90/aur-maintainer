@@ -15,12 +15,12 @@ export async function updatePackage(
 ): Promise<PackageUpdateResult> {
   const content = await readFile(pkg.pkgbuildPath, 'utf8')
   const currentVersion = readPkgver(content)
+  const updated = applyPackageUpdates(content, pkg.config.updates, candidate)
 
-  if (currentVersion === candidate.version) {
+  if (updated === content) {
     return { changed: false, currentVersion, version: candidate.version }
   }
 
-  const updated = replacePkgver(content, candidate.version)
   await writeFile(pkg.pkgbuildPath, updated)
   return {
     changed: true,
@@ -75,4 +75,61 @@ export function replacePkgver(content: string, version: string): string {
     )
   }
   return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version)
+}
+
+
+export function applyPackageUpdates(
+  content: string,
+  updates: PackageConfig['updates'],
+  candidate: UpdateCandidate
+): string {
+  const fields = {
+    version: candidate.version,
+    source: candidate.source,
+    sha256: candidate.sha256
+  }
+
+  let updated = replaceAssignment(content, 'pkgver', `pkgver=${candidate.version}`)
+  for (const field of ['source', 'sha256'] as const) {
+    const template = updates[field]
+    const value = fields[field]
+    if (template === undefined || value === undefined) continue
+    const rendered = renderUpdateTemplate(template, {
+      version: candidate.version,
+      source: candidate.source,
+      sha256: candidate.sha256
+    })
+    const assignment = rendered.match(/^([A-Za-z_][A-Za-z0-9_]*)=/)?.[1]
+    if (!assignment) {
+      throw new Error(
+        `Package update template for "${field}" must start with a PKGBUILD assignment`
+      )
+    }
+    updated = replaceAssignment(updated, assignment, rendered)
+  }
+
+  return updated
+}
+
+function renderUpdateTemplate(
+  template: string,
+  values: Record<'version' | 'source' | 'sha256', string | undefined>
+): string {
+  return template.replace(
+    /\$\{(version|source|sha256)\}/g,
+    (_, key: 'version' | 'source' | 'sha256') => values[key] ?? ''
+  )
+}
+
+function replaceAssignment(
+  content: string,
+  name: string,
+  replacement: string
+): string {
+  const pattern = new RegExp(`^${name}=.*$`, 'm')
+  const matches = content.match(pattern)
+  if (!matches) {
+    throw new Error(`PKGBUILD must contain a "${name}" assignment`)
+  }
+  return content.replace(pattern, replacement)
 }
