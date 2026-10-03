@@ -188,7 +188,6 @@ describe('github-tag connector', () => {
   })
 })
 
-
 describe('repository-local connectors', () => {
   it('loads an ESM connector from its repository directory', async () => {
     const workspace = await mkdtemp(path.join(os.tmpdir(), 'aur-connectors-'))
