@@ -95,9 +95,7 @@ describe('main.ts', () => {
   })
 
   it('rolls back all modified packages when a later package fails', async () => {
-    const directory = await mkdtemp(
-      path.join(os.tmpdir(), 'aur-maintainer-')
-    )
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const packages = ['first', 'second'].map((name) => ({
       ...pkg,
       name,
@@ -108,14 +106,8 @@ describe('main.ts', () => {
 
     for (const item of packages) {
       await mkdir(item.path, { recursive: true })
-      await writeFile(
-        item.pkgbuildPath,
-        `pkgname=${item.name}\npkgver=1.0.0\n`
-      )
-      await writeFile(
-        item.srcinfoPath,
-        `pkgname=${item.name}\npkgver=1.0.0\n`
-      )
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
+      await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
     }
 
     discoverPackages.mockResolvedValue(packages)
@@ -131,10 +123,7 @@ describe('main.ts', () => {
       ])
     )
     updatePackage.mockImplementation(async (item) => {
-      await writeFile(
-        item.pkgbuildPath,
-        `pkgname=${item.name}\npkgver=1.1.0\n`
-      )
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
       return {
         changed: true,
         currentVersion: '1.0.0',
@@ -146,10 +135,7 @@ describe('main.ts', () => {
         item.pkgbuildPath,
         `pkgname=${item.name}\npkgver=1.1.0\nsha256sums=('changed')\n`
       )
-      await writeFile(
-        item.srcinfoPath,
-        `pkgname=${item.name}\npkgver=1.1.0\n`
-      )
+      await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
     })
     validatePackage.mockImplementation(async (item) => {
       if (item.name === 'second') throw new Error('validation failed')
