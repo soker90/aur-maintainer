@@ -18,11 +18,9 @@ const pkg = {
 }
 
 afterEach(async () => {
-  await Promise.all(
-    temporaryWorkspaces.splice(0).map((workspace) =>
-      rm(workspace, { recursive: true, force: true })
-    )
-  )
+  for (const workspace of temporaryWorkspaces.splice(0)) {
+    await rm(workspace, { recursive: true, force: true })
+  }
 })
 
 async function createConnectorWorkspace(): Promise<string> {
