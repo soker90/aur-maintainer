@@ -106,7 +106,7 @@ async function detectWithScript(
   try {
     result = await execFile('bash', [scriptPath], {
       cwd: pkg.path,
-      timeout: pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT,
+      timeout: (pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT) * 1000,
       killSignal: 'SIGTERM',
       env: {
       ...process.env,
