@@ -66,8 +66,9 @@ connectors/
     └── index.js
 ```
 
-The module must default-export a factory that receives the same connector context
-as the built-in connectors and returns a connector with a matching `name`:
+The module must default-export a factory that receives the same connector
+context as the built-in connectors and returns a connector with a matching
+`name`:
 
 ```js
 export default (context) => ({
@@ -91,8 +92,8 @@ config:
 
 Repository-local connectors are loaded only from the repository's
 `connectors/<name>/index.js` directories. A local connector cannot replace a
-built-in connector with the same name, and its returned connector name must match
-the directory name. Generic connectors continue to be provided by this Action.
+built-in connector with the same name, and its returned connector name
+must match the directory name. Generic connectors continue to be provided by this Action.
 
 ## Usage
 
