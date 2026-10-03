@@ -126,7 +126,7 @@ checksum fields are opt-in because package layouts differ:
 ```yaml
 connector: custom
 config: {}
-timeout: 60 # seconds
+timeout: 60 # override the 30-second default
 updates:
   source: 'source=("vega-${version}.tar.gz::${source}")'
   sha256: '_sha256=${sha256}'
