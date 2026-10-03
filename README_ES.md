@@ -115,7 +115,8 @@ updates:
 
 Los conectores locales tienen un tiempo máximo de ejecución de 30 segundos por
 defecto. Puedes sobrescribirlo con `timeout`, expresado en segundos. Debe ser un
-entero positivo.
+entero positivo. Si se alcanza, la Action indica el paquete afectado y conserva
+la causa original para facilitar el diagnóstico.
 
 Cada mapeo es una plantilla completa de asignación de PKGBUILD. Los placeholders
 admitidos son `${version}`, `${source}` y `${sha256}`. Esto mantiene explícita
