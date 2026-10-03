@@ -36198,16 +36198,28 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             .map((entry) => entry.trim())
             .filter(Boolean)
             .map((entry) => path.basename(entry));
-        const entries = new Set(await readdir$1(pkg.path));
-        const artifacts = expectedArtifacts.filter((entry) => entries.has(entry));
+        const artifacts = [];
+        for (const entry of expectedArtifacts) {
+            const artifactPath = path.isAbsolute(entry)
+                ? entry
+                : path.join(pkg.path, entry);
+            try {
+                if ((await stat$1(artifactPath)).isFile()) {
+                    artifacts.push(artifactPath);
+                }
+            }
+            catch (error) {
+                if (!isFileNotFound(error))
+                    throw error;
+            }
+        }
         if (artifacts.length === 0) {
             throw new Error(`No package artifact was produced for ${pkg.name}`);
         }
         for (const artifact of artifacts) {
-            const artifactPath = path.join(pkg.path, artifact);
-            await runner.run('namcap', [artifactPath], pkg.path);
+            await runner.run('namcap', [artifact], pkg.path);
         }
-        await runner.run('sudo', ['-n', 'pacman', '-U', '--noconfirm', '--nodeps', ...artifacts], pkg.path);
+        await runner.run('sudo', ['-n', 'pacman', '-U', '--noconfirm', ...artifacts], pkg.path);
     }
     catch (error) {
         if (!isCommandNotFound(error))
@@ -36235,6 +36247,12 @@ async function validatePackageWithDocker(pkg) {
         '-c',
         'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && mapfile -t package_list < <(sudo -u builder makepkg --packagelist) && sudo -u builder makepkg -sf --noconfirm && packages=() && for package in "${package_list[@]}"; do [[ -f "$package" ]] && packages+=( "$(basename "$package")" ); done && [[ -n "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ], { cwd: pkg.path });
+}
+function isFileNotFound(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT');
 }
 function isCommandNotFound(error) {
     return (typeof error === 'object' &&
