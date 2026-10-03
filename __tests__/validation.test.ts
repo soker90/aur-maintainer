@@ -8,7 +8,13 @@ import { validatePackage } from '../src/validation.js'
 describe('package validation', () => {
   it('runs the complete Arch validation pipeline', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
-    const artifactPath = path.join(directory, 'demo-1.1.0-1-x86_64.pkg.tar.zst')
+    const outputDirectory = await mkdtemp(
+      path.join(os.tmpdir(), 'aur-validation-output-')
+    )
+    const artifactPath = path.join(
+      outputDirectory,
+      'demo-1.1.0-1-x86_64.pkg.tar.zst'
+    )
     const staleArtifactPath = path.join(
       directory,
       'demo-1.0.0-1-x86_64.pkg.tar.zst'
@@ -62,22 +68,11 @@ describe('package validation', () => {
       ['--packagelist'],
       pkg.path
     )
-    expect(run).toHaveBeenNthCalledWith(
-      6,
-      'namcap',
-      [path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')],
-      pkg.path
-    )
+    expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
     expect(run).toHaveBeenNthCalledWith(
       7,
       'sudo',
-      [
-        '-n',
-        'pacman',
-        '-U',
-        '--noconfirm',
-        path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')
-      ],
+      ['-n', 'pacman', '-U', '--noconfirm', artifactPath],
       pkg.path
     )
   })
