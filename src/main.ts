@@ -51,8 +51,13 @@ export async function run(): Promise<void> {
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
-        const snapshot = await snapshotPackage(pkg, update.previousPkgbuild)
+        const snapshot: PackageSnapshot = {
+          pkg,
+          pkgbuild: update.previousPkgbuild ?? '',
+          srcinfo: undefined
+        }
         snapshots.push(snapshot)
+        await completePackageSnapshot(snapshot)
         try {
           await updatePackageMetadata(pkg)
           await validatePackage(pkg)
@@ -91,10 +96,9 @@ export async function run(): Promise<void> {
   }
 }
 
-async function snapshotPackage(
-  pkg: PackageDefinition,
-  pkgbuild: string | undefined
-): Promise<PackageSnapshot> {
+async function completePackageSnapshot(snapshot: PackageSnapshot): Promise<void> {
+  const pkg = snapshot.pkg
+  let srcinfo: string | undefined
   let srcinfo: string | undefined
   try {
     srcinfo = await readFile(pkg.srcinfoPath, 'utf8')
@@ -102,11 +106,7 @@ async function snapshotPackage(
     if (!isMissingFile(error)) throw error
   }
 
-  return {
-    pkg,
-    pkgbuild: pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
-    srcinfo
-  }
+  snapshot.srcinfo = srcinfo
 }
 
 async function rollbackSnapshots(snapshots: PackageSnapshot[]): Promise<void> {
