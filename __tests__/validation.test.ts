@@ -18,6 +18,7 @@ describe('package validation', () => {
     } satisfies PackageDefinition
     await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
     await writeFile(directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst', '')
+    await writeFile(directory + '/demo-1.0.0-1-x86_64.pkg.tar.zst', '')
 
     const run = jest
       .fn()
@@ -25,6 +26,9 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(
+        path.join(directory, 'demo-1.1.0-1-x86_64.pkg.tar.zst') + '\n'
+      )
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('')
 
@@ -51,14 +55,20 @@ describe('package validation', () => {
     )
     expect(run).toHaveBeenNthCalledWith(
       5,
+      'makepkg',
+      ['--packagelist'],
+      pkg.path
+    )
+    expect(run).toHaveBeenNthCalledWith(
+      6,
       'namcap',
       [path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')],
       pkg.path
     )
     expect(run).toHaveBeenNthCalledWith(
-      6,
-      'pacman',
-      ['-U', '--noconfirm', 'demo-1.1.0-1-x86_64.pkg.tar.zst'],
+      7,
+      'sudo',
+      ['-n', 'pacman', '-U', '--noconfirm', 'demo-1.1.0-1-x86_64.pkg.tar.zst'],
       pkg.path
     )
   })
@@ -105,9 +115,11 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
 
     await expect(validatePackage(pkg, { run })).rejects.toThrow(
       'No package artifact was produced'
     )
+    expect(run).toHaveBeenCalledTimes(5)
   })
 })
