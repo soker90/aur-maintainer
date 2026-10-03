@@ -24,7 +24,8 @@ El modelo previsto para los usuarios es deliberadamente pequeño:
 ```text
 repository/
 ├── .aur-maintainer.yml       # configuración global opcional
-├── packages/                 # opcional; los paquetes también pueden estar en la raíz
+├── packages/                 # opcional; los paquetes también pueden estar
+│                              # en la raíz
 │   └── example-bin/
 │       ├── PKGBUILD
 │       ├── .SRCINFO
