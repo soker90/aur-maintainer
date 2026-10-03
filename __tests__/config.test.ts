@@ -67,11 +67,7 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      `connector: custom
-updates:
-  source: 'source=("${source}")'
-  sha256: '_sha256=${sha256}'
-`
+'connector: custom\nupdates:\n  version: pkgver\n'
     )
     await expect(loadPackageConfig(packagePath)).rejects.toThrow(
       '"updates.version" is not supported'
