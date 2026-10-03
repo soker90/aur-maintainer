@@ -246,7 +246,7 @@ describe('package-local custom connectors', () => {
       [
         "printf 'version=2.4.0\\nsource=https://example.test\\n'",
         "printf 'sha256=abc123\\nversion=2.4.1\\n'"
-      ].join('\\n')
+      ].join('\n')
     )
 
     const pkgDefinition = {
