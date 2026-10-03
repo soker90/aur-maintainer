@@ -35822,21 +35822,18 @@ async function loadRepositoryConnectors(workspace, context) {
         if (!(await isFile(modulePath))) {
             throw new Error(`Repository connector "${name}" must provide connectors/${name}/index.js`);
         }
-        const factory = await loadConnectorFactory(modulePath, name);
+        const factory = await loadConnectorFactory(modulePath, name, context);
         registry.set(name, factory);
     }
     return registry;
 }
-async function loadConnectorFactory(modulePath, name) {
+async function loadConnectorFactory(modulePath, name, context) {
     const module = (await import(pathToFileURL(modulePath).href));
     if (typeof module.default !== 'function') {
         throw new Error(`Repository connector "${name}" must default-export a connector factory`);
     }
     const factory = module.default;
-    const connector = factory({
-        fetch,
-        token: undefined
-    });
+    const connector = factory(context);
     if (!isConnector(connector) || connector.name !== name) {
         throw new Error(`Repository connector "${name}" factory must return a connector named "${name}"`);
     }
