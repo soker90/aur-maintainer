@@ -35829,6 +35829,7 @@ function isTrailingEmptySegment(segments, index) {
 }
 
 const execFile$3 = promisify(execFile$4);
+const PACKAGE_LOCAL_CONNECTOR = 'custom';
 function createConnectorRegistry(context) {
     return new Map([
         ['github-release', () => new GithubReleaseConnector(context)],
@@ -35881,7 +35882,6 @@ async function detectWithScript(pkg, scriptPath) {
     });
     return parseCustomConnectorOutput(pkg.name, result.stdout);
 }
-const PACKAGE_LOCAL_CONNECTOR = 'custom';
 function parseCustomConnectorOutput(packageName, output) {
     const values = new Map();
     for (const line of output.split(/\r?\n/)) {
