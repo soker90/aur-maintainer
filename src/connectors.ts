@@ -156,7 +156,8 @@ function parseCustomConnectorOutput(
     )
   }
 
-  return { version, source, sha256 }
+  const result: PackageLocalConnectorOutput = { version, source, sha256 }
+  return result
 }
 
 async function loadConnectorFactory(
