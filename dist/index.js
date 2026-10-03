@@ -35903,10 +35903,12 @@ async function detectWithScript(pkg, scriptPath) {
     return parseCustomConnectorOutput(pkg.name, result.stdout);
 }
 function isTimeoutError(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'ETIMEDOUT');
+    if (typeof error !== 'object' || error === null)
+        return false;
+    const candidate = error;
+    if (candidate.code === 'ETIMEDOUT')
+        return true;
+    return candidate.killed === true && candidate.signal === 'SIGTERM';
 }
 function parseCustomConnectorOutput(packageName, output) {
     const values = new Map();
