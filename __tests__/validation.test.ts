@@ -76,6 +76,7 @@ describe('package validation', () => {
         'pacman',
         '-U',
         '--noconfirm',
+        '--nodeps',
         path.join(pkg.path, 'demo-1.1.0-1-x86_64.pkg.tar.zst')
       ],
       pkg.path
