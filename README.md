@@ -28,7 +28,7 @@ repository/
 │   │   ├── PKGBUILD
 │   │   ├── .SRCINFO
 │   │   └── update.yml
-│   └── custom-bin/            # package-local custom connector
+│   └── custom-bin/           # package-local custom connector
 │       ├── PKGBUILD
 │       ├── .SRCINFO
 │       └── connector/
