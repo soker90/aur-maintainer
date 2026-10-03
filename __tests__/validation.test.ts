@@ -31,7 +31,6 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
       .mockResolvedValueOnce('')
-      .mockResolvedValueOnce('')
       .mockResolvedValueOnce(artifactPath + '\n')
       .mockResolvedValueOnce('')
       .mockResolvedValueOnce('')
