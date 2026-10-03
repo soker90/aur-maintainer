@@ -19,9 +19,10 @@ export async function loadMaintainerConfig(
 }
 
 export async function loadPackageConfig(
-  packagePath: string
+  packagePath: string,
+  relativeConfigPath = 'update.yml'
 ): Promise<PackageConfig> {
-  const filePath = path.join(packagePath, 'update.yml')
+  const filePath = path.join(packagePath, relativeConfigPath)
   const content = await readFile(filePath, 'utf8')
   return parsePackageConfig(parse(content), filePath)
 }

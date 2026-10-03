@@ -34,7 +34,7 @@ import 'child_process';
 import 'timers';
 import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
-import { execFile as execFile$3 } from 'node:child_process';
+import { execFile as execFile$4 } from 'node:child_process';
 
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -35559,8 +35559,8 @@ async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml
         throw error;
     }
 }
-async function loadPackageConfig(packagePath) {
-    const filePath = path.join(packagePath, 'update.yml');
+async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml') {
+    const filePath = path.join(packagePath, relativeConfigPath);
     const content = await readFile(filePath, 'utf8');
     return parsePackageConfig(parse(content), filePath);
 }
@@ -35633,16 +35633,32 @@ async function discoverPackage(packagePath, workspace) {
     if (!(await isFile$1(pkgbuildPath))) {
         throw new Error(`Package directory has no PKGBUILD: ${packagePath}`);
     }
-    const config = await loadPackageConfig(packagePath);
+    const updateConfigPath = await findUpdateConfigPath(packagePath);
+    const config = await loadPackageConfig(packagePath, path.relative(packagePath, updateConfigPath));
     const name = path.basename(packagePath);
     return {
         name,
         path: packagePath,
         pkgbuildPath,
         srcinfoPath: path.join(packagePath, '.SRCINFO'),
-        updateConfigPath: path.join(packagePath, 'update.yml'),
+        updateConfigPath,
         config
     };
+}
+async function findUpdateConfigPath(packagePath) {
+    const rootConfigPath = path.join(packagePath, 'update.yml');
+    const connectorDirectory = path.join(packagePath, 'connector');
+    const connectorConfigPath = path.join(connectorDirectory, 'update.yml');
+    if (await isFile$1(connectorConfigPath)) {
+        if (await isFile$1(rootConfigPath)) {
+            throw new Error(`Package "${path.basename(packagePath)}" must not define both update.yml and connector/update.yml`);
+        }
+        return connectorConfigPath;
+    }
+    if (await isDirectory$1(connectorDirectory)) {
+        throw new Error(`Package "${path.basename(packagePath)}" has connector/ but no connector/update.yml`);
+    }
+    return rootConfigPath;
 }
 async function isPackageDirectory(directory) {
     return ((await isDirectory$1(directory)) &&
@@ -35799,6 +35815,7 @@ function isTrailingEmptySegment(segments, index) {
         segments[index]?.parts[0] === '');
 }
 
+const execFile$3 = promisify(execFile$4);
 function createConnectorRegistry(context) {
     return new Map([
         ['github-release', () => new GithubReleaseConnector(context)],
@@ -35826,6 +35843,60 @@ async function loadRepositoryConnectors(workspace, context) {
         registry.set(name, factory);
     }
     return registry;
+}
+function loadPackageConnector(pkg) {
+    if (pkg.config.connector !== 'custom') {
+        throw new Error(`Package connector "${pkg.config.connector}" is not a package-local custom connector`);
+    }
+    const scriptPath = path.join(pkg.path, 'connector', 'detect.sh');
+    return () => ({
+        name: 'custom',
+        detect: async () => detectWithScript(pkg, scriptPath)
+    });
+}
+async function detectWithScript(pkg, scriptPath) {
+    if (!(await isFile(scriptPath))) {
+        throw new Error(`Package "${pkg.name}" custom connector must provide connector/detect.sh`);
+    }
+    const result = await execFile$3('bash', [scriptPath], {
+        cwd: pkg.path,
+        env: {
+            ...process.env,
+            AUR_MAINTAINER_PACKAGE: pkg.name,
+            AUR_MAINTAINER_PACKAGE_PATH: pkg.path
+        }
+    });
+    return parseCustomConnectorOutput(pkg.name, result.stdout);
+}
+function parseCustomConnectorOutput(packageName, output) {
+    const values = new Map();
+    for (const line of output.split(/\r?\n/)) {
+        if (!line.trim())
+            continue;
+        const separator = line.indexOf('=');
+        if (separator <= 0) {
+            throw new Error(`Package "${packageName}" custom connector produced an invalid output line`);
+        }
+        const key = line.slice(0, separator);
+        const value = line.slice(separator + 1);
+        if (!['version', 'source', 'sha256'].includes(key)) {
+            throw new Error(`Package "${packageName}" custom connector produced unknown output "${key}"`);
+        }
+        if (values.has(key)) {
+            throw new Error(`Package "${packageName}" custom connector produced duplicate output "${key}"`);
+        }
+        if (!value) {
+            throw new Error(`Package "${packageName}" custom connector produced an empty "${key}"`);
+        }
+        values.set(key, value);
+    }
+    const version = values.get('version');
+    const source = values.get('source');
+    const sha256 = values.get('sha256');
+    if (!version || !source || !sha256) {
+        throw new Error(`Package "${packageName}" custom connector must output version, source and sha256`);
+    }
+    return { version, source, sha256 };
 }
 async function loadConnectorFactory(modulePath, name, context) {
     const module = (await import(pathToFileURL(modulePath).href));
@@ -35963,7 +36034,7 @@ function isRecord(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-const execFile$2 = promisify(execFile$3);
+const execFile$2 = promisify(execFile$4);
 const hostCommandRunner$1 = {
     async run(command, args, cwd) {
         const result = await execFile$2(command, args, { cwd });
@@ -36059,7 +36130,7 @@ function replacePkgver(content, version) {
     return content.replace(/^pkgver=[^\n\r]+$/m, 'pkgver=' + version);
 }
 
-const execFile$1 = promisify(execFile$3);
+const execFile$1 = promisify(execFile$4);
 const hostGitRunner = {
     async run(command, args, cwd) {
         const result = await execFile$1(command, args, { cwd });
@@ -36174,7 +36245,7 @@ function isPullRequest(value) {
         typeof value.html_url === 'string');
 }
 
-const execFile = promisify(execFile$3);
+const execFile = promisify(execFile$4);
 const hostCommandRunner = {
     async run(command, args, cwd) {
         const result = await execFile(command, args, { cwd });
@@ -36267,7 +36338,9 @@ async function run() {
         const candidates = [];
         const updatedPackages = [];
         for (const pkg of packages) {
-            const factory = registry.get(pkg.config.connector);
+            const factory = pkg.config.connector === 'custom'
+                ? loadPackageConnector(pkg)
+                : registry.get(pkg.config.connector);
             if (!factory)
                 throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`);
             const candidate = await factory(registryContext).detect(pkg, pkg.config.config);

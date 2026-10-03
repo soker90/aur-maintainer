@@ -50,7 +50,11 @@ async function discoverPackage(
     throw new Error(`Package directory has no PKGBUILD: ${packagePath}`)
   }
 
-  const config = await loadPackageConfig(packagePath)
+  const updateConfigPath = await findUpdateConfigPath(packagePath)
+  const config = await loadPackageConfig(
+    packagePath,
+    path.relative(packagePath, updateConfigPath)
+  )
   const name = path.basename(packagePath)
 
   return {
@@ -58,9 +62,32 @@ async function discoverPackage(
     path: packagePath,
     pkgbuildPath,
     srcinfoPath: path.join(packagePath, '.SRCINFO'),
-    updateConfigPath: path.join(packagePath, 'update.yml'),
+    updateConfigPath,
     config
   }
+}
+
+async function findUpdateConfigPath(packagePath: string): Promise<string> {
+  const rootConfigPath = path.join(packagePath, 'update.yml')
+  const connectorDirectory = path.join(packagePath, 'connector')
+  const connectorConfigPath = path.join(connectorDirectory, 'update.yml')
+
+  if (await isFile(connectorConfigPath)) {
+    if (await isFile(rootConfigPath)) {
+      throw new Error(
+        `Package "${path.basename(packagePath)}" must not define both update.yml and connector/update.yml`
+      )
+    }
+    return connectorConfigPath
+  }
+
+  if (await isDirectory(connectorDirectory)) {
+    throw new Error(
+      `Package "${path.basename(packagePath)}" has connector/ but no connector/update.yml`
+    )
+  }
+
+  return rootConfigPath
 }
 
 async function isPackageDirectory(directory: string): Promise<boolean> {

@@ -13,21 +13,31 @@ async function workspace(): Promise<string> {
 async function packageDirectory(
   workspace: string,
   relativePath: string,
-  connector: string
+  connector: string,
+  packageLocal = false
 ): Promise<void> {
   const directory = path.join(workspace, relativePath)
   await mkdir(directory, { recursive: true })
   await writeFile(path.join(directory, 'PKGBUILD'), 'pkgname=test\n')
-  await writeFile(
-    path.join(directory, 'update.yml'),
-    `connector: ${connector}\n`
-  )
+
+  if (packageLocal) {
+    await mkdir(path.join(directory, 'connector'), { recursive: true })
+    await writeFile(
+      path.join(directory, 'connector', 'update.yml'),
+      `connector: ${connector}\n`
+    )
+  } else {
+    await writeFile(
+      path.join(directory, 'update.yml'),
+      `connector: ${connector}\n`
+    )
+  }
 }
 
 describe('discoverPackages', () => {
   it('discovers packages from the conventional packages directory', async () => {
     const root = await workspace()
-    await packageDirectory(root, 'packages/zeta-bin', 'custom')
+    await packageDirectory(root, 'packages/zeta-bin', 'custom', true)
     await packageDirectory(root, 'packages/alpha-bin', 'github-release')
 
     await expect(discoverPackages(root, {})).resolves.toEqual([
@@ -40,6 +50,51 @@ describe('discoverPackages', () => {
         config: { connector: 'custom', config: {} }
       })
     ])
+  })
+
+  it('uses connector/update.yml for package-local connectors', async () => {
+    const root = await workspace()
+    await packageDirectory(root, 'packages/custom-bin', 'custom', true)
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([
+      expect.objectContaining({
+        name: 'custom-bin',
+        updateConfigPath: path.join(
+          root,
+          'packages/custom-bin',
+          'connector',
+          'update.yml'
+        ),
+        config: { connector: 'custom', config: {} }
+      })
+    ])
+  })
+
+  it('rejects a package with both connector configurations', async () => {
+    const root = await workspace()
+    const directory = path.join(root, 'packages/conflict')
+    await packageDirectory(root, 'packages/conflict', 'github-release')
+    await mkdir(path.join(directory, 'connector'), { recursive: true })
+    await writeFile(
+      path.join(directory, 'connector', 'update.yml'),
+      'connector: custom\n'
+    )
+
+    await expect(discoverPackages(root, {})).rejects.toThrow(
+      'must not define both update.yml and connector/update.yml'
+    )
+  })
+
+  it('rejects a connector directory without its configuration', async () => {
+    const root = await workspace()
+    const directory = path.join(root, 'packages/broken')
+    await mkdir(directory, { recursive: true })
+    await writeFile(path.join(directory, 'PKGBUILD'), 'pkgname=test\n')
+    await mkdir(path.join(directory, 'connector'))
+
+    await expect(discoverPackages(root, {})).rejects.toThrow(
+      'has connector/ but no connector/update.yml'
+    )
   })
 
   it('supports a package at repository root', async () => {

@@ -3,6 +3,7 @@ import path from 'node:path'
 import { afterEach, describe, expect, it, jest } from '@jest/globals'
 import {
   createConnectorRegistry,
+  loadPackageConnector,
   loadRepositoryConnectors
 } from '../src/connectors.js'
 
@@ -202,6 +203,102 @@ describe('github-tag connector', () => {
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
     ).rejects.toThrow('contain no supported versions')
+  })
+})
+
+describe('package-local custom connectors', () => {
+  it('runs connector/detect.sh and parses the standard update output', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `#!/usr/bin/env bash
+set -euo pipefail
+printf 'version=2.4.0\\nsource=https://example.test/archive.tar.gz\\nsha256=abc123\\n'
+`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory
+    }
+    const connector = loadPackageConnector({
+      ...pkgDefinition,
+      config: { connector: 'custom', config: {} }
+    })({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).resolves.toEqual({
+      version: '2.4.0',
+      source: 'https://example.test/archive.tar.gz',
+      sha256: 'abc123'
+    })
+  })
+
+  it('rejects custom connector output with missing fields', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `printf 'version=2.4.0\\n'`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {} }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
+      'must output version, source and sha256'
+    )
+  })
+
+  it('rejects custom connector output with unknown fields', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    const connectorDirectory = path.join(packageDirectory, 'connector')
+    await mkdir(connectorDirectory, { recursive: true })
+    await writeFile(
+      path.join(connectorDirectory, 'detect.sh'),
+      `printf 'version=2.4.0\\nsource=https://example.test\\nsha256=abc123\\nextra=value\\n'`
+    )
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {} }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
+      'produced unknown output "extra"'
+    )
+  })
+
+  it('rejects a custom package without detect.sh', async () => {
+    const workspace = await createConnectorWorkspace()
+    const packageDirectory = path.join(workspace, 'example-bin')
+    await mkdir(path.join(packageDirectory, 'connector'), { recursive: true })
+
+    const pkgDefinition = {
+      ...pkg,
+      name: 'example-bin',
+      path: packageDirectory,
+      config: { connector: 'custom', config: {} }
+    }
+    const connector = loadPackageConnector(pkgDefinition)({ fetch })
+
+    await expect(connector.detect(pkgDefinition, {})).rejects.toThrow(
+      'must provide connector/detect.sh'
+    )
   })
 })
 

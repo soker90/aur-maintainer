@@ -1,8 +1,12 @@
+import { execFile as execFileCallback } from 'node:child_process'
 import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
+import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
 import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
+
+const execFile = promisify(execFileCallback)
 
 export interface Connector {
   readonly name: string
@@ -63,6 +67,88 @@ export async function loadRepositoryConnectors(
   }
 
   return registry
+}
+
+export function loadPackageConnector(pkg: PackageDefinition): ConnectorFactory {
+  if (pkg.config.connector !== 'custom') {
+    throw new Error(
+      `Package connector "${pkg.config.connector}" is not a package-local custom connector`
+    )
+  }
+
+  const scriptPath = path.join(pkg.path, 'connector', 'detect.sh')
+  return () => ({
+    name: 'custom',
+    detect: async () => detectWithScript(pkg, scriptPath)
+  })
+}
+
+async function detectWithScript(
+  pkg: PackageDefinition,
+  scriptPath: string
+): Promise<UpdateCandidate> {
+  if (!(await isFile(scriptPath))) {
+    throw new Error(
+      `Package "${pkg.name}" custom connector must provide connector/detect.sh`
+    )
+  }
+
+  const result = await execFile('bash', [scriptPath], {
+    cwd: pkg.path,
+    env: {
+      ...process.env,
+      AUR_MAINTAINER_PACKAGE: pkg.name,
+      AUR_MAINTAINER_PACKAGE_PATH: pkg.path
+    }
+  })
+
+  return parseCustomConnectorOutput(pkg.name, result.stdout)
+}
+
+function parseCustomConnectorOutput(
+  packageName: string,
+  output: string
+): UpdateCandidate {
+  const values = new Map<string, string>()
+  for (const line of output.split(/\r?\n/)) {
+    if (!line.trim()) continue
+    const separator = line.indexOf('=')
+    if (separator <= 0) {
+      throw new Error(
+        `Package "${packageName}" custom connector produced an invalid output line`
+      )
+    }
+
+    const key = line.slice(0, separator)
+    const value = line.slice(separator + 1)
+    if (!['version', 'source', 'sha256'].includes(key)) {
+      throw new Error(
+        `Package "${packageName}" custom connector produced unknown output "${key}"`
+      )
+    }
+    if (values.has(key)) {
+      throw new Error(
+        `Package "${packageName}" custom connector produced duplicate output "${key}"`
+      )
+    }
+    if (!value) {
+      throw new Error(
+        `Package "${packageName}" custom connector produced an empty "${key}"`
+      )
+    }
+    values.set(key, value)
+  }
+
+  const version = values.get('version')
+  const source = values.get('source')
+  const sha256 = values.get('sha256')
+  if (!version || !source || !sha256) {
+    throw new Error(
+      `Package "${packageName}" custom connector must output version, source and sha256`
+    )
+  }
+
+  return { version, source, sha256 }
 }
 
 async function loadConnectorFactory(
