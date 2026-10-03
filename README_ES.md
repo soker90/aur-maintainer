@@ -107,7 +107,7 @@ los paquetes puede variar:
 ```yaml
 connector: custom
 config: {}
-timeout: 60
+timeout: 60 # seconds
 updates:
   source: 'source=("vega-${version}.tar.gz::${source}")'
   sha256: '_sha256=${sha256}'
