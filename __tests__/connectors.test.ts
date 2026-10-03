@@ -249,9 +249,7 @@ describe('repository-local connectors', () => {
     ).rejects.toThrow('must provide connectors/custom/index.js')
   })
 
-  it(
-    'rejects a repository connector that conflicts with a built-in',
-    async () => {
+  it('rejects a local connector that conflicts with a built-in', async () => {
       const workspace = await createConnectorWorkspace()
       const connectorDirectory = path.join(
         workspace,
