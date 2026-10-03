@@ -51,10 +51,7 @@ export async function run(): Promise<void> {
       const update = await updatePackage(pkg, candidate)
       candidates.push({ package: pkg.name, candidate, update })
       if (update.changed) {
-        const snapshot = await snapshotPackage(
-          pkg,
-          update.previousPkgbuild
-        )
+        const snapshot = await snapshotPackage(pkg, update.previousPkgbuild)
         snapshots.push(snapshot)
         try {
           await updatePackageMetadata(pkg)
@@ -107,8 +104,7 @@ async function snapshotPackage(
 
   return {
     pkg,
-    pkgbuild:
-      pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
+    pkgbuild: pkgbuild ?? (await readFile(pkg.pkgbuildPath, 'utf8')),
     srcinfo
   }
 }
