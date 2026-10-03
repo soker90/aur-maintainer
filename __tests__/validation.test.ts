@@ -8,6 +8,14 @@ import { validatePackage } from '../src/validation.js'
 describe('package validation', () => {
   it('runs the complete Arch validation pipeline', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
+    const artifactPath = path.join(
+      directory,
+      'demo-1.1.0-1-x86_64.pkg.tar.zst'
+    )
+    const staleArtifactPath = path.join(
+      directory,
+      'demo-1.0.0-1-x86_64.pkg.tar.zst'
+    )
     const pkg = {
       name: 'demo',
       path: directory,
@@ -17,8 +25,8 @@ describe('package validation', () => {
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
     await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
-    await writeFile(directory + '/demo-1.1.0-1-x86_64.pkg.tar.zst', '')
-    await writeFile(directory + '/demo-1.0.0-1-x86_64.pkg.tar.zst', '')
+    await writeFile(artifactPath, '')
+    await writeFile(staleArtifactPath, '')
 
     const run = jest
       .fn()
