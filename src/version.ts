@@ -92,7 +92,7 @@ function splitVersion(version: string): VersionSegment[] {
   if (segment) parts.push(segment)
   if (parts.length || delimiters) {
     segments.push({
-      parts: parts.flatMap(splitAlphaNumeric),
+      parts: parts.length ? parts.flatMap(splitAlphaNumeric) : [''],
       delimiters
     })
   }
