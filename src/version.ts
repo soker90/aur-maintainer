@@ -129,8 +129,8 @@ function compareSegmentParts(left: string[], right: string[]): number {
 }
 
 function compareParts(left: string, right: string): number {
-  const leftNumeric = /^\\d+$/.test(left)
-  const rightNumeric = /^\\d+$/.test(right)
+  const leftNumeric = /^\d+$/.test(left)
+  const rightNumeric = /^\d+$/.test(right)
 
   if (leftNumeric && rightNumeric) {
     return compareNumericParts(left, right)
@@ -145,12 +145,12 @@ function compareParts(left: string, right: string): number {
 
 function compareMissingPart(part: string | undefined): number {
   if (part === undefined) return 0
-  return /^\\d+$/.test(part) ? -1 : 1
+  return /^\d+$/.test(part) ? -1 : 1
 }
 
 function compareNumericParts(left: string, right: string): number {
-  const normalizedLeft = left.replace(/^0+(?=\\d)/, '')
-  const normalizedRight = right.replace(/^0+(?=\\d)/, '')
+  const normalizedLeft = left.replace(/^0+(?=\d)/, '')
+  const normalizedRight = right.replace(/^0+(?=\d)/, '')
 
   if (normalizedLeft.length !== normalizedRight.length) {
     return normalizedLeft.length - normalizedRight.length
