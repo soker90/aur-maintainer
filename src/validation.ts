@@ -17,6 +17,7 @@ const hostCommandRunner: CommandRunner = {
   }
 }
 
+/** Validate an AUR package on the host, falling back to an Arch container when needed. */
 export async function validatePackage(
   pkg: PackageDefinition,
   runner: CommandRunner = hostCommandRunner
@@ -66,6 +67,7 @@ export async function validatePackage(
   }
 }
 
+/** Validate an AUR package inside an Arch Linux Docker container. */
 async function validatePackageWithDocker(
   pkg: PackageDefinition
 ): Promise<void> {
