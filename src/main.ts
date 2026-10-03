@@ -57,7 +57,13 @@ export async function run(): Promise<void> {
           srcinfo: undefined
         }
         snapshots.push(snapshot)
-        await completePackageSnapshot(snapshot)
+        try {
+          await completePackageSnapshot(snapshot)
+        } catch (error) {
+          await rollbackPackageUpdate(pkg, update)
+          snapshots.pop()
+          throw error
+        }
         try {
           await updatePackageMetadata(pkg)
           await validatePackage(pkg)
