@@ -101,6 +101,40 @@ describe('package validation', () => {
     expect(run).toHaveBeenCalledTimes(3)
   })
 
+  it('requires every split-package artifact to be produced', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
+    const firstArtifact = path.join(
+      directory,
+      'demo-cli-1.1.0-1-x86_64.pkg.tar.zst'
+    )
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath: path.join(directory, 'PKGBUILD'),
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    await writeFile(pkg.srcinfoPath, 'pkgbase = demo\n\tpkgver = 1.1.0\n')
+    await writeFile(firstArtifact, '')
+
+    const run = jest
+      .fn()
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('pkgbase = demo\n\tpkgver = 1.1.0\n')
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce(
+        'demo-cli-1.1.0-1-x86_64.pkg.tar.zst\n' +
+          'demo-gui-1.1.0-1-x86_64.pkg.tar.zst\n'
+      )
+
+    await expect(validatePackage(pkg, { run })).rejects.toThrow(
+      'Expected package artifacts were not produced'
+    )
+    expect(run).toHaveBeenCalledTimes(5)
+  })
+
   it('fails when no package artifact is produced', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
     const pkg = {

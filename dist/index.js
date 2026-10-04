@@ -36364,18 +36364,21 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             .split('\n')
             .map((entry) => entry.trim())
             .filter(Boolean);
-        const artifacts = [];
-        for (const artifact of expectedArtifacts) {
+        if (expectedArtifacts.length === 0) {
+            throw new Error(`No package artifact was produced for ${pkg.name}`);
+        }
+        const artifacts = expectedArtifacts.map((artifact) => resolveArtifactPath(pkg.path, artifact));
+        const missingArtifacts = [];
+        for (const artifact of artifacts) {
             try {
                 await access$1(artifact);
-                artifacts.push(artifact);
             }
             catch {
-                // The package was expected but was not produced.
+                missingArtifacts.push(artifact);
             }
         }
-        if (artifacts.length === 0) {
-            throw new Error(`No package artifact was produced for ${pkg.name}`);
+        if (missingArtifacts.length > 0) {
+            throw new Error(`Expected package artifacts were not produced for ${pkg.name}: ${missingArtifacts.join(', ')}`);
         }
         for (const artifact of artifacts) {
             await runner.run('namcap', [artifact], pkg.path);
@@ -36407,6 +36410,11 @@ async function validatePackageWithDocker(pkg) {
         '-c',
         'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ], { cwd: pkg.path });
+}
+function resolveArtifactPath(packagePath, artifact) {
+    return path.isAbsolute(artifact)
+        ? artifact
+        : path.resolve(packagePath, artifact);
 }
 function isCommandNotFound(error) {
     return (typeof error === 'object' &&
