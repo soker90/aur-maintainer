@@ -15,6 +15,7 @@ const rollbackPackageUpdate = jest.fn()
 const updatePackageMetadata = jest.fn()
 const validatePackage = jest.fn()
 const publishAurPackage = jest.fn()
+const createUpdatePullRequest = jest.fn()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
@@ -38,7 +39,7 @@ jest.unstable_mockModule('../src/aur.js', () => ({
   publishAurPackage
 }))
 jest.unstable_mockModule('../src/pull-request.js', () => ({
-  createUpdatePullRequest: jest.fn()
+  createUpdatePullRequest
 }))
 
 const { run } = await import('../src/main.js')
@@ -189,7 +190,7 @@ describe('main.ts', () => {
     expect(core.setFailed).toHaveBeenCalled()
   })
 
-  it('rolls back all modified packages when a later package fails', async () => {
+  it('stops after the first package with an update', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const packages = ['first', 'second'].map((name) => ({
       ...pkg,
@@ -226,27 +227,26 @@ describe('main.ts', () => {
         previousPkgbuild: `pkgname=${item.name}\npkgver=1.0.0\n`
       }
     })
-    updatePackageMetadata.mockImplementation(async (item) => {
-      await writeFile(
-        item.pkgbuildPath,
-        `pkgname=${item.name}\npkgver=1.1.0\nsha256sums=('changed')\n`
-      )
-      await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
-    })
-    validatePackage.mockImplementation(async (item) => {
-      if (item.name === 'second') throw new Error('validation failed')
-    })
+    createUpdatePullRequest.mockResolvedValue(
+      'https://github.com/test/repo/pull/1'
+    )
 
     await run()
 
-    for (const item of packages) {
-      await expect(readFile(item.pkgbuildPath, 'utf8')).resolves.toBe(
-        `pkgname=${item.name}\npkgver=1.0.0\n`
-      )
-      await expect(readFile(item.srcinfoPath, 'utf8')).resolves.toBe(
-        `pkgname=${item.name}\npkgver=1.0.0\n`
-      )
-    }
-    expect(core.setFailed).toHaveBeenCalledWith('validation failed')
+    expect(updatePackage).toHaveBeenCalledTimes(1)
+    expect(updatePackage).toHaveBeenCalledWith(
+      packages[0],
+      expect.objectContaining({ version: '1.1.0' })
+    )
+    expect(createUpdatePullRequest).toHaveBeenCalledTimes(1)
+    expect(createUpdatePullRequest).toHaveBeenCalledWith(
+      '/workspace',
+      expect.objectContaining({ packages: [packages[0]] })
+    )
+    await expect(readFile(packages[1].pkgbuildPath, 'utf8')).resolves.toBe(
+      'pkgname=second\npkgver=1.0.0\n'
+    )
+    expect(core.setFailed).not.toHaveBeenCalled()
   })
+
 })
