@@ -36545,7 +36545,7 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
     const knownHostsPath = path.join(tempDir, 'known_hosts');
     const repositoryPath = path.join(tempDir, pkg.name);
     try {
-        await writeFile$1(keyPath, options.sshKey, { mode: 0o600 });
+        await writeFile$1(keyPath, normalizeSshKey(options.sshKey), { mode: 0o600 });
         await writeFile$1(knownHostsPath, options.knownHosts, { mode: 0o600 });
         const sshCommand = [
             'ssh',
@@ -36581,6 +36581,9 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
     finally {
         await rm$1(tempDir, { recursive: true, force: true });
     }
+}
+function normalizeSshKey(key) {
+    return key.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').trimEnd() + '\n';
 }
 async function getAurPackageFiles(packagePath) {
     const entries = await readdir$1(packagePath, { withFileTypes: true });
