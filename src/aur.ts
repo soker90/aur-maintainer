@@ -97,7 +97,7 @@ export async function publishAurPackage(
     )
     await git.run(
       'git',
-      ['add', '--', ...files],
+      ['add', '-A'],
       repositoryPath,
       env
     )
