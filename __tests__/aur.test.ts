@@ -11,12 +11,12 @@ import type { PackageDefinition } from '../src/types.js'
 
 describe('AUR publishing', () => {
   it('normalizes SSH keys from common secret formats', () => {
-    expect(normalizeSshKey('-----BEGIN KEY-----\\r\\nabc\\r\\n-----END KEY-----')).toBe(
-      '-----BEGIN KEY-----\\nabc\\n-----END KEY-----\\n'
-    )
-    expect(normalizeSshKey('-----BEGIN KEY-----\\nabc\\n-----END KEY-----')).toBe(
-      '-----BEGIN KEY-----\\nabc\\n-----END KEY-----\\n'
-    )
+    expect(
+      normalizeSshKey('-----BEGIN KEY-----\r\nabc\r\n-----END KEY-----')
+    ).toBe('-----BEGIN KEY-----\nabc\n-----END KEY-----\n')
+    expect(
+      normalizeSshKey('-----BEGIN KEY-----\nabc\n-----END KEY-----')
+    ).toBe('-----BEGIN KEY-----\nabc\n-----END KEY-----\n')
   })
 
   const pkg: PackageDefinition = {
