@@ -162,9 +162,18 @@ steps:
 ```
 
 When `github-token` is provided, the Action commits validated package updates to
-`update-branch` and opens an update pull request against `base-branch`. Without
-a token, package updates are still applied to the workspace but no pull request
-is created.
+a package-specific branch and opens an update pull request against `base-branch`.
+The `update-branch` input is the **branch prefix**, not the complete branch name.
+For example, `update-branch: update` creates `update/example-bin`.
+
+Only one package update is processed per Action run. The first package that needs
+an update is committed and its pull request is created or updated; processing
+stops after that package. This is equivalent to Renovate's former
+`prConcurrentLimit: 1` behavior and keeps subsequent package updates for later
+runs after the current pull request has been merged.
+
+Without a token, package updates are still applied to the workspace but no pull
+request is created.
 
 When `aur-publish` is enabled, the Action publishes the managed package files to
 the AUR `master` branch using the supplied SSH key and known-hosts entry. This
