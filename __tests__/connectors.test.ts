@@ -46,7 +46,9 @@ describe('github-release connector', () => {
   it('retries public API requests without the repository token after a 403', async () => {
     const fetchMock = jest
       .fn()
-      .mockResolvedValueOnce(response({}, { status: 403, statusText: 'Forbidden' }))
+      .mockResolvedValueOnce(
+        response({}, { status: 403, statusText: 'Forbidden' })
+      )
       .mockResolvedValueOnce(response({ tag_name: 'v1.4.3' }))
     const connector = createConnectorRegistry({
       fetch: fetchMock,
