@@ -36335,7 +36335,7 @@ async function enableAutoMerge(token, pullRequest) {
             }
         })
     });
-    const payload = await response.json();
+    const payload = (await response.json());
     if (!response.ok || payload.errors?.length) {
         const message = payload.errors?.[0]?.message;
         throw new Error('GitHub auto-merge request failed: ' + (message ?? response.statusText));
@@ -36398,7 +36398,9 @@ function isPullRequest(value) {
         typeof value.html_url !== 'string') {
         return false;
     }
-    if ('node_id' in value && value.node_id !== undefined && typeof value.node_id !== 'string') {
+    if ('node_id' in value &&
+        value.node_id !== undefined &&
+        typeof value.node_id !== 'string') {
         return false;
     }
     if ('head' in value && value.head !== undefined) {
@@ -36406,8 +36408,9 @@ function isPullRequest(value) {
         if (typeof head !== 'object' ||
             head === null ||
             !('sha' in head) ||
-            typeof head.sha !== 'string')
+            typeof head.sha !== 'string') {
             return false;
+        }
     }
     return true;
 }
