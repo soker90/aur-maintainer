@@ -226,22 +226,12 @@ describe('update pull request creation', () => {
             workflow_runs: [
               {
                 id: 99,
-                status: 'in_progress',
-                conclusion: null,
+                status: 'completed',
+                conclusion: 'success',
                 created_at: new Date().toISOString(),
                 head_sha: 'abc123'
               }
             ]
-          }),
-          { status: 200 }
-        )
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            id: 99,
-            status: 'completed',
-            conclusion: 'success'
           }),
           { status: 200 }
         )
@@ -319,8 +309,8 @@ describe('update pull request creation', () => {
             workflow_runs: [
               {
                 id: 99,
-                status: 'in_progress',
-                conclusion: null,
+                status: 'completed',
+                conclusion: 'failure',
                 created_at: new Date().toISOString(),
                 head_sha: 'abc123'
               }
@@ -329,16 +319,7 @@ describe('update pull request creation', () => {
           { status: 200 }
         )
       )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            id: 99,
-            status: 'completed',
-            conclusion: 'failure'
-          }),
-          { status: 200 }
-        )
-      )
+
 
     await expect(
       createUpdatePullRequest(
