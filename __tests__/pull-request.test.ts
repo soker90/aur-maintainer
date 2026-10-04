@@ -79,6 +79,45 @@ describe('update pull request creation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it('skips an empty cherry-pick on an existing update branch', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
+      if (args[0] === 'rev-parse') return 'abc123\\n'
+      if (args[0] === 'ls-remote') return 'remote-sha\\trefs/heads/aur-maintainer/updates\\n'
+      if (args[0] === 'cherry-pick' && args[1] === 'abc123') {
+        const error = new Error('cherry-pick failed') as Error & { stderr: string }
+        error.stderr = 'The previous cherry-pick is now empty, possibly due to conflict resolution.'
+        throw error
+      }
+      return ''
+    })
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]), { status: 200 })
+    )
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token', repository: 'test/repo', baseBranch: 'main',
+          updateBranch: 'aur-maintainer/updates', packages: [pkg], autoMerge: false
+        },
+        { run }
+      )
+    ).resolves.toBe('https://github.com/test/pr/1')
+
+    expect(run).toHaveBeenCalledWith('git', ['cherry-pick', '--skip'], '/workspace')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it('enables squash auto-merge when requested', async () => {
     const pkg = {
       name: 'demo',
