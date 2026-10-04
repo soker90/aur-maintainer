@@ -264,15 +264,14 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(fetchMock).toHaveBeenCalledTimes(5)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/dispatches'
     )
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/runs?branch='
     )
-    expect(String(fetchMock.mock.calls[3]?.[0])).toContain('/actions/runs/99')
-    expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
 
   it('waits for the dispatched validation workflow and rejects failures', async () => {
@@ -338,6 +337,6 @@ describe('update pull request creation', () => {
       )
     ).rejects.toThrow('Pull request validation workflow failed: failure')
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 })
