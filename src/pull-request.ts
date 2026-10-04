@@ -148,18 +148,20 @@ export async function createUpdatePullRequest(
   if (isPullRequest(current)) {
     if (options.autoMerge) {
       if (options.validationWorkflow) {
-        await dispatchValidationWorkflow(
+        const validationRunId = await dispatchValidationWorkflow(
           options.token,
           owner,
           repo,
           options.validationWorkflow,
-          branch
+          branch,
+          new Date().toISOString()
         )
       }
-      await waitForChecksAndMerge(
+      await waitForWorkflowRunAndMerge(
         options.token,
         options.repository,
         current,
+        validationRunId,
         options.autoMergeTimeoutSeconds
       )
     }
@@ -201,8 +203,9 @@ async function dispatchValidationWorkflow(
   owner: string,
   repo: string,
   workflow: string,
-  ref: string
-): Promise<void> {
+  ref: string,
+  minimumCreatedAt: string
+): Promise<number> {
   await requestGitHub(
     token,
     `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(
@@ -210,6 +213,90 @@ async function dispatchValidationWorkflow(
     )}/dispatches`,
     'POST',
     { ref }
+  )
+
+  const deadline = Date.now() + 30_000
+  while (Date.now() < deadline) {
+    const response = await requestGitHub(
+      token,
+      `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(
+        workflow
+      )}/runs?branch=${encodeURIComponent(ref)}&event=workflow_dispatch&per_page=10`
+    )
+    if (isWorkflowRunsResponse(response)) {
+      const run = response.workflow_runs.find(
+        (candidate) =>
+          candidate.created_at >= minimumCreatedAt && candidate.head_sha
+      )
+      if (run) return run.id
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        Math.min(
+          AUTO_MERGE_POLL_INTERVAL_MS,
+          Math.max(0, deadline - Date.now())
+        )
+      )
+    )
+  }
+
+  throw new Error(
+    'Timed out waiting for dispatched validation workflow after 30 seconds'
+  )
+}
+
+async function waitForWorkflowRunAndMerge(
+  token: string,
+  repository: string,
+  pullRequest: PullRequest,
+  workflowRunId: number,
+  timeoutSeconds: number
+): Promise<void> {
+  if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1) {
+    throw new Error('auto-merge-timeout must be a positive integer')
+  }
+
+  const deadline = Date.now() + timeoutSeconds * 1000
+  const [owner, repo] = repository.split('/')
+  if (!owner || !repo) {
+    throw new Error('GITHUB_REPOSITORY must use owner/name form')
+  }
+
+  while (Date.now() < deadline) {
+    const response = await requestGitHub(
+      token,
+      `/repos/${owner}/${repo}/actions/runs/${workflowRunId}`
+    )
+    if (isWorkflowRunResponse(response) && response.status === 'completed') {
+      if (
+        response.conclusion !== 'success' &&
+        response.conclusion !== 'neutral' &&
+        response.conclusion !== 'skipped'
+      ) {
+        throw new Error(
+          `Pull request validation workflow failed: ${response.conclusion ?? 'unknown'}`
+        )
+      }
+
+      await squashMergePullRequest(token, pullRequest)
+      return
+    }
+
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        Math.min(
+          AUTO_MERGE_POLL_INTERVAL_MS,
+          Math.max(0, deadline - Date.now())
+        )
+      )
+    )
+  }
+
+  throw new Error(
+    `Timed out waiting for pull request checks after ${timeoutSeconds} seconds`
   )
 }
 
@@ -321,6 +408,58 @@ interface PullRequest {
   number?: number
   node_id?: string
   head?: { sha: string }
+}
+
+interface WorkflowRun {
+  id: number
+  status: string
+  conclusion: string | null
+  created_at: string
+  head_sha?: string
+}
+
+interface WorkflowRunsResponse {
+  workflow_runs: WorkflowRun[]
+}
+
+function isWorkflowRunsResponse(
+  value: unknown
+): value is WorkflowRunsResponse {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('workflow_runs' in value) ||
+    !Array.isArray(value.workflow_runs)
+  ) {
+    return false
+  }
+
+  return value.workflow_runs.every(
+    (run): run is WorkflowRun =>
+      typeof run === 'object' &&
+      run !== null &&
+      'id' in run &&
+      typeof run.id === 'number' &&
+      'status' in run &&
+      typeof run.status === 'string' &&
+      'conclusion' in run &&
+      (typeof run.conclusion === 'string' || run.conclusion === null) &&
+      'created_at' in run &&
+      typeof run.created_at === 'string'
+  )
+}
+
+function isWorkflowRunResponse(value: unknown): value is WorkflowRun {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    typeof value.id === 'number' &&
+    'status' in value &&
+    typeof value.status === 'string' &&
+    'conclusion' in value &&
+    (typeof value.conclusion === 'string' || value.conclusion === null)
+  )
 }
 
 interface CheckRun {
