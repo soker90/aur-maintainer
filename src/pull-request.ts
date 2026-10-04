@@ -422,9 +422,7 @@ interface WorkflowRunsResponse {
   workflow_runs: WorkflowRun[]
 }
 
-function isWorkflowRunsResponse(
-  value: unknown
-): value is WorkflowRunsResponse {
+function isWorkflowRunsResponse(value: unknown): value is WorkflowRunsResponse {
   if (
     typeof value !== 'object' ||
     value === null ||

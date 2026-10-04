@@ -281,9 +281,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/runs?branch='
     )
-    expect(String(fetchMock.mock.calls[3]?.[0])).toContain(
-      '/actions/runs/99'
-    )
+    expect(String(fetchMock.mock.calls[3]?.[0])).toContain('/actions/runs/99')
     expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
   })
 
@@ -357,9 +355,7 @@ describe('update pull request creation', () => {
         },
         { run }
       )
-    ).rejects.toThrow(
-      'Pull request validation workflow failed: failure'
-    )
+    ).rejects.toThrow('Pull request validation workflow failed: failure')
 
     expect(fetchMock).toHaveBeenCalledTimes(4)
   })
