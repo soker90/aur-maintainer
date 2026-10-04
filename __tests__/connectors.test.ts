@@ -43,6 +43,32 @@ function response(body: unknown, init?: ResponseInit): Response {
 }
 
 describe('github-release connector', () => {
+  it('retries public API requests without the repository token after a 403', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(response({}, { status: 403, statusText: 'Forbidden' }))
+      .mockResolvedValueOnce(response({ tag_name: 'v1.4.3' }))
+    const connector = createConnectorRegistry({
+      fetch: fetchMock,
+      token: 'test-token'
+    }).get('github-release')!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toMatchObject({ version: '1.4.3' })
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://api.github.com/repos/owner/project/releases/latest',
+      expect.objectContaining({
+        headers: expect.not.objectContaining({
+          authorization: expect.anything()
+        })
+      })
+    )
+  })
+
+
   it('normalizes a v-prefixed release version', async () => {
     const fetchMock = jest.fn(async () => response({ tag_name: 'v1.4.3' }))
     const connector = createConnectorRegistry({
