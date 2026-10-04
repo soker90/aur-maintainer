@@ -36250,13 +36250,13 @@ function replaceAssignment(content, name, replacement) {
 }
 
 const execFile$1 = promisify(execFile$4);
-const hostGitRunner = {
+const hostGitRunner$1 = {
     async run(command, args, cwd) {
         const result = await execFile$1(command, args, { cwd });
         return result.stdout;
     }
 };
-async function createUpdatePullRequest(workspace, options, git = hostGitRunner) {
+async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1) {
     validateBranchName(options.updateBranch);
     const packagePaths = options.packages.map((pkg) => getRelativePackagePath(workspace, pkg.path));
     await git.run('git', ['add', '--', ...packagePaths], workspace);
@@ -36497,6 +36497,15 @@ function isCommandNotFound(error) {
         (error.code === 'ENOENT' || error.code === 127));
 }
 
+const hostGitRunner = {
+    async run(command, args, cwd, env) {
+        const { execFile } = await import('node:child_process');
+        const { promisify } = await import('node:util');
+        const run = promisify(execFile);
+        const result = await run(command, args, { cwd, env });
+        return result.stdout;
+    }
+};
 const hostGitRunner = {
     async run(command, args, cwd, env) {
         const { execFile } = await import('node:child_process');
