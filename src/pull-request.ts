@@ -89,9 +89,6 @@ export async function createUpdatePullRequest(
   return created.html_url
 }
 
-function getPackageUpdateBranch(prefix: string, packageName: string): string {
-  return prefix.replace(/\/$/, '') + '/' + packageName
-}
 async function enableAutoMerge(
   token: string,
   pullRequest: PullRequest
@@ -133,6 +130,10 @@ async function enableAutoMerge(
       `GitHub auto-merge request failed: ${message ?? response.statusText}`
     )
   }
+}
+
+function getPackageUpdateBranch(prefix: string, packageName: string): string {
+  return prefix.replace(/\/$/, '') + '/' + packageName
 }
 
 interface PullRequest {
