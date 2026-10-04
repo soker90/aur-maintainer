@@ -164,8 +164,8 @@ steps:
 When `github-token` is provided, the Action commits validated package updates to
 a package-specific branch and opens an update pull request against
 `base-branch`. The `update-branch` input is the **branch prefix**, not the
-complete branch name.
-For example, `update-branch: update` creates `update/example-bin`.
+complete branch name. For example, `update-branch: update` creates
+`update/example-bin`.
 
 Only one package update is processed per Action run. The first package that
 needs an update is committed and its pull request is created or updated;
