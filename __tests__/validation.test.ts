@@ -101,7 +101,6 @@ describe('package validation', () => {
     expect(run).toHaveBeenCalledTimes(3)
   })
 
-
   it('requires every split-package artifact to be produced', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-validation-'))
     const firstArtifact = path.join(
