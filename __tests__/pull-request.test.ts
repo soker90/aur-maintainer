@@ -50,11 +50,7 @@ describe('update pull request creation', () => {
       ['add', '--', 'packages/demo/PKGBUILD', 'packages/demo/.SRCINFO'],
       '/workspace'
     )
-    expect(run).toHaveBeenCalledWith(
-      'git',
-      ['switch', 'main'],
-      '/workspace'
-    )
+    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(run).toHaveBeenCalledWith(
       'git',
       ['switch', '-C', 'automation/aur-maintainer-updates/demo'],
