@@ -44,7 +44,7 @@ describe('AUR publishing', () => {
     const run = jest
       .fn()
       .mockImplementation(
-        async (_command: string, args: string[], _cwd?: string) => {
+        async (_command: string, args: string[]) => {
           if (args[0] === 'clone') {
             await mkdir(args[2], { recursive: true })
           }
