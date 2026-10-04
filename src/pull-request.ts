@@ -156,14 +156,21 @@ export async function createUpdatePullRequest(
           branch,
           new Date().toISOString()
         )
+        await waitForWorkflowRunAndMerge(
+          options.token,
+          options.repository,
+          current,
+          validationRunId,
+          options.autoMergeTimeoutSeconds
+        )
+      } else {
+        await waitForChecksAndMerge(
+          options.token,
+          options.repository,
+          current,
+          options.autoMergeTimeoutSeconds
+        )
       }
-      await waitForWorkflowRunAndMerge(
-        options.token,
-        options.repository,
-        current,
-        validationRunId,
-        options.autoMergeTimeoutSeconds
-      )
     }
     await git.run('git', ['switch', options.baseBranch], workspace)
     return current.html_url
