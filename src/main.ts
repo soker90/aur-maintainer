@@ -98,7 +98,8 @@ export async function run(): Promise<void> {
         baseBranch: core.getInput('base-branch') || 'main',
         updateBranch:
           core.getInput('update-branch') || 'aur-maintainer/updates',
-        packages: updatedPackages
+        packages: updatedPackages,
+        autoMerge: core.getBooleanInput('auto-merge')
       })
       if (pullRequest) core.setOutput('pull-request', pullRequest)
     }
