@@ -26,13 +26,15 @@ describe('AUR publishing', () => {
     await writeFile(path.join(directory, 'PKGBUILD'), 'pkgname=example-bin\n')
     await writeFile(path.join(directory, '.SRCINFO'), 'pkgbase = example-bin\n')
     await writeFile(path.join(directory, 'example-bin.install'), '')
+    await writeFile(path.join(directory, 'LICENSE'), '')
     await writeFile(path.join(directory, 'update.yml'), '')
     await mkdir(path.join(directory, 'connector'))
 
     await expect(getAurPackageFiles(directory)).resolves.toEqual([
       'PKGBUILD',
       '.SRCINFO',
-      'example-bin.install'
+      'example-bin.install',
+      'LICENSE'
     ])
   })
 
@@ -45,7 +47,7 @@ describe('AUR publishing', () => {
     const run = jest.fn().mockImplementation(
       async (_command: string, args: string[], cwd?: string) => {
         if (args[0] === 'clone') {
-          await mkdir(path.join(cwd ?? '', 'example-bin'), { recursive: true })
+          await mkdir(args[2], { recursive: true })
         }
         if (args[0] === 'status') return ' M PKGBUILD\n'
         return ''
