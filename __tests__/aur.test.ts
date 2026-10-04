@@ -2,10 +2,23 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { jest } from '@jest/globals'
-import { getAurPackageFiles, publishAurPackage } from '../src/aur.js'
+import {
+  getAurPackageFiles,
+  normalizeSshKey,
+  publishAurPackage
+} from '../src/aur.js'
 import type { PackageDefinition } from '../src/types.js'
 
 describe('AUR publishing', () => {
+  it('normalizes SSH keys from common secret formats', () => {
+    expect(normalizeSshKey('-----BEGIN KEY-----\\r\\nabc\\r\\n-----END KEY-----')).toBe(
+      '-----BEGIN KEY-----\\nabc\\n-----END KEY-----\\n'
+    )
+    expect(normalizeSshKey('-----BEGIN KEY-----\\nabc\\n-----END KEY-----')).toBe(
+      '-----BEGIN KEY-----\\nabc\\n-----END KEY-----\\n'
+    )
+  })
+
   const pkg: PackageDefinition = {
     name: 'example-bin',
     path: '',
