@@ -81,7 +81,12 @@ export async function createUpdatePullRequest(
       ],
       workspace
     )
-    await git.run('git', ['cherry-pick', commit], workspace)
+    try {
+      await git.run('git', ['cherry-pick', commit], workspace)
+    } catch (error) {
+      if (!isEmptyCherryPick(error)) throw error
+      await git.run('git', ['cherry-pick', '--skip'], workspace)
+    }
   } else {
     await git.run('git', ['switch', '-c', options.updateBranch], workspace)
   }
@@ -242,6 +247,20 @@ function validateBranchName(branch: string): void {
   ) {
     throw new Error('Invalid update branch name')
   }
+}
+
+function isEmptyCherryPick(error: unknown): boolean {
+  const message = getErrorMessage(error)
+  return message.includes('previous cherry-pick is now empty')
+}
+
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'stderr' in error) {
+    const stderr = error.stderr
+    if (typeof stderr === 'string') return stderr
+  }
+  if (error instanceof Error) return error.message
+  return ''
 }
 
 function isGitExitCode(error: unknown, code: number): boolean {
