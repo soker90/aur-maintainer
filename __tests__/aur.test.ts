@@ -43,15 +43,13 @@ describe('AUR publishing', () => {
 
     const run = jest
       .fn()
-      .mockImplementation(
-        async (_command: string, args: string[]) => {
-          if (args[0] === 'clone') {
-            await mkdir(args[2], { recursive: true })
-          }
-          if (args[0] === 'status') return ' M PKGBUILD\n'
-          return ''
+      .mockImplementation(async (_command: string, args: string[]) => {
+        if (args[0] === 'clone') {
+          await mkdir(args[2], { recursive: true })
         }
-      )
+        if (args[0] === 'status') return ' M PKGBUILD\n'
+        return ''
+      })
 
     await expect(
       publishAurPackage(
