@@ -120,7 +120,9 @@ export async function run(): Promise<void> {
               updateBranch:
                 core.getInput('update-branch') || 'aur-maintainer/updates',
               packages: [pkg],
-              autoMerge: core.getBooleanInput('auto-merge')
+              autoMerge: core.getBooleanInput('auto-merge'),
+              autoMergeTimeoutSeconds:
+                getPositiveIntegerInput('auto-merge-timeout')
             })
             if (pullRequest) pullRequests.push(pullRequest)
           }
@@ -147,6 +149,15 @@ export async function run(): Promise<void> {
     if (error instanceof Error) core.setFailed(error.message)
     else core.setFailed(String(error))
   }
+}
+
+function getPositiveIntegerInput(name: string): number {
+  const value = core.getInput(name)
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`${name} must be a positive integer`)
+  }
+  return parsed
 }
 
 async function completePackageSnapshot(
