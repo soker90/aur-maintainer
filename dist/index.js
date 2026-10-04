@@ -36364,6 +36364,9 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             .split('\n')
             .map((entry) => entry.trim())
             .filter(Boolean);
+        if (expectedArtifacts.length === 0) {
+            throw new Error(`No package artifact was produced for ${pkg.name}`);
+        }
         const artifacts = expectedArtifacts.map((artifact) => resolveArtifactPath(pkg.path, artifact));
         const missingArtifacts = [];
         for (const artifact of artifacts) {
