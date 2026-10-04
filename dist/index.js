@@ -36338,7 +36338,7 @@ async function enableAutoMerge(token, pullRequest) {
     const payload = (await response.json());
     if (!response.ok || payload.errors?.length) {
         const message = payload.errors?.[0]?.message;
-        throw new Error('GitHub auto-merge request failed: ' + (message ?? response.statusText));
+        throw new Error(`GitHub auto-merge request failed: ${message ?? response.statusText}`);
     }
 }
 async function remoteBranchExists(git, workspace, branch) {
