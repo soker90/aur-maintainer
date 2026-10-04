@@ -248,5 +248,4 @@ describe('main.ts', () => {
     )
     expect(core.setFailed).not.toHaveBeenCalled()
   })
-
 })
