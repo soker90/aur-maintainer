@@ -19,7 +19,8 @@ inputs:
     required: false
   update-branch:
     description: >-
-      Prefix used for generated package-specific update pull request branches
+      Prefix used for generated package-specific update pull request
+      branches
     required: false
     default: aur-maintainer/updates
   base-branch:
@@ -61,7 +62,8 @@ outputs:
       URL of the first generated update pull request, when one is created
   pull-requests:
     description: >-
-      JSON array containing URLs of generated package-specific update pull requests
+      JSON array containing URLs of generated package-specific update pull
+      requests
 
 runs:
   using: node24
