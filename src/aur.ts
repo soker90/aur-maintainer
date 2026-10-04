@@ -110,7 +110,7 @@ export async function publishAurPackage(
 }
 
 export function normalizeSshKey(key: string): string {
-  return key.replace(/\\r\\n/g, '\\n').replace(/\\n/g, '\\n').trimEnd() + '\\n'
+  return key.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').trimEnd() + '\n'
 }
 
 export async function getAurPackageFiles(
