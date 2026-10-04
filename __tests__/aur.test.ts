@@ -41,15 +41,17 @@ describe('AUR publishing', () => {
     await writeFile(path.join(directory, 'PKGBUILD'), 'pkgname=example-bin\n')
     await writeFile(path.join(directory, '.SRCINFO'), 'pkgbase = example-bin\n')
 
-    const run = jest.fn().mockImplementation(
-      async (_command: string, args: string[], cwd?: string) => {
-        if (args[0] === 'clone') {
-          await mkdir(args[2], { recursive: true })
+    const run = jest
+      .fn()
+      .mockImplementation(
+        async (_command: string, args: string[], _cwd?: string) => {
+          if (args[0] === 'clone') {
+            await mkdir(args[2], { recursive: true })
+          }
+          if (args[0] === 'status') return ' M PKGBUILD\n'
+          return ''
         }
-        if (args[0] === 'status') return ' M PKGBUILD\n'
-        return ''
-      }
-    )
+      )
 
     await expect(
       publishAurPackage(
