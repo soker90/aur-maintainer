@@ -156,6 +156,7 @@ steps:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       auto-merge: true
       aur-publish: true
+      aur-publish-only: true
       aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
       aur-known-hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
 ```
@@ -168,7 +169,8 @@ is created.
 When `aur-publish` is enabled, the Action publishes the managed package files to
 the AUR `master` branch using the supplied SSH key and known-hosts entry. This
 mode is intended for a workflow triggered after the source repository has been
-merged. The publisher excludes `update.yml` and includes `PKGBUILD`, `.SRCINFO`,
+merged. Use `aur-publish-only` for that workflow so the Action does not re-run
+upstream detection or modify package files before publishing. The publisher excludes `update.yml` and includes `PKGBUILD`, `.SRCINFO`,
 and other package files at the package root.
 
 Configuration and the final set of inputs will be documented once the first
