@@ -29,9 +29,14 @@ inputs:
     default: main
   auto-merge:
     description: >-
-      Enable GitHub auto-merge for the generated update pull request
+      Wait for pull request checks and squash-merge the generated pull request
     required: false
     default: 'false'
+  auto-merge-timeout:
+    description: >-
+      Maximum number of seconds to wait for pull request checks before merging
+    required: false
+    default: '600'
   aur-publish:
     description: >-
       Publish managed packages to the Arch User Repository
