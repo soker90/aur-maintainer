@@ -56,7 +56,11 @@ export async function createUpdatePullRequest(
 
   await git.run('git', ['switch', options.baseBranch], workspace)
   await git.run('git', ['switch', '-C', branch], workspace)
-  await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace)
+  await git.run(
+    'git',
+    ['config', 'user.name', 'github-actions[bot]'],
+    workspace
+  )
   await git.run(
     'git',
     [
