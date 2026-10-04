@@ -56,7 +56,9 @@ jobs:
           pkgver=1.0.0
           pkgrel=1
           arch=('x86_64')
-          source=('README.md::https://raw.githubusercontent.com/actions/checkout/main/README.md')
+          source=(
+            'README.md::https://raw.githubusercontent.com/actions/checkout/main/README.md'
+          )
           sha256sums=()
           package() {
             install -Dm644 "$srcdir/README.md" \

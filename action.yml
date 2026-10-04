@@ -37,6 +37,12 @@ inputs:
       Publish managed packages to the Arch User Repository
     required: false
     default: 'false'
+  aur-publish-only:
+    description: >-
+      Publish the current package state to the AUR without checking upstream
+      updates
+    required: false
+    default: 'false'
   aur-ssh-key:
     description: >-
       Private SSH key authorized for the AUR account

@@ -30,8 +30,26 @@ export async function run(): Promise<void> {
     const packages = await discoverPackages(workspace, config)
     const token = core.getInput('github-token')
     const aurPublish = core.getBooleanInput('aur-publish')
+    const aurPublishOnly = core.getBooleanInput('aur-publish-only')
     const aurSshKey = core.getInput('aur-ssh-key')
     const aurKnownHosts = core.getInput('aur-known-hosts')
+
+    if (aurPublishOnly) {
+      if (!aurSshKey || !aurKnownHosts) {
+        throw new Error(
+          'aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled'
+        )
+      }
+      for (const pkg of packages) {
+        const published = await publishAurPackage(pkg, {
+          sshKey: aurSshKey,
+          knownHosts: aurKnownHosts
+        })
+        if (published) core.info(`Published ${pkg.name} to the AUR`)
+        else core.info(`AUR package ${pkg.name} is already up to date`)
+      }
+      return
+    }
 
     const registryContext = {
       fetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
