@@ -21,7 +21,7 @@ inputs:
     description: >-
       Prefix used for generated package-specific update pull request branches
     required: false
-    default: aur-maintainer/updates
+    default: update
   base-branch:
     description: >-
       Branch that receives the generated update pull request
