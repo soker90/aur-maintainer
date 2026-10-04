@@ -33,8 +33,8 @@ describe('AUR publishing', () => {
     await expect(getAurPackageFiles(directory)).resolves.toEqual([
       'PKGBUILD',
       '.SRCINFO',
-      'example-bin.install',
-      'LICENSE'
+      'LICENSE',
+      'example-bin.install'
     ])
   })
 
@@ -64,7 +64,11 @@ describe('AUR publishing', () => {
 
     expect(run).toHaveBeenCalledWith(
       'git',
-      ['clone', 'ssh://aur@aur.archlinux.org/example-bin.git', expect.any(String)],
+      [
+        'clone',
+        'ssh://aur@aur.archlinux.org/example-bin.git',
+        expect.any(String)
+      ],
       undefined,
       expect.objectContaining({
         GIT_SSH_COMMAND: expect.stringContaining('StrictHostKeyChecking=yes')
