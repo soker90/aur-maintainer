@@ -59,6 +59,7 @@ describe('main.ts', () => {
     core.getInput.mockImplementation((name) =>
       name === 'github-token' ? 'test-token' : '.aur-maintainer.yml'
     )
+    core.getBooleanInput.mockReturnValue(false)
     discoverPackages.mockResolvedValue([pkg])
     loadMaintainerConfig.mockResolvedValue({})
     updatePackage.mockResolvedValue({
