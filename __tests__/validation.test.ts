@@ -130,7 +130,7 @@ describe('package validation', () => {
       )
 
     await expect(validatePackage(pkg, { run })).rejects.toThrow(
-      'No package artifact was produced'
+      'Expected package artifacts were not produced'
     )
     expect(run).toHaveBeenCalledTimes(5)
   })
@@ -156,7 +156,7 @@ describe('package validation', () => {
       .mockResolvedValueOnce('')
 
     await expect(validatePackage(pkg, { run })).rejects.toThrow(
-      'Expected package artifacts were not produced'
+      'No package artifact was produced'
     )
     expect(run).toHaveBeenCalledTimes(5)
   })
