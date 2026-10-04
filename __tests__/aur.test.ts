@@ -2,10 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { jest } from '@jest/globals'
-import {
-  getAurPackageFiles,
-  publishAurPackage
-} from '../src/aur.js'
+import { getAurPackageFiles, publishAurPackage } from '../src/aur.js'
 import type { PackageDefinition } from '../src/types.js'
 
 describe('AUR publishing', () => {
