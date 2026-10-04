@@ -101,10 +101,10 @@ describe('main.ts', () => {
 
     await run()
 
-    expect(publishAurPackage).toHaveBeenCalledWith(
-      pkg,
-      { sshKey: 'PRIVATE KEY', knownHosts: 'KNOWN HOST' }
-    )
+    expect(publishAurPackage).toHaveBeenCalledWith(pkg, {
+      sshKey: 'PRIVATE KEY',
+      knownHosts: 'KNOWN HOST'
+    })
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
