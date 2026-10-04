@@ -36693,7 +36693,7 @@ async function run() {
                             token,
                             repository,
                             baseBranch: getInput('base-branch') || 'main',
-                            updateBranch: getInput('update-branch') || 'aur-maintainer/updates',
+                            updateBranch: getInput('update-branch') || 'update',
                             packages: [pkg],
                             autoMerge: getBooleanInput('auto-merge'),
                             autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')

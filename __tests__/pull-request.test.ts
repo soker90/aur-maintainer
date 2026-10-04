@@ -37,7 +37,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'automation/aur-maintainer-updates',
+          updateBranch: 'update',
           packages: [pkg],
           autoMerge: false,
           autoMergeTimeoutSeconds: 600
@@ -54,18 +54,12 @@ describe('update pull request creation', () => {
     expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(run).toHaveBeenCalledWith(
       'git',
-      ['switch', '-C', 'automation/aur-maintainer-updates/demo'],
+      ['switch', '-C', 'update/demo'],
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith(
       'git',
-      [
-        'push',
-        '--force',
-        '--set-upstream',
-        'origin',
-        'automation/aur-maintainer-updates/demo'
-      ],
+      ['push', '--force', '--set-upstream', 'origin', 'update/demo'],
       '/workspace'
     )
     expect(fetchMock).toHaveBeenCalledTimes(2)
@@ -100,7 +94,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'automation/aur-maintainer-updates',
+          updateBranch: 'update',
           packages: [pkg],
           autoMerge: false,
           autoMergeTimeoutSeconds: 600
@@ -176,7 +170,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'automation/aur-maintainer-updates',
+          updateBranch: 'update',
           packages: [pkg],
           autoMerge: true,
           autoMergeTimeoutSeconds: 600
