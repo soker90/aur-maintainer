@@ -36707,6 +36707,7 @@ async function run() {
                     await rollbackPackageUpdate(pkg, update);
                     throw error;
                 }
+                break;
             }
             else {
                 info(`Package ${pkg.name} is already at ${update.version}`);
