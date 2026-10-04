@@ -95,12 +95,7 @@ export async function publishAurPackage(
       repositoryPath,
       env
     )
-    await git.run(
-      'git',
-      ['add', '-A'],
-      repositoryPath,
-      env
-    )
+    await git.run('git', ['add', '-A'], repositoryPath, env)
     await git.run(
       'git',
       ['commit', '-m', 'chore: update ' + pkg.name],
