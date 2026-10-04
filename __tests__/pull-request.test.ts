@@ -112,11 +112,7 @@ describe('update pull request creation', () => {
       ['cherry-pick', expect.any(String)],
       '/workspace'
     )
-    expect(run).toHaveBeenCalledWith(
-      'git',
-      ['switch', 'main'],
-      '/workspace'
-    )
+    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
