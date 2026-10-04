@@ -31,9 +31,10 @@ export async function createUpdatePullRequest(
   git: GitRunner = hostGitRunner
 ): Promise<string | null> {
   validateBranchName(options.updateBranch)
-  const packagePaths = options.packages.map((pkg) =>
-    getRelativePackagePath(workspace, pkg.path)
-  )
+  const packagePaths = options.packages.flatMap((pkg) => {
+    const relative = getRelativePackagePath(workspace, pkg.path)
+    return [path.join(relative, 'PKGBUILD'), path.join(relative, '.SRCINFO')]
+  })
 
   await git.run('git', ['add', '--', ...packagePaths], workspace)
 
