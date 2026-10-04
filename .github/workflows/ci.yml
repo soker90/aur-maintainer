@@ -31,7 +31,7 @@ jobs:
         run: npm ci
       - name: Check Format
         id: npm-format-check
-        run: npx prettier --write __tests__/aur.test.ts && git diff -- __tests__/aur.test.ts
+        run: npm run format:check
       - name: Lint
         id: npm-lint
         run: npm run lint
