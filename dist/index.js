@@ -32,9 +32,10 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { cp, mkdtemp, readFile, readdir as readdir$1, rm as rm$1, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, mkdtemp, cp, rm as rm$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$4 } from 'node:child_process';
+import os$1 from 'node:os';
 
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -36496,14 +36497,23 @@ function isCommandNotFound(error) {
         (error.code === 'ENOENT' || error.code === 127));
 }
 
-async function publishAurPackage(pkg, options) {
+const hostGitRunner = {
+    async run(command, args, cwd, env) {
+        const { execFile } = await import('node:child_process');
+        const { promisify } = await import('node:util');
+        const run = promisify(execFile);
+        const result = await run(command, args, { cwd, env });
+        return result.stdout;
+    }
+};
+async function publishAurPackage(pkg, options, git = hostGitRunner) {
     if (!options.sshKey.trim()) {
         throw new Error('AUR SSH key is required when AUR publishing is enabled');
     }
     if (!options.knownHosts.trim()) {
         throw new Error('AUR known hosts are required when AUR publishing is enabled');
     }
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'));
+    const tempDir = await mkdtemp(path.join(os$1.tmpdir(), 'aur-maintainer-'));
     const keyPath = path.join(tempDir, 'aur-key');
     const knownHostsPath = path.join(tempDir, 'known_hosts');
     const repositoryPath = path.join(tempDir, pkg.name);
@@ -36521,29 +36531,29 @@ async function publishAurPackage(pkg, options) {
             '-o',
             'StrictHostKeyChecking=yes'
         ].join(' ');
-        const env = { ...process.env, GIT_SSH_COMMAND: sshCommand };
+        const env = {
+            ...process.env,
+            GIT_SSH_COMMAND: sshCommand
+        };
         const remote = 'ssh://aur@aur.archlinux.org/' + pkg.name + '.git';
-        await runGitCommand('git', ['clone', remote, repositoryPath], undefined, env);
+        await git.run('git', ['clone', remote, repositoryPath], undefined, env);
         const files = await getAurPackageFiles(pkg.path);
-        for (const file of files)
+        for (const file of files) {
             await cp(path.join(pkg.path, file), path.join(repositoryPath, file));
-        const changed = await runGitCommand('git', ['status', '--short'], repositoryPath, env);
+        }
+        const changed = await git.run('git', ['status', '--short'], repositoryPath, env);
         if (!changed.trim())
             return false;
-        await runGitCommand('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
-        await runGitCommand('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
-        await runGitCommand('git', ['add', '-A'], repositoryPath, env);
-        await runGitCommand('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
-        await runGitCommand('git', ['push', 'origin', 'master'], repositoryPath, env);
+        await git.run('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
+        await git.run('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
+        await git.run('git', ['add', '-A'], repositoryPath, env);
+        await git.run('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
+        await git.run('git', ['push', 'origin', 'master'], repositoryPath, env);
         return true;
     }
     finally {
         await rm$1(tempDir, { recursive: true, force: true });
     }
-}
-async function runGitCommand(command, args, cwd, env) {
-    const result = await execFile(command, args, { cwd, env });
-    return result.stdout;
 }
 async function getAurPackageFiles(packagePath) {
     const entries = await readdir$1(packagePath, { withFileTypes: true });
@@ -36554,6 +36564,7 @@ async function getAurPackageFiles(packagePath) {
         .toSorted();
     return ['PKGBUILD', '.SRCINFO', ...additionalFiles];
 }
+
 async function run() {
     const snapshots = [];
     try {
