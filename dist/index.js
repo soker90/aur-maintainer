@@ -36252,7 +36252,10 @@ function replaceAssignment(content, name, replacement) {
 const execFile$1 = promisify(execFile$4);
 const hostGitRunner$1 = {
     async run(command, args, cwd) {
-        const result = await execFile$1(command, args, { cwd });
+        const result = await execFile$1(command, args, {
+            cwd,
+            env: { ...process.env, LC_ALL: 'C' }
+        });
         return result.stdout;
     }
 };
@@ -36284,7 +36287,14 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
             '--track',
             'origin/' + options.updateBranch
         ], workspace);
-        await git.run('git', ['cherry-pick', commit], workspace);
+        try {
+            await git.run('git', ['cherry-pick', commit], workspace);
+        }
+        catch (error) {
+            if (!isEmptyCherryPick(error))
+                throw error;
+            await git.run('git', ['cherry-pick', '--skip'], workspace);
+        }
     }
     else {
         await git.run('git', ['switch', '-c', options.updateBranch], workspace);
@@ -36388,6 +36398,20 @@ function validateBranchName(branch) {
         branch.includes(' ')) {
         throw new Error('Invalid update branch name');
     }
+}
+function isEmptyCherryPick(error) {
+    const message = getErrorMessage(error);
+    return message.includes('previous cherry-pick is now empty');
+}
+function getErrorMessage(error) {
+    if (typeof error === 'object' && error !== null && 'stderr' in error) {
+        const stderr = error.stderr;
+        if (typeof stderr === 'string')
+            return stderr;
+    }
+    if (error instanceof Error)
+        return error.message;
+    return '';
 }
 function isGitExitCode(error, code) {
     return (typeof error === 'object' &&
