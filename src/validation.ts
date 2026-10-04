@@ -57,7 +57,9 @@ export async function validatePackage(
 
     if (missingArtifacts.length > 0) {
       throw new Error(
-        `Expected package artifacts were not produced for ${pkg.name}: ${missingArtifacts.join(', ')}`
+        `Expected package artifacts were not produced for ${pkg.name}: ${missingArtifacts.join(
+          ', '
+        )}`
       )
     }
 
