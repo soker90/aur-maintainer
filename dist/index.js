@@ -28698,6 +28698,14 @@ function error(message, properties = {}) {
     issueCommand('error', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
+ * Adds a warning issue
+ * @param message warning issue message. Errors will be converted to string via toString()
+ * @param properties optional properties to add to the annotation.
+ */
+function warning(message, properties = {}) {
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+}
+/**
  * Writes info to log with console.log.
  * @param message info message
  */
@@ -36014,7 +36022,7 @@ class GithubReleaseConnector {
             repository.split('/').some((part) => !part)) {
             throw new Error('github-release connector requires config.repository in owner/name form');
         }
-        const response = await this.context.fetch(`https://api.github.com/repos/${repository}/releases/latest`, githubRequestInit(this.context.token));
+        const response = await fetchGithub(this.context, `https://api.github.com/repos/${repository}/releases/latest`);
         if (!response.ok) {
             throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
         }
@@ -36037,7 +36045,7 @@ class GithubTagConnector {
         const tags = [];
         let page = 1;
         while (true) {
-            const response = await this.context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, githubRequestInit(this.context.token));
+            const response = await fetchGithub(this.context, `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`);
             if (!response.ok) {
                 throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
             }
@@ -36052,6 +36060,12 @@ class GithubTagConnector {
         }
         return parseLatestTag(repository, tags);
     }
+}
+async function fetchGithub(context, url) {
+    const authenticated = await context.fetch(url, githubRequestInit(context.token));
+    if (authenticated.status !== 403 || !context.token)
+        return authenticated;
+    return context.fetch(url, githubRequestInit());
 }
 function githubRequestInit(token) {
     const headers = {
@@ -36700,6 +36714,10 @@ async function run() {
                         });
                         if (pullRequest)
                             pullRequests.push(pullRequest);
+                    }
+                    else {
+                        warning(`Updated ${pkg.name}, but github-token was not provided; ` +
+                            'no GitHub branch or pull request was created.');
                     }
                     info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
                 }
