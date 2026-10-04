@@ -161,6 +161,16 @@ describe('update pull request creation', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'success'
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
             data: {
               mergePullRequest: { pullRequest: { id: 'PR_node' } }
             }
@@ -190,7 +200,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain(
       'MergePullRequestInput'
     )
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
+    expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
   })
   it('waits for the dispatched validation workflow before merging', async () => {
     const pkg = {
@@ -228,7 +238,7 @@ describe('update pull request creation', () => {
                 id: 99,
                 status: 'completed',
                 conclusion: 'success',
-                created_at: new Date(Date.now() + 1_000).toISOString(),
+                created_at: new Date(Date.now() + 10_000).toISOString(),
                 head_sha: 'abc123'
               }
             ]
@@ -264,7 +274,7 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenCalledTimes(5)
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/dispatches'
     )
@@ -318,6 +328,16 @@ describe('update pull request creation', () => {
           { status: 200 }
         )
       )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'failure'
+          }),
+          { status: 200 }
+        )
+      )
 
     await expect(
       createUpdatePullRequest(
@@ -336,6 +356,6 @@ describe('update pull request creation', () => {
       )
     ).rejects.toThrow('Pull request validation workflow failed: failure')
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
   })
 })
