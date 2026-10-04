@@ -36532,7 +36532,7 @@ async function publishAurPackage(pkg, options) {
             return false;
         await runGitCommand('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
         await runGitCommand('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
-        await runGitCommand('git', ['add', '--', ...files], repositoryPath, env);
+        await runGitCommand('git', ['add', '-A'], repositoryPath, env);
         await runGitCommand('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
         await runGitCommand('git', ['push', 'origin', 'master'], repositoryPath, env);
         return true;
