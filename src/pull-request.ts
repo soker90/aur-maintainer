@@ -47,22 +47,42 @@ export async function createUpdatePullRequest(
   validateBranchName(branch)
 
   await git.run('git', ['add', '--', ...packagePaths], workspace)
-  const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace)
+  const changed = await git.run(
+    'git',
+    ['diff', '--cached', '--name-only'],
+    workspace
+  )
   if (!changed.trim()) return null
 
   await git.run('git', ['switch', options.baseBranch], workspace)
   await git.run('git', ['switch', '-C', branch], workspace)
   await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace)
-  await git.run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], workspace)
+  await git.run(
+    'git',
+    [
+      'config',
+      'user.email',
+      '41898282+github-actions[bot]@users.noreply.github.com'
+    ],
+    workspace
+  )
   await git.run('git', ['commit', '-m', `chore: update ${pkg.name}`], workspace)
-  await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace)
+  await git.run(
+    'git',
+    ['push', '--force', '--set-upstream', 'origin', branch],
+    workspace
+  )
 
   const [owner, repo] = options.repository.split('/')
-  if (!owner || !repo) throw new Error('GITHUB_REPOSITORY must use owner/name form')
+  if (!owner || !repo) {
+    throw new Error('GITHUB_REPOSITORY must use owner/name form')
+  }
 
   const existing = await requestGitHub(
     options.token,
-    `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`
+    `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(
+      owner + ':' + branch
+    )}&base=${encodeURIComponent(options.baseBranch)}`
   )
   const pullRequests = Array.isArray(existing) ? existing : []
   const current = pullRequests[0]
@@ -83,7 +103,9 @@ export async function createUpdatePullRequest(
       base: options.baseBranch
     }
   )
-  if (!isPullRequest(created)) throw new Error('GitHub did not return the created pull request URL')
+  if (!isPullRequest(created)) {
+    throw new Error('GitHub did not return the created pull request URL')
+  }
   if (options.autoMerge) await enableAutoMerge(options.token, created)
   await git.run('git', ['switch', options.baseBranch], workspace)
   return created.html_url
@@ -92,6 +114,7 @@ export async function createUpdatePullRequest(
 function getPackageUpdateBranch(prefix: string, packageName: string): string {
   return prefix.replace(/\/$/, '') + '/' + packageName
 }
+
 async function enableAutoMerge(
   token: string,
   pullRequest: PullRequest
@@ -134,7 +157,6 @@ async function enableAutoMerge(
     )
   }
 }
-
 
 interface PullRequest {
   html_url: string
