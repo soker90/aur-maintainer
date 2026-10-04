@@ -98,6 +98,12 @@ describe('main.ts', () => {
       if (name === 'aur-known-hosts') return 'KNOWN HOST'
       return '.aur-maintainer.yml'
     })
+    updatePackage.mockResolvedValue({
+      changed: true,
+      currentVersion: '1.0.0',
+      version: '1.1.0',
+      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+    })
 
     await run()
 

@@ -33,6 +33,8 @@ export async function run(): Promise<void> {
     const aurPublishOnly = core.getBooleanInput('aur-publish-only')
     const aurSshKey = core.getInput('aur-ssh-key')
     const aurKnownHosts = core.getInput('aur-known-hosts')
+    const pullRequests: string[] = []
+    core.setOutput('pull-requests', JSON.stringify(pullRequests))
 
     if (aurPublishOnly) {
       if (!aurSshKey || !aurKnownHosts) {
@@ -63,7 +65,7 @@ export async function run(): Promise<void> {
     }
 
     const candidates = []
-    const updatedPackages = []
+    const repository = process.env.GITHUB_REPOSITORY
     for (const pkg of packages) {
       const factory =
         pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
@@ -96,7 +98,32 @@ export async function run(): Promise<void> {
         try {
           await updatePackageMetadata(pkg)
           await validatePackage(pkg)
-          updatedPackages.push(pkg)
+          if (aurPublish) {
+            if (!aurSshKey || !aurKnownHosts) {
+              throw new Error(
+                'aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled'
+              )
+            }
+            const published = await publishAurPackage(pkg, {
+              sshKey: aurSshKey,
+              knownHosts: aurKnownHosts
+            })
+            if (published) core.info(`Published ${pkg.name} to the AUR`)
+            else core.info(`AUR package ${pkg.name} is already up to date`)
+          }
+          if (token) {
+            if (!repository) throw new Error('GITHUB_REPOSITORY is required')
+            const pullRequest = await createUpdatePullRequest(workspace, {
+              token,
+              repository,
+              baseBranch: core.getInput('base-branch') || 'main',
+              updateBranch:
+                core.getInput('update-branch') || 'aur-maintainer/updates',
+              packages: [pkg],
+              autoMerge: core.getBooleanInput('auto-merge')
+            })
+            if (pullRequest) pullRequests.push(pullRequest)
+          }
           core.info(
             `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
           )
@@ -111,35 +138,9 @@ export async function run(): Promise<void> {
 
     core.setOutput('packages', JSON.stringify(candidates))
 
-    if (aurPublish) {
-      if (!aurSshKey || !aurKnownHosts) {
-        throw new Error(
-          'aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled'
-        )
-      }
-      for (const pkg of packages) {
-        const published = await publishAurPackage(pkg, {
-          sshKey: aurSshKey,
-          knownHosts: aurKnownHosts
-        })
-        if (published) core.info(`Published ${pkg.name} to the AUR`)
-        else core.info(`AUR package ${pkg.name} is already up to date`)
-      }
-    }
-
-    if (token && updatedPackages.length > 0) {
-      const repository = process.env.GITHUB_REPOSITORY
-      if (!repository) throw new Error('GITHUB_REPOSITORY is required')
-      const pullRequest = await createUpdatePullRequest(workspace, {
-        token,
-        repository,
-        baseBranch: core.getInput('base-branch') || 'main',
-        updateBranch:
-          core.getInput('update-branch') || 'aur-maintainer/updates',
-        packages: updatedPackages,
-        autoMerge: core.getBooleanInput('auto-merge')
-      })
-      if (pullRequest) core.setOutput('pull-request', pullRequest)
+    if (pullRequests.length > 0) {
+      core.setOutput('pull-requests', JSON.stringify(pullRequests))
+      core.setOutput('pull-request', pullRequests[0])
     }
   } catch (error) {
     await rollbackSnapshots(snapshots)

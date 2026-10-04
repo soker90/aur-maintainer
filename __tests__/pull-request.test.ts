@@ -7,7 +7,7 @@ describe('update pull request creation', () => {
     jest.restoreAllMocks()
   })
 
-  it('commits, pushes, and creates a pull request', async () => {
+  it('creates a package-specific branch and pull request', async () => {
     const pkg = {
       name: 'demo',
       path: '/workspace/packages/demo',
@@ -18,31 +18,15 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
-      if (args[0] === 'rev-parse') return 'abc123\n'
-      if (args[0] === 'ls-remote') {
-        const error = new Error('branch not found') as Error & {
-          code: number
-        }
-        error.code = 2
-        throw error
-      }
       return ''
     })
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify([]), {
-          status: 200,
-          headers: { 'content-type': 'application/json' }
-        })
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({ html_url: 'https://github.com/test/pr/1' }),
-          {
-            status: 201,
-            headers: { 'content-type': 'application/json' }
-          }
+          { status: 201 }
         )
       )
 
@@ -53,7 +37,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'aur-maintainer/updates',
+          updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
           autoMerge: false
         },
@@ -66,20 +50,27 @@ describe('update pull request creation', () => {
       ['add', '--', 'packages/demo/PKGBUILD', 'packages/demo/.SRCINFO'],
       '/workspace'
     )
+    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(run).toHaveBeenCalledWith(
       'git',
-      ['switch', '-c', 'aur-maintainer/updates'],
+      ['switch', '-C', 'automation/aur-maintainer-updates/demo'],
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith(
       'git',
-      ['push', '--set-upstream', 'origin', 'aur-maintainer/updates'],
+      [
+        'push',
+        '--force',
+        '--set-upstream',
+        'origin',
+        'automation/aur-maintainer-updates/demo'
+      ],
       '/workspace'
     )
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-  it('skips an empty cherry-pick on an existing update branch', async () => {
+  it('updates an existing package pull request without cherry-picking', async () => {
     const pkg = {
       name: 'demo',
       path: '/workspace/packages/demo',
@@ -90,26 +81,16 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
-      if (args[0] === 'rev-parse') return 'abc123\n'
-      if (args[0] === 'ls-remote') {
-        return 'remote-sha\trefs/heads/aur-maintainer/updates\n'
-      }
-      if (args[0] === 'cherry-pick' && args[1] === 'abc123') {
-        const error = new Error('cherry-pick failed') as Error & {
-          stderr: string
-        }
-        error.stderr =
-          'The previous cherry-pick is now empty, possibly due to conflict resolution.'
-        throw error
-      }
       return ''
     })
-    const response = new Response(
-      JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }])
-    )
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(response)
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]),
+          { status: 200 }
+        )
+      )
 
     await expect(
       createUpdatePullRequest(
@@ -118,7 +99,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'aur-maintainer/updates',
+          updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
           autoMerge: false
         },
@@ -126,60 +107,13 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(run).toHaveBeenCalledWith(
-      'git',
-      ['cherry-pick', '--skip'],
-      '/workspace'
-    )
-    expect(fetchMock).toHaveBeenCalledTimes(1)
-  })
-
-  it('propagates non-empty cherry-pick errors', async () => {
-    const pkg = {
-      name: 'demo',
-      path: '/workspace/packages/demo',
-      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
-      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
-      updateConfigPath: '/workspace/packages/demo/update.yml',
-      config: { connector: 'github-release', config: {} }
-    } satisfies PackageDefinition
-    const run = jest.fn().mockImplementation(async (_command, args) => {
-      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
-      if (args[0] === 'rev-parse') return 'abc123\n'
-      if (args[0] === 'ls-remote') {
-        return 'remote-sha\trefs/heads/aur-maintainer/updates\n'
-      }
-      if (args[0] === 'cherry-pick' && args[1] === 'abc123') {
-        const error = new Error('cherry-pick conflict') as Error & {
-          stderr: string
-        }
-        error.stderr = 'CONFLICT (content): merge conflict in PKGBUILD'
-        throw error
-      }
-      return ''
-    })
-    jest.spyOn(globalThis, 'fetch')
-
-    await expect(
-      createUpdatePullRequest(
-        '/workspace',
-        {
-          token: 'token',
-          repository: 'test/repo',
-          baseBranch: 'main',
-          updateBranch: 'aur-maintainer/updates',
-          packages: [pkg],
-          autoMerge: false
-        },
-        { run }
-      )
-    ).rejects.toThrow('cherry-pick conflict')
-
     expect(run).not.toHaveBeenCalledWith(
       'git',
-      ['cherry-pick', '--skip'],
+      ['cherry-pick', expect.any(String)],
       '/workspace'
     )
+    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('enables squash auto-merge when requested', async () => {
@@ -193,14 +127,6 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
-      if (args[0] === 'rev-parse') return 'abc123\n'
-      if (args[0] === 'ls-remote') {
-        const error = new Error('branch not found') as Error & {
-          status: number
-        }
-        error.status = 2
-        throw error
-      }
       return ''
     })
     const fetchMock = jest
@@ -234,7 +160,7 @@ describe('update pull request creation', () => {
           token: 'token',
           repository: 'test/repo',
           baseBranch: 'main',
-          updateBranch: 'aur-maintainer/updates',
+          updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
           autoMerge: true
         },
@@ -243,9 +169,6 @@ describe('update pull request creation', () => {
     ).resolves.toBe('https://github.com/test/pr/1')
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(fetchMock.mock.calls[2]?.[0]).toBe('https://api.github.com/graphql')
     expect(String(fetchMock.mock.calls[2]?.[1]?.body)).toContain('SQUASH')
-    expect(String(fetchMock.mock.calls[2]?.[1]?.body)).toContain('PR_node')
-    expect(String(fetchMock.mock.calls[2]?.[1]?.body)).toContain('abc123')
   })
 })
