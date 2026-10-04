@@ -36286,9 +36286,8 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     await git.run('git', ['commit', '-m', `chore: update ${pkg.name}`], workspace);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
-    if (!owner || !repo) {
+    if (!owner || !repo)
         throw new Error('GITHUB_REPOSITORY must use owner/name form');
-    }
     const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`);
     const pullRequests = Array.isArray(existing) ? existing : [];
     const current = pullRequests[0];
@@ -36304,9 +36303,8 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
         head: branch,
         base: options.baseBranch
     });
-    if (!isPullRequest(created)) {
+    if (!isPullRequest(created))
         throw new Error('GitHub did not return the created pull request URL');
-    }
     if (options.autoMerge)
         await enableAutoMerge(options.token, created);
     await git.run('git', ['switch', options.baseBranch], workspace);
