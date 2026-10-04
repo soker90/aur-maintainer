@@ -42,6 +42,10 @@ export async function validatePackage(
       .split('\n')
       .map((entry) => entry.trim())
       .filter(Boolean)
+    if (expectedArtifacts.length === 0) {
+      throw new Error(`No package artifact was produced for ${pkg.name}`)
+    }
+
     const artifacts = expectedArtifacts.map((artifact) =>
       resolveArtifactPath(pkg.path, artifact)
     )
