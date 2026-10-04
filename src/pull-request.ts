@@ -71,7 +71,6 @@ function validateBranchName(branch: string): void {
   }
 }
 
-
 interface PullRequestOptions {
   token: string
   repository: string
