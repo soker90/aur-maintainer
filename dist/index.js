@@ -36506,15 +36506,6 @@ const hostGitRunner = {
         return result.stdout;
     }
 };
-const hostGitRunner = {
-    async run(command, args, cwd, env) {
-        const { execFile } = await import('node:child_process');
-        const { promisify } = await import('node:util');
-        const run = promisify(execFile);
-        const result = await run(command, args, { cwd, env });
-        return result.stdout;
-    }
-};
 async function publishAurPackage(pkg, options, git = hostGitRunner) {
     if (!options.sshKey.trim()) {
         throw new Error('AUR SSH key is required when AUR publishing is enabled');
