@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { cp, mkdtemp, readFile, readdir as readdir$1, rm, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, readdir as readdir$1, rm as rm$1, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$4 } from 'node:child_process';
 
@@ -36538,7 +36538,7 @@ async function publishAurPackage(pkg, options) {
         return true;
     }
     finally {
-        await rm(tempDir, { recursive: true, force: true });
+        await rm$1(tempDir, { recursive: true, force: true });
     }
 }
 async function runGitCommand(command, args, cwd, env) {
