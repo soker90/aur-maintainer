@@ -89,6 +89,9 @@ export async function createUpdatePullRequest(
   return created.html_url
 }
 
+function getPackageUpdateBranch(prefix: string, packageName: string): string {
+  return prefix.replace(/\/$/, '') + '/' + packageName
+}
 async function enableAutoMerge(
   token: string,
   pullRequest: PullRequest
@@ -132,9 +135,6 @@ async function enableAutoMerge(
   }
 }
 
-function getPackageUpdateBranch(prefix: string, packageName: string): string {
-  return prefix.replace(/\/$/, '') + '/' + packageName
-}
 
 interface PullRequest {
   html_url: string
