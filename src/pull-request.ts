@@ -199,8 +199,8 @@ async function waitForChecksAndMerge(
   const [owner, repo] = repository.split('/')
   if (!owner || !repo)
     throw new Error('GITHUB_REPOSITORY must use owner/name form')
-  if (!pullRequest.number || !pullRequest.head?.sha) {
-    throw new Error('GitHub did not return the pull request number or head SHA')
+  if (!pullRequest.head?.sha) {
+    throw new Error('GitHub did not return the pull request head SHA')
   }
 
   while (Date.now() < deadline) {
@@ -225,7 +225,7 @@ async function waitForChecksAndMerge(
           `Pull request checks failed: ${failed.name} (${failed.conclusion ?? 'unknown'})`
         )
       }
-      await squashMergePullRequest(token, owner, repo, pullRequest.number)
+      await squashMergePullRequest(token, pullRequest)
       return
     }
 
@@ -247,30 +247,44 @@ async function waitForChecksAndMerge(
 
 async function squashMergePullRequest(
   token: string,
-  owner: string,
-  repo: string,
-  pullRequestNumber: number
+  pullRequest: PullRequest
 ): Promise<void> {
-  const result = await requestGitHub(
-    token,
-    `/repos/${owner}/${repo}/pulls/${pullRequestNumber}/merge`,
-    'PUT',
-    { merge_method: 'squash' }
-  )
-  if (
-    typeof result !== 'object' ||
-    result === null ||
-    !('merged' in result) ||
-    result.merged !== true
-  ) {
-    const message =
-      typeof result === 'object' &&
-      result !== null &&
-      'message' in result &&
-      typeof result.message === 'string'
-        ? result.message
-        : 'GitHub did not merge the pull request'
-    throw new Error(message)
+  if (!pullRequest.node_id || !pullRequest.head?.sha) {
+    throw new Error(
+      'GitHub did not return the pull request node ID or head SHA'
+    )
+  }
+
+  const response = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: 'Bearer ' + token,
+      'content-type': 'application/json',
+      'x-github-api-version': '2026-03-10',
+      'user-agent': 'aur-maintainer'
+    },
+    body: JSON.stringify({
+      query:
+        'mutation($input: MergePullRequestInput!) { mergePullRequest(input: $input) { pullRequest { id } } }',
+      variables: {
+        input: {
+          pullRequestId: pullRequest.node_id,
+          expectedHeadOid: pullRequest.head.sha,
+          mergeMethod: 'SQUASH'
+        }
+      }
+    })
+  })
+
+  const payload = (await response.json()) as {
+    errors?: Array<{ message?: string }>
+  }
+  if (!response.ok || payload.errors?.length) {
+    const message = payload.errors?.[0]?.message
+    throw new Error(
+      `GitHub squash merge failed: ${message ?? response.statusText}`
+    )
   }
 }
 

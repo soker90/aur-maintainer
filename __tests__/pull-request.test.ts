@@ -138,7 +138,7 @@ describe('update pull request creation', () => {
         new Response(
           JSON.stringify({
             html_url: 'https://github.com/test/pr/1',
-            number: 1,
+            node_id: 'PR_node',
             head: { sha: 'abc123' }
           }),
           { status: 201 }
@@ -159,9 +159,14 @@ describe('update pull request creation', () => {
         )
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ merged: true, sha: 'merge123' }), {
-          status: 200
-        })
+        new Response(
+          JSON.stringify({
+            data: {
+              mergePullRequest: { pullRequest: { id: 'PR_node' } }
+            }
+          }),
+          { status: 200 }
+        )
       )
 
     await expect(
@@ -182,7 +187,9 @@ describe('update pull request creation', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('update: demo')
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('merge_method')
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('squash')
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain(
+      'MergePullRequestInput'
+    )
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
 })
