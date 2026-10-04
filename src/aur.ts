@@ -114,7 +114,9 @@ export async function publishAurPackage(
   }
 }
 
-export async function getAurPackageFiles(packagePath: string): Promise<string[]> {
+export async function getAurPackageFiles(
+  packagePath: string
+): Promise<string[]> {
   const entries = await readdir(packagePath, { withFileTypes: true })
   const additionalFiles = entries
     .filter((entry) => entry.isFile())
