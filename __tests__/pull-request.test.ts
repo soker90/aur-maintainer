@@ -49,11 +49,7 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(run).toHaveBeenCalledWith(
-      'git',
-      ['switch', 'main'],
-      '/workspace'
-    )
+    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(run).toHaveBeenCalledWith(
       'git',
       ['switch', '-C', 'automation/aur-maintainer-updates/demo'],
