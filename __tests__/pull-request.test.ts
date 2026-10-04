@@ -192,7 +192,7 @@ describe('update pull request creation', () => {
     )
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
-  it('dispatches validation before automerging an existing package pull request', async () => {
+  it('waits for the dispatched validation workflow before merging', async () => {
     const pkg = {
       name: 'demo',
       path: '/workspace/packages/demo',
@@ -223,13 +223,25 @@ describe('update pull request creation', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            check_runs: [
+            workflow_runs: [
               {
-                name: 'Validate Packages',
-                status: 'completed',
-                conclusion: 'success'
+                id: 99,
+                status: 'in_progress',
+                conclusion: null,
+                created_at: new Date().toISOString(),
+                head_sha: 'abc123'
               }
             ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'success'
           }),
           { status: 200 }
         )
@@ -262,12 +274,93 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenCalledTimes(5)
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/dispatches'
     )
-    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain(
-      '"ref":"automation/aur-maintainer-updates/demo"'
+    expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
+      '/actions/workflows/validate-packages.yml/runs?branch='
     )
+    expect(String(fetchMock.mock.calls[3]?.[0])).toContain(
+      '/actions/runs/99'
+    )
+    expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
+  })
+
+  it('waits for the dispatched validation workflow and rejects failures', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      return ''
+    })
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              html_url: 'https://github.com/test/pr/1',
+              node_id: 'PR_node',
+              head: { sha: 'abc123' }
+            }
+          ]),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            workflow_runs: [
+              {
+                id: 99,
+                status: 'in_progress',
+                conclusion: null,
+                created_at: new Date().toISOString(),
+                head_sha: 'abc123'
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'failure'
+          }),
+          { status: 200 }
+        )
+      )
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'automation/aur-maintainer-updates',
+          packages: [pkg],
+          autoMerge: true,
+          autoMergeTimeoutSeconds: 600,
+          validationWorkflow: 'validate-packages.yml'
+        },
+        { run }
+      )
+    ).rejects.toThrow(
+      'Pull request validation workflow failed: failure'
+    )
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
   })
 })
