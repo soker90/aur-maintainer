@@ -228,7 +228,7 @@ describe('update pull request creation', () => {
                 id: 99,
                 status: 'completed',
                 conclusion: 'success',
-                created_at: new Date().toISOString(),
+                created_at: new Date(Date.now() + 1_000).toISOString(),
                 head_sha: 'abc123'
               }
             ]
