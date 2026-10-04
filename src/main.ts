@@ -122,9 +122,7 @@ export async function run(): Promise<void> {
               packages: [pkg],
               autoMerge: core.getBooleanInput('auto-merge'),
               autoMergeTimeoutSeconds:
-                getPositiveIntegerInput('auto-merge-timeout'),
-              validationWorkflow:
-                core.getInput('validation-workflow') || undefined
+                getPositiveIntegerInput('auto-merge-timeout')
             })
             if (pullRequest) pullRequests.push(pullRequest)
           }
