@@ -118,6 +118,42 @@ describe('update pull request creation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('propagates non-empty cherry-pick errors', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
+      if (args[0] === 'rev-parse') return 'abc123\\n'
+      if (args[0] === 'ls-remote') return 'remote-sha\\trefs/heads/aur-maintainer/updates\\n'
+      if (args[0] === 'cherry-pick' && args[1] === 'abc123') {
+        const error = new Error('cherry-pick conflict') as Error & { stderr: string }
+        error.stderr = 'CONFLICT (content): merge conflict in PKGBUILD'
+        throw error
+      }
+      return ''
+    })
+    jest.spyOn(globalThis, 'fetch')
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token', repository: 'test/repo', baseBranch: 'main',
+          updateBranch: 'aur-maintainer/updates', packages: [pkg], autoMerge: false
+        },
+        { run }
+      )
+    ).rejects.toThrow('cherry-pick conflict')
+
+    expect(run).not.toHaveBeenCalledWith('git', ['cherry-pick', '--skip'], '/workspace')
+  })
+
   it('enables squash auto-merge when requested', async () => {
     const pkg = {
       name: 'demo',
