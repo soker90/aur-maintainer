@@ -43,6 +43,7 @@ export async function requestGitHub(
     )
   }
 
+  if (response.status === 204) return undefined
   return response.json()
 }
 
@@ -80,6 +81,7 @@ interface PullRequestOptions {
   packages: PackageDefinition[]
   autoMerge: boolean
   autoMergeTimeoutSeconds: number
+  validationWorkflow?: string
 }
 
 export async function createUpdatePullRequest(
@@ -145,6 +147,15 @@ export async function createUpdatePullRequest(
   const current = pullRequests[0]
   if (isPullRequest(current)) {
     if (options.autoMerge) {
+      if (options.validationWorkflow) {
+        await dispatchValidationWorkflow(
+          options.token,
+          owner,
+          repo,
+          options.validationWorkflow,
+          branch
+        )
+      }
       await waitForChecksAndMerge(
         options.token,
         options.repository,
@@ -183,6 +194,23 @@ export async function createUpdatePullRequest(
 
 function getPackageUpdateBranch(prefix: string, packageName: string): string {
   return prefix.replace(/\/$/, '') + '/' + packageName
+}
+
+async function dispatchValidationWorkflow(
+  token: string,
+  owner: string,
+  repo: string,
+  workflow: string,
+  ref: string
+): Promise<void> {
+  await requestGitHub(
+    token,
+    `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(
+      workflow
+    )}/dispatches`,
+    'POST',
+    { ref }
+  )
 }
 
 async function waitForChecksAndMerge(
