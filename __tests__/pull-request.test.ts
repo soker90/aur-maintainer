@@ -7,15 +7,19 @@ describe('update pull request creation', () => {
     jest.restoreAllMocks()
   })
 
+  function createPackage(name = 'demo'): PackageDefinition {
+    return {
+      name,
+      path: `/workspace/packages/${name}`,
+      pkgbuildPath: `/workspace/packages/${name}/PKGBUILD`,
+      srcinfoPath: `/workspace/packages/${name}/.SRCINFO`,
+      updateConfigPath: `/workspace/packages/${name}/update.yml`,
+      config: { connector: 'github-release', config: {} }
+    }
+  }
+
   it('creates a package-specific branch and pull request', async () => {
-    const pkg = {
-  name: 'demo',
-  path: '/workspace/packages/demo',
-  pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
-  srcinfoPath: '/workspace/packages/demo/.SRCINFO',
-  updateConfigPath: '/workspace/packages/demo/update.yml',
-  config: { connector: 'github-release', config: {} }
-} satisfies PackageDefinition
+    const pkg = createPackage()
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
@@ -77,14 +81,7 @@ describe('update pull request creation', () => {
   })
 
   it('updates an existing package pull request without cherry-picking', async () => {
-    const pkg = {
-  name: 'demo',
-  path: '/workspace/packages/demo',
-  pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
-  srcinfoPath: '/workspace/packages/demo/.SRCINFO',
-  updateConfigPath: '/workspace/packages/demo/update.yml',
-  config: { connector: 'github-release', config: {} }
-} satisfies PackageDefinition
+    const pkg = createPackage()
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
@@ -128,14 +125,7 @@ describe('update pull request creation', () => {
   })
 
   it('enables squash auto-merge when requested', async () => {
-    const pkg = {
-  name: 'demo',
-  path: '/workspace/packages/demo',
-  pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
-  srcinfoPath: '/workspace/packages/demo/.SRCINFO',
-  updateConfigPath: '/workspace/packages/demo/update.yml',
-  config: { connector: 'github-release', config: {} }
-} satisfies PackageDefinition
+    const pkg = createPackage()
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
@@ -186,14 +176,8 @@ describe('update pull request creation', () => {
   })
 
   it('requires exactly one package per pull request', async () => {
-    const pkg = {
-  name: 'demo',
-  path: '/workspace/packages/demo',
-  pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
-  srcinfoPath: '/workspace/packages/demo/.SRCINFO',
-  updateConfigPath: '/workspace/packages/demo/update.yml',
-  config: { connector: 'github-release', config: {} }
-} satisfies PackageDefinition
+    const pkg = createPackage()
+
     await expect(
       createUpdatePullRequest(
         '/workspace',
@@ -202,7 +186,7 @@ describe('update pull request creation', () => {
           repository: 'test/repo',
           baseBranch: 'main',
           updateBranch: 'automation/aur-maintainer-updates',
-          packages: [pkg, { ...pkg, name: 'other' }],
+          packages: [pkg, createPackage('other')],
           autoMerge: false
         },
         { run: jest.fn() }
