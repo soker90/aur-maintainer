@@ -36574,8 +36574,25 @@ async function run() {
         const packages = await discoverPackages(workspace, config);
         const token = getInput('github-token');
         const aurPublish = getBooleanInput('aur-publish');
+        const aurPublishOnly = getBooleanInput('aur-publish-only');
         const aurSshKey = getInput('aur-ssh-key');
         const aurKnownHosts = getInput('aur-known-hosts');
+        if (aurPublishOnly) {
+            if (!aurSshKey || !aurKnownHosts) {
+                throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
+            }
+            for (const pkg of packages) {
+                const published = await publishAurPackage(pkg, {
+                    sshKey: aurSshKey,
+                    knownHosts: aurKnownHosts
+                });
+                if (published)
+                    info(`Published ${pkg.name} to the AUR`);
+                else
+                    info(`AUR package ${pkg.name} is already up to date`);
+            }
+            return;
+        }
         const registryContext = {
             fetch: (input, init) => fetch(input, init),
             token: token || undefined
