@@ -33,7 +33,7 @@ jobs:
 
       - name: Commit dist
         run: |
-          if git diff --quiet -- dist; then
+          if git diff --quiet; then
             exit 0
           fi
           git config user.name 'github-actions[bot]'
