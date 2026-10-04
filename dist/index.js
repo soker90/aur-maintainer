@@ -36258,7 +36258,10 @@ const hostGitRunner$1 = {
 };
 async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1) {
     validateBranchName(options.updateBranch);
-    const packagePaths = options.packages.map((pkg) => getRelativePackagePath(workspace, pkg.path));
+    const packagePaths = options.packages.flatMap((pkg) => {
+        const relative = getRelativePackagePath(workspace, pkg.path);
+        return [path.join(relative, 'PKGBUILD'), path.join(relative, '.SRCINFO')];
+    });
     await git.run('git', ['add', '--', ...packagePaths], workspace);
     const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
     if (!changed.trim())
