@@ -65,7 +65,7 @@ export async function createUpdatePullRequest(
   )
 
   const commit = (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim()
-  const remoteBranch = 'refs/heads/' + options.updateBranch
+  const remoteBranch = options.updateBranch
 
   if (await remoteBranchExists(git, workspace, remoteBranch)) {
     await git.run('git', ['fetch', 'origin', options.updateBranch], workspace)
