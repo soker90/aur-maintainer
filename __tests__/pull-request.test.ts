@@ -114,14 +114,20 @@ describe('update pull request creation', () => {
         }), { status: 200 })
       )
 
-    await expect(createUpdatePullRequest('/workspace', {
-      token: 'token',
-      repository: 'test/repo',
-      baseBranch: 'main',
-      updateBranch: 'aur-maintainer/updates',
-      packages: [pkg],
-      autoMerge: true
-    }, { run })).resolves.toBe('https://github.com/test/pr/1')
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'aur-maintainer/updates',
+          packages: [pkg],
+          autoMerge: true
+        },
+        { run }
+      )
+    ).resolves.toBe('https://github.com/test/pr/1')
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(fetchMock.mock.calls[2]?.[0]).toBe('https://api.github.com/graphql')
