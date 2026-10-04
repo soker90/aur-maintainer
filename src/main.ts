@@ -63,7 +63,8 @@ export async function run(): Promise<void> {
     }
 
     const candidates = []
-    const updatedPackages = []
+    const pullRequests = []
+    const repository = process.env.GITHUB_REPOSITORY
     for (const pkg of packages) {
       const factory =
         pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
@@ -96,7 +97,19 @@ export async function run(): Promise<void> {
         try {
           await updatePackageMetadata(pkg)
           await validatePackage(pkg)
-          updatedPackages.push(pkg)
+          if (token) {
+            if (!repository) throw new Error('GITHUB_REPOSITORY is required')
+            const pullRequest = await createUpdatePullRequest(workspace, {
+              token,
+              repository,
+              baseBranch: core.getInput('base-branch') || 'main',
+              updateBranch:
+                core.getInput('update-branch') || 'aur-maintainer/updates',
+              packages: [pkg],
+              autoMerge: core.getBooleanInput('auto-merge')
+            })
+            if (pullRequest) pullRequests.push(pullRequest)
+          }
           core.info(
             `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
           )
@@ -127,19 +140,9 @@ export async function run(): Promise<void> {
       }
     }
 
-    if (token && updatedPackages.length > 0) {
-      const repository = process.env.GITHUB_REPOSITORY
-      if (!repository) throw new Error('GITHUB_REPOSITORY is required')
-      const pullRequest = await createUpdatePullRequest(workspace, {
-        token,
-        repository,
-        baseBranch: core.getInput('base-branch') || 'main',
-        updateBranch:
-          core.getInput('update-branch') || 'aur-maintainer/updates',
-        packages: updatedPackages,
-        autoMerge: core.getBooleanInput('auto-merge')
-      })
-      if (pullRequest) core.setOutput('pull-request', pullRequest)
+    if (pullRequests.length > 0) {
+      core.setOutput('pull-requests', JSON.stringify(pullRequests))
+      core.setOutput('pull-request', pullRequests[0])
     }
   } catch (error) {
     await rollbackSnapshots(snapshots)
