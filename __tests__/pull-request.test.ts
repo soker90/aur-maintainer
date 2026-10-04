@@ -63,7 +63,7 @@ describe('update pull request creation', () => {
 
     expect(run).toHaveBeenCalledWith(
       'git',
-      ['add', '--', 'packages/demo'],
+      ['add', '--', 'packages/demo/PKGBUILD', 'packages/demo/.SRCINFO'],
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith(
