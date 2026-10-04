@@ -108,6 +108,27 @@ describe('main.ts', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
+  it('publishes without checking upstream updates in publish-only mode', async () => {
+    core.getBooleanInput.mockImplementation(
+      (name) => name === 'aur-publish-only'
+    )
+    core.getInput.mockImplementation((name) => {
+      if (name === 'github-token') return 'test-token'
+      if (name === 'aur-ssh-key') return 'PRIVATE KEY'
+      if (name === 'aur-known-hosts') return 'KNOWN HOST'
+      return '.aur-maintainer.yml'
+    })
+
+    await run()
+
+    expect(publishAurPackage).toHaveBeenCalledWith(pkg, {
+      sshKey: 'PRIVATE KEY',
+      knownHosts: 'KNOWN HOST'
+    })
+    expect(loadRepositoryConnectors).not.toHaveBeenCalled()
+    expect(updatePackage).not.toHaveBeenCalled()
+  })
+
   it('does not fail when the optional repository configuration is absent', async () => {
     discoverPackages.mockResolvedValue([])
     await run()
