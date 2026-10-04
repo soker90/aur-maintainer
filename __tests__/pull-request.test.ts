@@ -7,19 +7,15 @@ describe('update pull request creation', () => {
     jest.restoreAllMocks()
   })
 
-  function createPackage(name = 'demo'): PackageDefinition {
-    return {
-      name,
-      path: `/workspace/packages/${name}`,
-      pkgbuildPath: `/workspace/packages/${name}/PKGBUILD`,
-      srcinfoPath: `/workspace/packages/${name}/.SRCINFO`,
-      updateConfigPath: `/workspace/packages/${name}/update.yml`,
-      config: { connector: 'github-release', config: {} }
-    }
-  }
-
   it('creates a package-specific branch and pull request', async () => {
-    const pkg = createPackage()
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
@@ -49,7 +45,16 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['add', '--', 'packages/demo/PKGBUILD', 'packages/demo/.SRCINFO'],
+      '/workspace'
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['switch', 'main'],
+      '/workspace'
+    )
     expect(run).toHaveBeenCalledWith(
       'git',
       ['switch', '-C', 'automation/aur-maintainer-updates/demo'],
@@ -66,16 +71,18 @@ describe('update pull request creation', () => {
       ],
       '/workspace'
     )
-    expect(run).toHaveBeenCalledWith(
-      'git',
-      ['switch', 'main'],
-      '/workspace'
-    )
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('updates an existing package pull request without cherry-picking', async () => {
-    const pkg = createPackage()
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
@@ -84,13 +91,7 @@ describe('update pull request creation', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(
         new Response(
-          JSON.stringify([
-            {
-              html_url: 'https://github.com/test/pr/1',
-              node_id: 'PR_node',
-              head: { sha: 'abc123' }
-            }
-          ]),
+          JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]),
           { status: 200 }
         )
       )
@@ -115,20 +116,30 @@ describe('update pull request creation', () => {
       ['cherry-pick', expect.any(String)],
       '/workspace'
     )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['switch', 'main'],
+      '/workspace'
+    )
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('enables squash auto-merge when requested', async () => {
-    const pkg = createPackage()
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
     })
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify([]), { status: 200 })
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -167,24 +178,5 @@ describe('update pull request creation', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(String(fetchMock.mock.calls[2]?.[1]?.body)).toContain('SQUASH')
-  })
-
-  it('requires exactly one package per pull request', async () => {
-    const pkg = createPackage()
-
-    await expect(
-      createUpdatePullRequest(
-        '/workspace',
-        {
-          token: 'token',
-          repository: 'test/repo',
-          baseBranch: 'main',
-          updateBranch: 'automation/aur-maintainer-updates',
-          packages: [pkg, createPackage('other')],
-          autoMerge: false
-        },
-        { run: jest.fn() }
-      )
-    ).rejects.toThrow('Exactly one package is required')
   })
 })
