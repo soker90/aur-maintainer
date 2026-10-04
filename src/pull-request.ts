@@ -74,9 +74,8 @@ export async function createUpdatePullRequest(
   )
 
   const [owner, repo] = options.repository.split('/')
-  if (!owner || !repo) {
+  if (!owner || !repo)
     throw new Error('GITHUB_REPOSITORY must use owner/name form')
-  }
 
   const existing = await requestGitHub(
     options.token,
@@ -103,9 +102,8 @@ export async function createUpdatePullRequest(
       base: options.baseBranch
     }
   )
-  if (!isPullRequest(created)) {
+  if (!isPullRequest(created))
     throw new Error('GitHub did not return the created pull request URL')
-  }
   if (options.autoMerge) await enableAutoMerge(options.token, created)
   await git.run('git', ['switch', options.baseBranch], workspace)
   return created.html_url
