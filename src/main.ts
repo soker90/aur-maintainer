@@ -11,6 +11,7 @@ import { updatePackageMetadata } from './metadata.js'
 import { rollbackPackageUpdate, updatePackage } from './update.js'
 import { createUpdatePullRequest } from './pull-request.js'
 import { validatePackage } from './validation.js'
+import { publishAurPackage } from './aur.js'
 import type { PackageDefinition } from './types.js'
 
 interface PackageSnapshot {
@@ -28,6 +29,9 @@ export async function run(): Promise<void> {
     const config = await loadMaintainerConfig(workspace, configPath)
     const packages = await discoverPackages(workspace, config)
     const token = core.getInput('github-token')
+    const aurPublish = core.getBooleanInput('aur-publish')
+    const aurSshKey = core.getInput('aur-ssh-key')
+    const aurKnownHosts = core.getInput('aur-known-hosts')
 
     const registryContext = {
       fetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
@@ -88,6 +92,22 @@ export async function run(): Promise<void> {
     }
 
     core.setOutput('packages', JSON.stringify(candidates))
+
+    if (aurPublish) {
+      if (!aurSshKey || !aurKnownHosts) {
+        throw new Error(
+          'aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled'
+        )
+      }
+      for (const pkg of packages) {
+        const published = await publishAurPackage(pkg, {
+          sshKey: aurSshKey,
+          knownHosts: aurKnownHosts
+        })
+        if (published) core.info(`Published ${pkg.name} to the AUR`)
+        else core.info(`AUR package ${pkg.name} is already up to date`)
+      }
+    }
 
     if (token && updatedPackages.length > 0) {
       const repository = process.env.GITHUB_REPOSITORY
