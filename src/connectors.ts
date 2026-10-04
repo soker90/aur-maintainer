@@ -317,7 +317,10 @@ async function fetchGithub(
   context: ConnectorContext,
   url: string
 ): Promise<Response> {
-  const authenticated = await context.fetch(url, githubRequestInit(context.token))
+  const authenticated = await context.fetch(
+    url,
+    githubRequestInit(context.token)
+  )
   if (authenticated.status !== 403 || !context.token) return authenticated
 
   return context.fetch(url, githubRequestInit())
