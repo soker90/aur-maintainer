@@ -61,7 +61,11 @@ describe('main.ts', () => {
   beforeEach(() => {
     process.env.GITHUB_WORKSPACE = '/workspace'
     core.getInput.mockImplementation((name) =>
-      name === 'github-token' ? 'test-token' : '.aur-maintainer.yml'
+      name === 'github-token'
+        ? 'test-token'
+        : name === 'auto-merge-timeout'
+          ? '600'
+          : '.aur-maintainer.yml'
     )
     core.getBooleanInput.mockReturnValue(false)
     discoverPackages.mockResolvedValue([pkg])
