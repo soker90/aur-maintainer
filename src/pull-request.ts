@@ -11,7 +11,10 @@ export interface GitRunner {
 
 const hostGitRunner: GitRunner = {
   async run(command, args, cwd) {
-    const result = await execFile(command, args, { cwd })
+    const result = await execFile(command, args, {
+      cwd,
+      env: { ...process.env, LC_ALL: 'C' }
+    })
     return result.stdout
   }
 }
