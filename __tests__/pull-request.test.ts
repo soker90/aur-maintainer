@@ -52,16 +52,14 @@ describe('update pull request creation', () => {
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
-    expect(run).toHaveBeenCalledWith('git', ['switch', '-C', 'update/demo'], '/workspace')
     expect(run).toHaveBeenCalledWith(
       'git',
-      [
-        'push',
-        '--force',
-        '--set-upstream',
-        'origin',
-        'update/demo'
-      ],
+      ['switch', '-C', 'update/demo'],
+      '/workspace'
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['push', '--force', '--set-upstream', 'origin', 'update/demo'],
       '/workspace'
     )
     expect(fetchMock).toHaveBeenCalledTimes(2)
