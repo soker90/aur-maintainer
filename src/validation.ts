@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
 import { access, readFile } from 'node:fs/promises'
+import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
 
@@ -41,19 +42,23 @@ export async function validatePackage(
       .split('\n')
       .map((entry) => entry.trim())
       .filter(Boolean)
-    const artifacts: string[] = []
+    const artifacts = expectedArtifacts.map((artifact) =>
+      resolveArtifactPath(pkg.path, artifact)
+    )
+    const missingArtifacts: string[] = []
 
-    for (const artifact of expectedArtifacts) {
+    for (const artifact of artifacts) {
       try {
         await access(artifact)
-        artifacts.push(artifact)
       } catch {
-        // The package was expected but was not produced.
+        missingArtifacts.push(artifact)
       }
     }
 
-    if (artifacts.length === 0) {
-      throw new Error(`No package artifact was produced for ${pkg.name}`)
+    if (missingArtifacts.length > 0) {
+      throw new Error(
+        `Expected package artifacts were not produced for ${pkg.name}: ${missingArtifacts.join(', ')}`
+      )
     }
 
     for (const artifact of artifacts) {
@@ -97,6 +102,10 @@ async function validatePackageWithDocker(
     ],
     { cwd: pkg.path }
   )
+}
+
+function resolveArtifactPath(packagePath: string, artifact: string): string {
+  return path.isAbsolute(artifact) ? artifact : path.resolve(packagePath, artifact)
 }
 
 function isCommandNotFound(error: unknown): boolean {
