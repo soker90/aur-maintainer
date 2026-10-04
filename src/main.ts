@@ -124,6 +124,10 @@ export async function run(): Promise<void> {
                 getPositiveIntegerInput('auto-merge-timeout')
             })
             if (pullRequest) pullRequests.push(pullRequest)
+          } else {
+            core.warning(
+              `Updated ${pkg.name}, but github-token was not provided; no GitHub branch or pull request was created.`
+            )
           }
           core.info(
             `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
