@@ -28,6 +28,7 @@ jobs:
       - name: Build dist
         run: |
           npm ci
+          npm run format:write
           npm run bundle
 
       - name: Commit dist
