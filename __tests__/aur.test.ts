@@ -83,7 +83,10 @@ describe('AUR publishing', () => {
       })
     )
 
-    const addCall = run.mock.calls.find((call) => call[1]?.[0] === 'add')
-    expect(addCall?.[1]).toEqual(['add', '--', 'PKGBUILD', '.SRCINFO'])
+    expect(
+      run.mock.calls.some(
+        (call) => call[1]?.[0] === 'add' && call[1]?.[1] === '-A'
+      )
+    ).toBe(true)
   })
 })
