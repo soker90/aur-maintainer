@@ -247,8 +247,8 @@ function isGitExitCode(error: unknown, code: number): boolean {
   return (
     typeof error === 'object' &&
     error !== null &&
-    'status' in error &&
-    error.status === code
+    (('status' in error && error.status === code) ||
+      ('code' in error && error.code === code))
   )
 }
 
