@@ -68,7 +68,6 @@ describe('github-release connector', () => {
     )
   })
 
-
   it('normalizes a v-prefixed release version', async () => {
     const fetchMock = jest.fn(async () => response({ tag_name: 'v1.4.3' }))
     const connector = createConnectorRegistry({
