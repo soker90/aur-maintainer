@@ -32,6 +32,19 @@ inputs:
       Enable GitHub auto-merge for the generated update pull request
     required: false
     default: 'false'
+  aur-publish:
+    description: >-
+      Publish managed packages to the Arch User Repository
+    required: false
+    default: 'false'
+  aur-ssh-key:
+    description: >-
+      Private SSH key authorized for the AUR account
+    required: false
+  aur-known-hosts:
+    description: >-
+      Known hosts entry for aur.archlinux.org
+    required: false
 
 outputs:
   packages:

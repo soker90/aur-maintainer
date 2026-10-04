@@ -155,12 +155,21 @@ steps:
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       auto-merge: true
+      aur-publish: true
+      aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+      aur-known-hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
 ```
 
 When `github-token` is provided, the Action commits validated package updates to
 `update-branch` and opens an update pull request against `base-branch`. Without
 a token, package updates are still applied to the workspace but no pull request
 is created.
+
+When `aur-publish` is enabled, the Action publishes the managed package files to
+the AUR `master` branch using the supplied SSH key and known-hosts entry. This
+mode is intended for a workflow triggered after the source repository has been
+merged. The publisher excludes `update.yml` and includes `PKGBUILD`, `.SRCINFO`,
+and other package files at the package root.
 
 Configuration and the final set of inputs will be documented once the first
 stable implementation is in place.

@@ -14,6 +14,7 @@ const updatePackage = jest.fn()
 const rollbackPackageUpdate = jest.fn()
 const updatePackageMetadata = jest.fn()
 const validatePackage = jest.fn()
+const publishAurPackage = jest.fn()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
@@ -32,6 +33,9 @@ jest.unstable_mockModule('../src/metadata.js', () => ({
 }))
 jest.unstable_mockModule('../src/validation.js', () => ({
   validatePackage
+}))
+jest.unstable_mockModule('../src/aur.js', () => ({
+  publishAurPackage
 }))
 jest.unstable_mockModule('../src/pull-request.js', () => ({
   createUpdatePullRequest: jest.fn()
@@ -67,6 +71,7 @@ describe('main.ts', () => {
       currentVersion: '1.0.0',
       version: '1.0.0'
     })
+    publishAurPackage.mockResolvedValue(false)
     loadRepositoryConnectors.mockResolvedValue(
       new Map([
         [
@@ -83,6 +88,24 @@ describe('main.ts', () => {
   afterEach(() => {
     process.env.GITHUB_WORKSPACE = originalWorkspace
     jest.resetAllMocks()
+  })
+
+  it('publishes packages when AUR publishing is enabled', async () => {
+    core.getBooleanInput.mockImplementation((name) => name === 'aur-publish')
+    core.getInput.mockImplementation((name) => {
+      if (name === 'github-token') return ''
+      if (name === 'aur-ssh-key') return 'PRIVATE KEY'
+      if (name === 'aur-known-hosts') return 'KNOWN HOST'
+      return '.aur-maintainer.yml'
+    })
+
+    await run()
+
+    expect(publishAurPackage).toHaveBeenCalledWith(pkg, {
+      sshKey: 'PRIVATE KEY',
+      knownHosts: 'KNOWN HOST'
+    })
+    expect(core.setFailed).not.toHaveBeenCalled()
   })
 
   it('does not fail when the optional repository configuration is absent', async () => {
