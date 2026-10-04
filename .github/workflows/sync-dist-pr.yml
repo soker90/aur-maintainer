@@ -1,0 +1,41 @@
+name: Sync dist for PR
+
+on:
+  push:
+    branches:
+      - fix/github-public-api-auth
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: fix/github-public-api-auth
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build dist
+        run: npm run bundle
+
+      - name: Commit dist
+        run: |
+          if git diff --quiet -- dist/; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          git commit -m "build: update dist"
+          git push origin HEAD:fix/github-public-api-auth
