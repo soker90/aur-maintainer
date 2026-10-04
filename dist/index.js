@@ -36542,7 +36542,7 @@ async function publishAurPackage(pkg, options) {
     }
 }
 async function runGitCommand(command, args, cwd, env) {
-    const result = await execFile$4(command, args, { cwd, env });
+    const result = await execFile(command, args, { cwd, env });
     return result.stdout;
 }
 async function getAurPackageFiles(packagePath) {
