@@ -130,7 +130,7 @@ describe('package validation', () => {
       )
 
     await expect(validatePackage(pkg, { run })).rejects.toThrow(
-      'Expected package artifacts were not produced'
+      'No package artifact was produced'
     )
     expect(run).toHaveBeenCalledTimes(5)
   })
