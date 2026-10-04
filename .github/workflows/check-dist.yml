@@ -18,7 +18,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check-dist:
@@ -29,12 +29,6 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@v7
-
-      - name: Checkout Feature Branch
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          git fetch origin "refs/heads/chore/bump-babel-core-7.29.7:refs/remotes/origin/chore/bump-babel-core-7.29.7"
-          git checkout -B "chore/bump-babel-core-7.29.7" "origin/chore/bump-babel-core-7.29.7"
 
       - name: Setup Node.js
         id: setup-node
@@ -57,17 +51,6 @@ jobs:
 
       # This will fail the workflow if the `dist/` directory is different than
       # expected.
-      - name: Commit Generated dist
-        if:
-          ${{ github.event_name == 'pull_request' && github.head_ref ==
-          'chore/bump-babel-core-7.29.7' }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add dist/
-          git diff --cached --quiet || git commit -m "build: refresh generated dist"
-          git push origin HEAD:chore/bump-babel-core-7.29.7
-
       - name: Compare Directories
         id: diff
         run: |
