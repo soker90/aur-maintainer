@@ -36564,6 +36564,8 @@ async function run() {
         const aurPublishOnly = getBooleanInput('aur-publish-only');
         const aurSshKey = getInput('aur-ssh-key');
         const aurKnownHosts = getInput('aur-known-hosts');
+        const pullRequests = [];
+        setOutput('pull-requests', JSON.stringify(pullRequests));
         if (aurPublishOnly) {
             if (!aurSshKey || !aurKnownHosts) {
                 throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
@@ -36590,7 +36592,6 @@ async function run() {
             return;
         }
         const candidates = [];
-        const pullRequests = [];
         const repository = process.env.GITHUB_REPOSITORY;
         for (const pkg of packages) {
             const factory = pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
@@ -36619,6 +36620,19 @@ async function run() {
                 try {
                     await updatePackageMetadata(pkg);
                     await validatePackage(pkg);
+                    if (aurPublish) {
+                        if (!aurSshKey || !aurKnownHosts) {
+                            throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
+                        }
+                        const published = await publishAurPackage(pkg, {
+                            sshKey: aurSshKey,
+                            knownHosts: aurKnownHosts
+                        });
+                        if (published)
+                            info(`Published ${pkg.name} to the AUR`);
+                        else
+                            info(`AUR package ${pkg.name} is already up to date`);
+                    }
                     if (token) {
                         if (!repository)
                             throw new Error('GITHUB_REPOSITORY is required');
@@ -36645,21 +36659,6 @@ async function run() {
             }
         }
         setOutput('packages', JSON.stringify(candidates));
-        if (aurPublish) {
-            if (!aurSshKey || !aurKnownHosts) {
-                throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
-            }
-            for (const pkg of packages) {
-                const published = await publishAurPackage(pkg, {
-                    sshKey: aurSshKey,
-                    knownHosts: aurKnownHosts
-                });
-                if (published)
-                    info(`Published ${pkg.name} to the AUR`);
-                else
-                    info(`AUR package ${pkg.name} is already up to date`);
-            }
-        }
         if (pullRequests.length > 0) {
             setOutput('pull-requests', JSON.stringify(pullRequests));
             setOutput('pull-request', pullRequests[0]);
