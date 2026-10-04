@@ -39,7 +39,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
-          autoMerge: false
+          autoMerge: false,
+          autoMergeTimeoutSeconds: 600
         },
         { run }
       )
@@ -101,7 +102,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
-          autoMerge: false
+          autoMerge: false,
+          autoMergeTimeoutSeconds: 600
         },
         { run }
       )
@@ -136,7 +138,7 @@ describe('update pull request creation', () => {
         new Response(
           JSON.stringify({
             html_url: 'https://github.com/test/pr/1',
-            node_id: 'PR_node',
+            number: 1,
             head: { sha: 'abc123' }
           }),
           { status: 201 }
@@ -145,10 +147,20 @@ describe('update pull request creation', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            data: {
-              enablePullRequestAutoMerge: { pullRequest: { id: 'PR_node' } }
-            }
+            check_runs: [
+              {
+                name: 'Validate Packages',
+                status: 'completed',
+                conclusion: 'success'
+              }
+            ]
           }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ merged: true, sha: 'merge123' }),
           { status: 200 }
         )
       )
@@ -162,13 +174,16 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'automation/aur-maintainer-updates',
           packages: [pkg],
-          autoMerge: true
+          autoMerge: true,
+          autoMergeTimeoutSeconds: 600
         },
         { run }
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(String(fetchMock.mock.calls[2]?.[1]?.body)).toContain('SQUASH')
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('update: demo')
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('merge_method');
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('squash')
   })
 })
