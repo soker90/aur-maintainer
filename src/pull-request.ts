@@ -22,6 +22,7 @@ export interface PullRequestOptions {
   baseBranch: string
   updateBranch: string
   packages: PackageDefinition[]
+  autoMerge: boolean
 }
 
 export async function createUpdatePullRequest(
@@ -104,7 +105,10 @@ export async function createUpdatePullRequest(
 
   const pullRequests = Array.isArray(existing) ? existing : []
   const current = pullRequests[0]
-  if (isPullRequest(current)) return current.html_url
+  if (isPullRequest(current)) {
+    if (options.autoMerge) await enableAutoMerge(options.token, current)
+    return current.html_url
+  }
 
   const created = await requestGitHub(
     options.token,
@@ -122,7 +126,49 @@ export async function createUpdatePullRequest(
     throw new Error('GitHub did not return the created pull request URL')
   }
 
+  if (options.autoMerge) await enableAutoMerge(options.token, created)
   return created.html_url
+}
+
+async function enableAutoMerge(
+  token: string,
+  pullRequest: PullRequest
+): Promise<void> {
+  if (!pullRequest.node_id || !pullRequest.head?.sha) {
+    throw new Error('GitHub did not return the pull request node ID or head SHA')
+  }
+
+  const response = await fetch('https://api.github.com/graphql', {
+    method: 'POST',
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: 'Bearer ' + token,
+      'content-type': 'application/json',
+      'x-github-api-version': '2026-03-10',
+      'user-agent': 'aur-maintainer'
+    },
+    body: JSON.stringify({
+      query:
+        'mutation($input: EnablePullRequestAutoMergeInput!) { enablePullRequestAutoMerge(input: $input) { pullRequest { id } } }',
+      variables: {
+        input: {
+          pullRequestId: pullRequest.node_id,
+          expectedHeadOid: pullRequest.head.sha,
+          mergeMethod: 'SQUASH'
+        }
+      }
+    })
+  })
+
+  const payload = (await response.json()) as {
+    errors?: Array<{ message?: string }>
+  }
+  if (!response.ok || payload.errors?.length) {
+    const message = payload.errors?.[0]?.message
+    throw new Error(
+      `GitHub auto-merge request failed: ${message ?? response.statusText}`
+    )
+  }
 }
 
 async function remoteBranchExists(
@@ -204,11 +250,35 @@ function isGitExitCode(error: unknown, code: number): boolean {
   )
 }
 
-function isPullRequest(value: unknown): value is { html_url: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'html_url' in value &&
-    typeof value.html_url === 'string'
-  )
+interface PullRequest {
+  html_url: string
+  node_id?: string
+  head?: { sha: string }
+}
+
+function isPullRequest(value: unknown): value is PullRequest {
+  if (
+    typeof value !== 'object' ||
+    value === null ||
+    !('html_url' in value) ||
+    typeof value.html_url !== 'string'
+  ) {
+    return false
+  }
+
+  if ('node_id' in value && value.node_id !== undefined && typeof value.node_id !== 'string') {
+    return false
+  }
+
+  if ('head' in value && value.head !== undefined) {
+    const head = value.head
+    if (
+      typeof head !== 'object' ||
+      head === null ||
+      !('sha' in head) ||
+      typeof head.sha !== 'string'
+    ) return false
+  }
+
+  return true
 }
