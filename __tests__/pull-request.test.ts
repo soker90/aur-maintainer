@@ -187,7 +187,9 @@ describe('update pull request creation', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('update: demo')
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('MergePullRequestInput')
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain(
+      'MergePullRequestInput'
+    )
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
 })
