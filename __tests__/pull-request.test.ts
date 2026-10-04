@@ -192,4 +192,83 @@ describe('update pull request creation', () => {
     )
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
+  it('dispatches validation before automerging an existing package pull request', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      return ''
+    })
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify([
+            {
+              html_url: 'https://github.com/test/pr/1',
+              node_id: 'PR_node',
+              head: { sha: 'abc123' }
+            }
+          ]),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            check_runs: [
+              {
+                name: 'Validate Packages',
+                status: 'completed',
+                conclusion: 'success'
+              }
+            ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              mergePullRequest: { pullRequest: { id: 'PR_node' } }
+            }
+          }),
+          { status: 200 }
+        )
+      )
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'automation/aur-maintainer-updates',
+          packages: [pkg],
+          autoMerge: true,
+          autoMergeTimeoutSeconds: 600,
+          validationWorkflow: 'validate-packages.yml'
+        },
+        { run }
+      )
+    ).resolves.toBe('https://github.com/test/pr/1')
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+      '/actions/workflows/validate-packages.yml/dispatches'
+    )
+    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain(
+      '"ref":"automation/aur-maintainer-updates/demo"'
+    )
+  })
+
 })
