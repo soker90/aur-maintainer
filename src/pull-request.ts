@@ -135,7 +135,9 @@ async function enableAutoMerge(
   pullRequest: PullRequest
 ): Promise<void> {
   if (!pullRequest.node_id || !pullRequest.head?.sha) {
-    throw new Error('GitHub did not return the pull request node ID or head SHA')
+    throw new Error(
+      'GitHub did not return the pull request node ID or head SHA'
+    )
   }
 
   const response = await fetch('https://api.github.com/graphql', {
