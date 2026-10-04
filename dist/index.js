@@ -36310,6 +36310,9 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     await git.run('git', ['switch', options.baseBranch], workspace);
     return created.html_url;
 }
+function getPackageUpdateBranch(prefix, packageName) {
+    return prefix.replace(/\/$/, '') + '/' + packageName;
+}
 async function enableAutoMerge(token, pullRequest) {
     if (!pullRequest.node_id || !pullRequest.head?.sha) {
         throw new Error('GitHub did not return the pull request node ID or head SHA');
@@ -36339,9 +36342,6 @@ async function enableAutoMerge(token, pullRequest) {
         const message = payload.errors?.[0]?.message;
         throw new Error(`GitHub auto-merge request failed: ${message ?? response.statusText}`);
     }
-}
-function getPackageUpdateBranch(prefix, packageName) {
-    return prefix.replace(/\/$/, '') + '/' + packageName;
 }
 function isPullRequest(value) {
     if (typeof value !== 'object' ||
