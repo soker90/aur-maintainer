@@ -92,7 +92,9 @@ describe('update pull request creation', () => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
       if (args[0] === 'rev-parse') return 'abc123\\n'
       if (args[0] === 'ls-remote') {
-        const error = new Error('branch not found') as Error & { status: number }
+        const error = new Error('branch not found') as Error & {
+          status: number
+        }
         error.status = 2
         throw error
       }
@@ -100,18 +102,28 @@ describe('update pull request creation', () => {
     })
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({
-          html_url: 'https://github.com/test/pr/1',
-          node_id: 'PR_node',
-          head: { sha: 'abc123' }
-        }), { status: 201 })
+        new Response(JSON.stringify([]), { status: 200 })
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({
-          data: { enablePullRequestAutoMerge: { pullRequest: { id: 'PR_node' } } }
-        }), { status: 200 })
+        new Response(
+          JSON.stringify({
+            html_url: 'https://github.com/test/pr/1',
+            node_id: 'PR_node',
+            head: { sha: 'abc123' }
+          }),
+          { status: 201 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: {
+              enablePullRequestAutoMerge: { pullRequest: { id: 'PR_node' } }
+            }
+          }),
+          { status: 200 }
+        )
       )
 
     await expect(
