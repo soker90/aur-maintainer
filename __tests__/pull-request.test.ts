@@ -104,11 +104,13 @@ describe('update pull request creation', () => {
       }
       return ''
     })
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]), {
-        status: 200
-      })
-    )
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]), {
+          status: 200
+        })
+      )
 
     await expect(
       createUpdatePullRequest(
@@ -125,7 +127,11 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(run).toHaveBeenCalledWith('git', ['cherry-pick', '--skip'], '/workspace')
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['cherry-pick', '--skip'],
+      '/workspace'
+    )
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
@@ -170,7 +176,11 @@ describe('update pull request creation', () => {
       )
     ).rejects.toThrow('cherry-pick conflict')
 
-    expect(run).not.toHaveBeenCalledWith('git', ['cherry-pick', '--skip'], '/workspace')
+    expect(run).not.toHaveBeenCalledWith(
+      'git',
+      ['cherry-pick', '--skip'],
+      '/workspace'
+    )
   })
 
   it('enables squash auto-merge when requested', async () => {
@@ -183,8 +193,8 @@ describe('update pull request creation', () => {
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
-      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
-      if (args[0] === 'rev-parse') return 'abc123\\n'
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'abc123\n'
       if (args[0] === 'ls-remote') {
         const error = new Error('branch not found') as Error & {
           status: number
