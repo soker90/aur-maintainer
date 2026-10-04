@@ -161,16 +161,6 @@ describe('update pull request creation', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            id: 99,
-            status: 'completed',
-            conclusion: 'success'
-          }),
-          { status: 200 }
-        )
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
             data: {
               mergePullRequest: { pullRequest: { id: 'PR_node' } }
             }
@@ -200,7 +190,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain(
       'MergePullRequestInput'
     )
-    expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
   it('waits for the dispatched validation workflow before merging', async () => {
     const pkg = {
@@ -249,6 +239,16 @@ describe('update pull request creation', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'success'
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
             data: {
               mergePullRequest: { pullRequest: { id: 'PR_node' } }
             }
@@ -281,7 +281,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[2]?.[0])).toContain(
       '/actions/workflows/validate-packages.yml/runs?branch='
     )
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
+    expect(String(fetchMock.mock.calls[4]?.[1]?.body)).toContain('SQUASH')
   })
 
   it('waits for the dispatched validation workflow and rejects failures', async () => {
@@ -320,10 +320,20 @@ describe('update pull request creation', () => {
                 id: 99,
                 status: 'completed',
                 conclusion: 'failure',
-                created_at: new Date().toISOString(),
+                created_at: new Date(Date.now() + 10_000).toISOString(),
                 head_sha: 'abc123'
               }
             ]
+          }),
+          { status: 200 }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            id: 99,
+            status: 'completed',
+            conclusion: 'failure'
           }),
           { status: 200 }
         )
