@@ -36278,7 +36278,11 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     await git.run('git', ['switch', options.baseBranch], workspace);
     await git.run('git', ['switch', '-C', branch], workspace);
     await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], workspace);
+    await git.run('git', [
+        'config',
+        'user.email',
+        '41898282+github-actions[bot]@users.noreply.github.com'
+    ], workspace);
     await git.run('git', ['commit', '-m', `chore: update ${pkg.name}`], workspace);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
