@@ -36274,8 +36274,6 @@ async function requestGitHub(token, path, method = 'GET', body) {
     if (!response.ok) {
         throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
     }
-    if (response.status === 204)
-        return undefined;
     return response.json();
 }
 function getRelativePackagePath(workspace, packagePath) {
@@ -36329,13 +36327,7 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     const current = pullRequests[0];
     if (isPullRequest(current)) {
         if (options.autoMerge) {
-            if (options.validationWorkflow) {
-                const validationRunId = await dispatchValidationWorkflow(options.token, owner, repo, options.validationWorkflow, branch, new Date().toISOString());
-                await waitForWorkflowRunAndMerge(options.token, options.repository, current, validationRunId, options.autoMergeTimeoutSeconds);
-            }
-            else {
-                await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
-            }
+            await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
         }
         await git.run('git', ['switch', options.baseBranch], workspace);
         return current.html_url;
@@ -36356,44 +36348,6 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
 }
 function getPackageUpdateBranch(prefix, packageName) {
     return prefix.replace(/\/$/, '') + '/' + packageName;
-}
-async function dispatchValidationWorkflow(token, owner, repo, workflow, ref, minimumCreatedAt) {
-    await requestGitHub(token, `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, 'POST', { ref });
-    const deadline = Date.now() + 30_000;
-    while (Date.now() < deadline) {
-        const response = await requestGitHub(token, `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/runs?branch=${encodeURIComponent(ref)}&event=workflow_dispatch&per_page=10`);
-        if (isWorkflowRunsResponse(response)) {
-            const run = response.workflow_runs.find((candidate) => candidate.created_at >= minimumCreatedAt && candidate.head_sha);
-            if (run)
-                return run.id;
-        }
-        await new Promise((resolve) => setTimeout(resolve, Math.min(AUTO_MERGE_POLL_INTERVAL_MS, Math.max(0, deadline - Date.now()))));
-    }
-    throw new Error('Timed out waiting for dispatched validation workflow after 30 seconds');
-}
-async function waitForWorkflowRunAndMerge(token, repository, pullRequest, workflowRunId, timeoutSeconds) {
-    if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1) {
-        throw new Error('auto-merge-timeout must be a positive integer');
-    }
-    const deadline = Date.now() + timeoutSeconds * 1000;
-    const [owner, repo] = repository.split('/');
-    if (!owner || !repo) {
-        throw new Error('GITHUB_REPOSITORY must use owner/name form');
-    }
-    while (Date.now() < deadline) {
-        const response = await requestGitHub(token, `/repos/${owner}/${repo}/actions/runs/${workflowRunId}`);
-        if (isWorkflowRunResponse(response) && response.status === 'completed') {
-            if (response.conclusion !== 'success' &&
-                response.conclusion !== 'neutral' &&
-                response.conclusion !== 'skipped') {
-                throw new Error(`Pull request validation workflow failed: ${response.conclusion ?? 'unknown'}`);
-            }
-            await squashMergePullRequest(token, pullRequest);
-            return;
-        }
-        await new Promise((resolve) => setTimeout(resolve, Math.min(AUTO_MERGE_POLL_INTERVAL_MS, Math.max(0, deadline - Date.now()))));
-    }
-    throw new Error(`Timed out waiting for pull request checks after ${timeoutSeconds} seconds`);
 }
 async function waitForChecksAndMerge(token, repository, pullRequest, timeoutSeconds) {
     if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1) {
@@ -36453,34 +36407,6 @@ async function squashMergePullRequest(token, pullRequest) {
         const message = payload.errors?.[0]?.message;
         throw new Error(`GitHub squash merge failed: ${message ?? response.statusText}`);
     }
-}
-function isWorkflowRunsResponse(value) {
-    if (typeof value !== 'object' ||
-        value === null ||
-        !('workflow_runs' in value) ||
-        !Array.isArray(value.workflow_runs)) {
-        return false;
-    }
-    return value.workflow_runs.every((run) => typeof run === 'object' &&
-        run !== null &&
-        'id' in run &&
-        typeof run.id === 'number' &&
-        'status' in run &&
-        typeof run.status === 'string' &&
-        'conclusion' in run &&
-        (typeof run.conclusion === 'string' || run.conclusion === null) &&
-        'created_at' in run &&
-        typeof run.created_at === 'string');
-}
-function isWorkflowRunResponse(value) {
-    return (typeof value === 'object' &&
-        value !== null &&
-        'id' in value &&
-        typeof value.id === 'number' &&
-        'status' in value &&
-        typeof value.status === 'string' &&
-        'conclusion' in value &&
-        (typeof value.conclusion === 'string' || value.conclusion === null));
 }
 function isCheckRunsResponse(value) {
     if (typeof value !== 'object' ||
@@ -36770,8 +36696,7 @@ async function run() {
                             updateBranch: getInput('update-branch') || 'aur-maintainer/updates',
                             packages: [pkg],
                             autoMerge: getBooleanInput('auto-merge'),
-                            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout'),
-                            validationWorkflow: getInput('validation-workflow') || undefined
+                            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
                         });
                         if (pullRequest)
                             pullRequests.push(pullRequest);

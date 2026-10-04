@@ -37,11 +37,6 @@ inputs:
       Maximum number of seconds to wait for pull request checks before merging
     required: false
     default: '600'
-  validation-workflow:
-    description: >-
-      Workflow file to dispatch when updating an existing pull request before
-      automerging
-    required: false
   aur-publish:
     description: >-
       Publish managed packages to the Arch User Repository
