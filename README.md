@@ -13,7 +13,7 @@ A GitHub Action for automating the maintenance of Arch Linux AUR packages.
 - Update `PKGBUILD` and regenerate `.SRCINFO`.
 - Validate packages with Arch Linux tooling.
 - Create and maintain update pull requests.
-- Optionally enable automatic merging after validation.
+- Optionally enable GitHub auto-merge after validation.
 - Publish maintained packages to the Arch User Repository (AUR).
 
 ## Repository structure
@@ -154,6 +154,7 @@ steps:
   - uses: soker90/aur-maintainer@v1
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
+      auto-merge: true
 ```
 
 When `github-token` is provided, the Action commits validated package updates to
