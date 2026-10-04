@@ -51,17 +51,6 @@ jobs:
 
       # This will fail the workflow if the `dist/` directory is different than
       # expected.
-      - name: Generate formatted README for inspection
-        id: format-readme
-        run: npx prettier README.md > /tmp/README.md
-
-      - name: Upload formatted README
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: formatted-readme
-          path: /tmp/README.md
-
       - name: Compare Directories
         id: diff
         run: |
