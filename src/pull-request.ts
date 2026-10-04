@@ -266,7 +266,11 @@ function isPullRequest(value: unknown): value is PullRequest {
     return false
   }
 
-  if ('node_id' in value && value.node_id !== undefined && typeof value.node_id !== 'string') {
+  if (
+    'node_id' in value &&
+    value.node_id !== undefined &&
+    typeof value.node_id !== 'string'
+  ) {
     return false
   }
 
@@ -277,7 +281,9 @@ function isPullRequest(value: unknown): value is PullRequest {
       head === null ||
       !('sha' in head) ||
       typeof head.sha !== 'string'
-    ) return false
+    ) {
+      return false
+    }
   }
 
   return true
