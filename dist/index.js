@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, readdir as readdir$1, rm, stat as stat$1, writeFile as writeFile$1, access as access$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$4 } from 'node:child_process';
 
@@ -36496,6 +36496,64 @@ function isCommandNotFound(error) {
         (error.code === 'ENOENT' || error.code === 127));
 }
 
+async function publishAurPackage(pkg, options) {
+    if (!options.sshKey.trim()) {
+        throw new Error('AUR SSH key is required when AUR publishing is enabled');
+    }
+    if (!options.knownHosts.trim()) {
+        throw new Error('AUR known hosts are required when AUR publishing is enabled');
+    }
+    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'));
+    const keyPath = path.join(tempDir, 'aur-key');
+    const knownHostsPath = path.join(tempDir, 'known_hosts');
+    const repositoryPath = path.join(tempDir, pkg.name);
+    try {
+        await writeFile$1(keyPath, options.sshKey, { mode: 0o600 });
+        await writeFile$1(knownHostsPath, options.knownHosts, { mode: 0o600 });
+        const sshCommand = [
+            'ssh',
+            '-i',
+            keyPath,
+            '-o',
+            'IdentitiesOnly=yes',
+            '-o',
+            'UserKnownHostsFile=' + knownHostsPath,
+            '-o',
+            'StrictHostKeyChecking=yes'
+        ].join(' ');
+        const env = { ...process.env, GIT_SSH_COMMAND: sshCommand };
+        const remote = 'ssh://aur@aur.archlinux.org/' + pkg.name + '.git';
+        await runGitCommand('git', ['clone', remote, repositoryPath], undefined, env);
+        const files = await getAurPackageFiles(pkg.path);
+        for (const file of files)
+            await cp(path.join(pkg.path, file), path.join(repositoryPath, file));
+        const changed = await runGitCommand('git', ['status', '--short'], repositoryPath, env);
+        if (!changed.trim())
+            return false;
+        await runGitCommand('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
+        await runGitCommand('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
+        await runGitCommand('git', ['add', '--', ...files], repositoryPath, env);
+        await runGitCommand('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
+        await runGitCommand('git', ['push', 'origin', 'master'], repositoryPath, env);
+        return true;
+    }
+    finally {
+        await rm(tempDir, { recursive: true, force: true });
+    }
+}
+async function runGitCommand(command, args, cwd, env) {
+    const result = await execFile$4(command, args, { cwd, env });
+    return result.stdout;
+}
+async function getAurPackageFiles(packagePath) {
+    const entries = await readdir$1(packagePath, { withFileTypes: true });
+    const additionalFiles = entries
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .filter((name) => !['PKGBUILD', '.SRCINFO', 'update.yml'].includes(name))
+        .toSorted();
+    return ['PKGBUILD', '.SRCINFO', ...additionalFiles];
+}
 async function run() {
     const snapshots = [];
     try {
@@ -36504,6 +36562,9 @@ async function run() {
         const config = await loadMaintainerConfig(workspace, configPath);
         const packages = await discoverPackages(workspace, config);
         const token = getInput('github-token');
+        const aurPublish = getBooleanInput('aur-publish');
+        const aurSshKey = getInput('aur-ssh-key');
+        const aurKnownHosts = getInput('aur-known-hosts');
         const registryContext = {
             fetch: (input, init) => fetch(input, init),
             token: token || undefined
@@ -36555,6 +36616,21 @@ async function run() {
             }
         }
         setOutput('packages', JSON.stringify(candidates));
+        if (aurPublish) {
+            if (!aurSshKey || !aurKnownHosts) {
+                throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
+            }
+            for (const pkg of packages) {
+                const published = await publishAurPackage(pkg, {
+                    sshKey: aurSshKey,
+                    knownHosts: aurKnownHosts
+                });
+                if (published)
+                    info(`Published ${pkg.name} to the AUR`);
+                else
+                    info(`AUR package ${pkg.name} is already up to date`);
+            }
+        }
         if (token && updatedPackages.length > 0) {
             const repository = process.env.GITHUB_REPOSITORY;
             if (!repository)
