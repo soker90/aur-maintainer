@@ -1,5 +1,7 @@
 name: Release
 
+#checkov:skip=CKV_GHA_7:Version input only selects release metadata; the released commit is always GITHUB_SHA.
+
 on:
   workflow_dispatch:
     inputs:
