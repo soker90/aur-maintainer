@@ -36389,8 +36389,8 @@ function validateBranchName(branch) {
 function isGitExitCode(error, code) {
     return (typeof error === 'object' &&
         error !== null &&
-        'status' in error &&
-        error.status === code);
+        (('status' in error && error.status === code) ||
+            ('code' in error && error.code === code)));
 }
 function isPullRequest(value) {
     if (typeof value !== 'object' ||
