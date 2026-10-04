@@ -47,7 +47,7 @@ export async function publishAurPackage(
   const repositoryPath = path.join(tempDir, pkg.name)
 
   try {
-    await writeFile(keyPath, options.sshKey, { mode: 0o600 })
+    await writeFile(keyPath, normalizeSshKey(options.sshKey), { mode: 0o600 })
     await writeFile(knownHostsPath, options.knownHosts, { mode: 0o600 })
 
     const sshCommand = [
@@ -107,6 +107,10 @@ export async function publishAurPackage(
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+}
+
+export function normalizeSshKey(key: string): string {
+  return key.replace(/\\r\\n/g, '\\n').replace(/\\n/g, '\\n').trimEnd() + '\\n'
 }
 
 export async function getAurPackageFiles(
