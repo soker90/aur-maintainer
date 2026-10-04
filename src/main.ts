@@ -126,7 +126,8 @@ export async function run(): Promise<void> {
             if (pullRequest) pullRequests.push(pullRequest)
           } else {
             core.warning(
-              `Updated ${pkg.name}, but github-token was not provided; no GitHub branch or pull request was created.`
+              `Updated ${pkg.name}, but github-token was not provided; ` +
+                'no GitHub branch or pull request was created.'
             )
           }
           core.info(
