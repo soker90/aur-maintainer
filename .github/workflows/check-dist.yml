@@ -16,6 +16,7 @@ on:
   push:
     branches:
       - main
+      - fix/pr-concurrency-limit
 
 permissions:
   contents: write
