@@ -132,6 +132,7 @@ export async function run(): Promise<void> {
           await rollbackPackageUpdate(pkg, update)
           throw error
         }
+        break
       } else {
         core.info(`Package ${pkg.name} is already at ${update.version}`)
       }
