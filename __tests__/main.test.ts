@@ -146,6 +146,26 @@ describe('main.ts', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
+  it('warns when an update is found without a GitHub token', async () => {
+    core.getInput.mockImplementation((name) =>
+      name === 'github-token' ? '' : '.aur-maintainer.yml'
+    )
+    updatePackage.mockResolvedValue({
+      changed: true,
+      currentVersion: '1.0.0',
+      version: '1.1.0',
+      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+    })
+
+    await run()
+
+    expect(core.warning).toHaveBeenCalledWith(
+      'Updated example, but github-token was not provided; no GitHub branch or pull request was created.'
+    )
+    expect(createUpdatePullRequest).not.toHaveBeenCalled()
+    expect(core.setFailed).not.toHaveBeenCalled()
+  })
+
   it('passes the GitHub token to connector detection', async () => {
     await run()
 

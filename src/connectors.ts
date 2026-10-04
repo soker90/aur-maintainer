@@ -247,9 +247,9 @@ class GithubReleaseConnector implements Connector {
       )
     }
 
-    const response = await this.context.fetch(
-      `https://api.github.com/repos/${repository}/releases/latest`,
-      githubRequestInit(this.context.token)
+    const response = await fetchGithub(
+      this.context,
+      `https://api.github.com/repos/${repository}/releases/latest`
     )
 
     if (!response.ok) {
@@ -286,9 +286,9 @@ class GithubTagConnector implements Connector {
     let page = 1
 
     while (true) {
-      const response = await this.context.fetch(
-        `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`,
-        githubRequestInit(this.context.token)
+      const response = await fetchGithub(
+        this.context,
+        `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`
       )
 
       if (!response.ok) {
@@ -311,6 +311,19 @@ class GithubTagConnector implements Connector {
 
     return parseLatestTag(repository, tags)
   }
+}
+
+async function fetchGithub(
+  context: ConnectorContext,
+  url: string
+): Promise<Response> {
+  const authenticated = await context.fetch(
+    url,
+    githubRequestInit(context.token)
+  )
+  if (authenticated.status !== 403 || !context.token) return authenticated
+
+  return context.fetch(url, githubRequestInit())
 }
 
 function githubRequestInit(token?: string): RequestInit {
