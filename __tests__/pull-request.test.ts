@@ -270,5 +270,4 @@ describe('update pull request creation', () => {
       '"ref":"automation/aur-maintainer-updates/demo"'
     )
   })
-
 })

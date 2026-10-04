@@ -36274,6 +36274,8 @@ async function requestGitHub(token, path, method = 'GET', body) {
     if (!response.ok) {
         throw new Error(`GitHub API request failed: ${response.status} ${response.statusText}`);
     }
+    if (response.status === 204)
+        return undefined;
     return response.json();
 }
 function getRelativePackagePath(workspace, packagePath) {
@@ -36327,6 +36329,9 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     const current = pullRequests[0];
     if (isPullRequest(current)) {
         if (options.autoMerge) {
+            if (options.validationWorkflow) {
+                await dispatchValidationWorkflow(options.token, owner, repo, options.validationWorkflow, branch);
+            }
             await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
         }
         await git.run('git', ['switch', options.baseBranch], workspace);
@@ -36348,6 +36353,9 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
 }
 function getPackageUpdateBranch(prefix, packageName) {
     return prefix.replace(/\/$/, '') + '/' + packageName;
+}
+async function dispatchValidationWorkflow(token, owner, repo, workflow, ref) {
+    await requestGitHub(token, `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, 'POST', { ref });
 }
 async function waitForChecksAndMerge(token, repository, pullRequest, timeoutSeconds) {
     if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1) {
@@ -36696,7 +36704,8 @@ async function run() {
                             updateBranch: getInput('update-branch') || 'aur-maintainer/updates',
                             packages: [pkg],
                             autoMerge: getBooleanInput('auto-merge'),
-                            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+                            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout'),
+                            validationWorkflow: getInput('validation-workflow') || undefined
                         });
                         if (pullRequest)
                             pullRequests.push(pullRequest);
