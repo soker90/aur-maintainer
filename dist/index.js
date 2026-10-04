@@ -36330,9 +36330,12 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     if (isPullRequest(current)) {
         if (options.autoMerge) {
             if (options.validationWorkflow) {
-                await dispatchValidationWorkflow(options.token, owner, repo, options.validationWorkflow, branch, new Date().toISOString());
+                const validationRunId = await dispatchValidationWorkflow(options.token, owner, repo, options.validationWorkflow, branch, new Date().toISOString());
+                await waitForWorkflowRunAndMerge(options.token, options.repository, current, validationRunId, options.autoMergeTimeoutSeconds);
             }
-            await waitForWorkflowRunAndMerge(options.token, options.repository, current, validationRunId, options.autoMergeTimeoutSeconds);
+            else {
+                await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
+            }
         }
         await git.run('git', ['switch', options.baseBranch], workspace);
         return current.html_url;
