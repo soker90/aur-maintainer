@@ -105,7 +105,9 @@ async function validatePackageWithDocker(
 }
 
 function resolveArtifactPath(packagePath: string, artifact: string): string {
-  return path.isAbsolute(artifact) ? artifact : path.resolve(packagePath, artifact)
+  return path.isAbsolute(artifact)
+    ? artifact
+    : path.resolve(packagePath, artifact)
 }
 
 function isCommandNotFound(error: unknown): boolean {
