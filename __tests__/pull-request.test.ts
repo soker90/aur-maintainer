@@ -319,7 +319,6 @@ describe('update pull request creation', () => {
         )
       )
 
-
     await expect(
       createUpdatePullRequest(
         '/workspace',
