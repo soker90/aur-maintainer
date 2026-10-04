@@ -107,9 +107,12 @@ describe('update pull request creation', () => {
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
-        new Response(JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]), {
-          status: 200
-        })
+        new Response(
+          JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]),
+          {
+            status: 200
+          }
+        )
       )
 
     await expect(
