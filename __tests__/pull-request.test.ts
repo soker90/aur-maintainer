@@ -21,9 +21,9 @@ describe('update pull request creation', () => {
       if (args[0] === 'rev-parse') return 'abc123\n'
       if (args[0] === 'ls-remote') {
         const error = new Error('branch not found') as Error & {
-          status: number
+          code: number
         }
-        error.status = 2
+        error.code = 2
         throw error
       }
       return ''
