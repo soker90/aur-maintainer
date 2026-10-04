@@ -14,6 +14,7 @@ const updatePackage = jest.fn()
 const rollbackPackageUpdate = jest.fn()
 const updatePackageMetadata = jest.fn()
 const validatePackage = jest.fn()
+const publishAurPackage = jest.fn()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
@@ -32,6 +33,9 @@ jest.unstable_mockModule('../src/metadata.js', () => ({
 }))
 jest.unstable_mockModule('../src/validation.js', () => ({
   validatePackage
+}))
+jest.unstable_mockModule('../src/aur.js', () => ({
+  publishAurPackage
 }))
 jest.unstable_mockModule('../src/pull-request.js', () => ({
   createUpdatePullRequest: jest.fn()
@@ -59,7 +63,7 @@ describe('main.ts', () => {
     core.getInput.mockImplementation((name) =>
       name === 'github-token' ? 'test-token' : '.aur-maintainer.yml'
     )
-    core.getBooleanInput.mockReturnValue(false)
+    core.getBooleanInput.mockImplementation((name) => name === 'aur-publish' ? false : false)
     discoverPackages.mockResolvedValue([pkg])
     loadMaintainerConfig.mockResolvedValue({})
     updatePackage.mockResolvedValue({
@@ -67,6 +71,7 @@ describe('main.ts', () => {
       currentVersion: '1.0.0',
       version: '1.0.0'
     })
+    publishAurPackage.mockResolvedValue(false)
     loadRepositoryConnectors.mockResolvedValue(
       new Map([
         [
