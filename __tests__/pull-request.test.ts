@@ -159,10 +159,9 @@ describe('update pull request creation', () => {
         )
       )
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ merged: true, sha: 'merge123' }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ merged: true, sha: 'merge123' }), {
+          status: 200
+        })
       )
 
     await expect(
@@ -183,7 +182,7 @@ describe('update pull request creation', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('update: demo')
-    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('merge_method');
+    expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('merge_method')
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('squash')
   })
 })

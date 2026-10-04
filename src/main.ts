@@ -121,7 +121,8 @@ export async function run(): Promise<void> {
                 core.getInput('update-branch') || 'aur-maintainer/updates',
               packages: [pkg],
               autoMerge: core.getBooleanInput('auto-merge'),
-              autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+              autoMergeTimeoutSeconds:
+                getPositiveIntegerInput('auto-merge-timeout')
             })
             if (pullRequest) pullRequests.push(pullRequest)
           }

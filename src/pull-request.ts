@@ -210,7 +210,10 @@ async function waitForChecksAndMerge(
     )
     const checkRuns = isCheckRunsResponse(checks) ? checks.check_runs : []
 
-    if (checkRuns.length > 0 && checkRuns.every((check) => check.status === 'completed')) {
+    if (
+      checkRuns.length > 0 &&
+      checkRuns.every((check) => check.status === 'completed')
+    ) {
       const failed = checkRuns.find(
         (check) =>
           check.conclusion !== 'success' &&
@@ -227,7 +230,13 @@ async function waitForChecksAndMerge(
     }
 
     await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(AUTO_MERGE_POLL_INTERVAL_MS, Math.max(0, deadline - Date.now())))
+      setTimeout(
+        resolve,
+        Math.min(
+          AUTO_MERGE_POLL_INTERVAL_MS,
+          Math.max(0, deadline - Date.now())
+        )
+      )
     )
   }
 
