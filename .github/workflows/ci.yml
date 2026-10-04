@@ -31,7 +31,12 @@ jobs:
         run: npm ci
       - name: Check Format
         id: npm-format-check
-        run: npm run format:check
+        run: |
+          npm run format:check || {
+            npx prettier __tests__/pull-request.test.ts --write
+            git diff -- __tests__/pull-request.test.ts
+            exit 1
+          }
       - name: Lint
         id: npm-lint
         run: npm run lint
