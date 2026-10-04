@@ -16,10 +16,9 @@ on:
   push:
     branches:
       - main
-      - fix/pr-concurrency-limit
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check-dist:
@@ -49,19 +48,6 @@ jobs:
       - name: Build dist/ Directory
         id: build
         run: npm run bundle
-
-      - name: Commit generated dist on maintenance branch
-        if: ${{ github.ref == 'refs/heads/fix/pr-concurrency-limit' && github.event_name == 'push' }}
-        run: |
-          if git diff --quiet -- dist/; then
-            exit 0
-          fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add dist/
-          git commit -m 'build: update bundled action'
-          git pull --rebase origin fix/pr-concurrency-limit
-          git push
 
       # This will fail the workflow if the `dist/` directory is different than
       # expected.
