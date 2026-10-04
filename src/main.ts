@@ -118,7 +118,7 @@ export async function run(): Promise<void> {
               repository,
               baseBranch: core.getInput('base-branch') || 'main',
               updateBranch:
-                core.getInput('update-branch') || 'aur-maintainer/updates',
+                core.getInput('update-branch') || 'update',
               packages: [pkg],
               autoMerge: core.getBooleanInput('auto-merge'),
               autoMergeTimeoutSeconds:
