@@ -39,7 +39,8 @@ inputs:
     default: 'false'
   aur-publish-only:
     description: >-
-      Publish the current package state to the AUR without checking upstream updates
+      Publish the current package state to the AUR without checking upstream
+      updates
     required: false
     default: 'false'
   aur-ssh-key:
