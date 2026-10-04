@@ -19,7 +19,60 @@ const hostGitRunner: GitRunner = {
   }
 }
 
-export interface PullRequestOptions {
+export async function requestGitHub(
+  token: string,
+  path: string,
+  method = 'GET',
+  body?: Record<string, string>
+): Promise<unknown> {
+  const response = await fetch('https://api.github.com' + path, {
+    method,
+    headers: {
+      accept: 'application/vnd.github+json',
+      authorization: 'Bearer ' + token,
+      'x-github-api-version': '2026-03-10',
+      'user-agent': 'aur-maintainer'
+    },
+    body: body ? JSON.stringify(body) : undefined
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `GitHub API request failed: ${response.status} ${response.statusText}`
+    )
+  }
+
+  return response.json()
+}
+
+function getRelativePackagePath(
+  workspace: string,
+  packagePath: string
+): string {
+  const relative = path.relative(workspace, packagePath)
+  if (
+    relative === '' ||
+    relative.startsWith('..') ||
+    path.isAbsolute(relative)
+  ) {
+    throw new Error('Package path must be inside the workspace')
+  }
+  return relative
+}
+
+function validateBranchName(branch: string): void {
+  if (
+    branch.length === 0 ||
+    branch.startsWith('-') ||
+    branch.includes('..') ||
+    branch.includes(' ')
+  ) {
+    throw new Error('Invalid update branch name')
+  }
+}
+
+
+interface PullRequestOptions {
   token: string
   repository: string
   baseBranch: string
