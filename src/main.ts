@@ -119,7 +119,11 @@ export async function run(): Promise<void> {
             core.error(
               `Validation failed for ${pkg.name}; changes preserved and issue created: ${issue}`
             )
-            core.setFailed(validationError instanceof Error ? validationError.message : String(validationError))
+            core.setFailed(
+              validationError instanceof Error
+                ? validationError.message
+                : String(validationError)
+            )
             return
           }
           if (aurPublish) {
