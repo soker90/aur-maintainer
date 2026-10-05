@@ -81,7 +81,9 @@ describe('update pull request creation', () => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
     })
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
       new Response(
         JSON.stringify({ html_url: 'https://github.com/test/repo/issues/1' }),
         { status: 201 }
