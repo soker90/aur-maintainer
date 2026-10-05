@@ -81,12 +81,14 @@ describe('update pull request creation', () => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
     })
-    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(
-        JSON.stringify({ html_url: 'https://github.com/test/repo/issues/1' }),
-        { status: 201 }
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ html_url: 'https://github.com/test/repo/issues/1' }),
+          { status: 201 }
+        )
       )
-    )
 
     await expect(
       createValidationFailureIssue(
@@ -121,9 +123,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(
       'makepkg failed'
     )
-    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(
-      'update/demo'
-    )
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('update/demo')
   })
 
   it('updates an existing package pull request without cherry-picking', async () => {
