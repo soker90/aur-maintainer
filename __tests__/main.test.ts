@@ -109,7 +109,7 @@ describe('main.ts', () => {
       changed: true,
       currentVersion: '1.0.0',
       version: '1.1.0',
-      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+      previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
     })
 
     await run()
@@ -156,7 +156,7 @@ describe('main.ts', () => {
       changed: true,
       currentVersion: '1.0.0',
       version: '1.1.0',
-      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+      previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
     })
 
     await run()
@@ -212,7 +212,6 @@ describe('main.ts', () => {
     expect(core.setFailed).toHaveBeenCalled()
   })
 
-
   it('creates a validation failure issue and preserves the update', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const packagePath = path.join(directory, 'example')
@@ -220,8 +219,8 @@ describe('main.ts', () => {
     const srcinfoPath = path.join(packagePath, '.SRCINFO')
 
     await mkdir(packagePath, { recursive: true })
-    await writeFile(pkgbuildPath, 'pkgname=example\\npkgver=1.0.0\\n')
-    await writeFile(srcinfoPath, 'pkgname=example\\npkgver=1.0.0\\n')
+    await writeFile(pkgbuildPath, 'pkgname=example\npkgver=1.0.0\n')
+    await writeFile(srcinfoPath, 'pkgname=example\npkgver=1.0.0\n')
 
     const updatedPkg = {
       ...pkg,
@@ -231,12 +230,12 @@ describe('main.ts', () => {
     }
     discoverPackages.mockResolvedValue([updatedPkg])
     updatePackage.mockImplementation(async (item) => {
-      await writeFile(item.pkgbuildPath, 'pkgname=example\\npkgver=1.1.0\\n')
+      await writeFile(item.pkgbuildPath, 'pkgname=example\npkgver=1.1.0\n')
       return {
         changed: true,
         currentVersion: '1.0.0',
         version: '1.1.0',
-        previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+        previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
       }
     })
     validatePackage.mockRejectedValue(new Error('makepkg failed'))
@@ -247,7 +246,7 @@ describe('main.ts', () => {
     await run()
 
     await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
-      'pkgname=example\\npkgver=1.1.0\\n'
+      'pkgname=example\npkgver=1.1.0\n'
     )
     expect(createValidationFailureIssue).toHaveBeenCalledWith(
       '/workspace',
