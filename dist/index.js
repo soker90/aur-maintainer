@@ -36487,6 +36487,9 @@ async function squashMergePullRequest(token, pullRequest) {
         throw new Error(`GitHub squash merge failed: ${message ?? response.statusText}`);
     }
 }
+function isIssue(value) {
+    return (typeof value === 'object' && value !== null && 'html_url' in value && typeof value.html_url === 'string');
+}
 function isCheckRunsResponse(value) {
     if (typeof value !== 'object' ||
         value === null ||
@@ -36502,9 +36505,6 @@ function isCheckRunsResponse(value) {
         typeof check.status === 'string' &&
         'conclusion' in check &&
         (typeof check.conclusion === 'string' || check.conclusion === null));
-}
-function isIssue(value) {
-    return (typeof value === 'object' && value !== null && 'html_url' in value && typeof value.html_url === 'string');
 }
 function isPullRequest(value) {
     if (typeof value !== 'object' ||
