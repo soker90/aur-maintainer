@@ -9,7 +9,10 @@ import {
 } from './connectors.js'
 import { updatePackageMetadata } from './metadata.js'
 import { rollbackPackageUpdate, updatePackage } from './update.js'
-import { createUpdatePullRequest } from './pull-request.js'
+import {
+  createUpdatePullRequest,
+  createValidationFailureIssue
+} from './pull-request.js'
 import { validatePackage } from './validation.js'
 import { publishAurPackage } from './aur.js'
 import type { PackageDefinition } from './types.js'
@@ -97,7 +100,28 @@ export async function run(): Promise<void> {
         }
         try {
           await updatePackageMetadata(pkg)
-          await validatePackage(pkg)
+          try {
+            await validatePackage(pkg)
+          } catch (validationError) {
+            if (!token || !repository) throw validationError
+
+            const issue = await createValidationFailureIssue(workspace, {
+              token,
+              repository,
+              baseBranch: core.getInput('base-branch') || 'main',
+              updateBranch: core.getInput('update-branch') || 'update',
+              pkg,
+              currentVersion: update.currentVersion,
+              version: update.version,
+              error: validationError
+            })
+            core.setOutput('validation-failure-issue', issue)
+            core.error(
+              `Validation failed for ${pkg.name}; changes preserved and issue created: ${issue}`
+            )
+            core.setFailed(validationError instanceof Error ? validationError.message : String(validationError))
+            return
+          }
           if (aurPublish) {
             if (!aurSshKey || !aurKnownHosts) {
               throw new Error(
