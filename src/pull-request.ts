@@ -111,7 +111,9 @@ export async function createValidationFailureIssue(
     workspace
   )
   if (!changed.trim()) {
-    throw new Error('No package changes are available for the validation failure branch')
+    throw new Error(
+      'No package changes are available for the validation failure branch'
+    )
   }
 
   await git.run('git', ['switch', options.baseBranch], workspace)
