@@ -13,6 +13,7 @@ A GitHub Action for automating the maintenance of Arch Linux AUR packages.
 - Update `PKGBUILD` and regenerate `.SRCINFO`.
 - Validate packages with Arch Linux tooling.
 - Create and maintain update pull requests.
+- Report package validation failures as GitHub issues with the failed update preserved on a branch.
 - Optionally enable GitHub auto-merge after validation.
 - Publish maintained packages to the Arch User Repository (AUR).
 
@@ -148,6 +149,7 @@ The intended interface is a single Action:
 ```yaml
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 steps:
@@ -166,6 +168,12 @@ a package-specific branch and opens an update pull request against
 `base-branch`. The `update-branch` input is the **branch prefix**, not the
 complete branch name. For example, `update-branch: update` creates
 `update/example-bin`.
+
+If package validation fails, no pull request is created. Instead, the generated
+`PKGBUILD` and `.SRCINFO` are preserved on the package branch and the Action
+creates a GitHub issue containing the validation error and a link to that
+branch. Creating these issues requires the `issues: write` permission for the
+provided token.
 
 Only one package update is processed per Action run. The first package that
 needs an update is committed and its pull request is created or updated;
