@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals'
 import type { PackageDefinition } from '../src/types.js'
-import { createUpdatePullRequest } from '../src/pull-request.js'
+import {
+  createUpdatePullRequest,
+  createValidationFailureIssue
+} from '../src/pull-request.js'
 
 describe('update pull request creation', () => {
   afterEach(() => {
@@ -63,6 +66,65 @@ describe('update pull request creation', () => {
       '/workspace'
     )
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+
+  it('creates a branch and issue for a validation failure', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
+      return ''
+    })
+    const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({ html_url: 'https://github.com/test/repo/issues/1' }),
+        { status: 201 }
+      )
+    )
+
+    await expect(
+      createValidationFailureIssue(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'update',
+          pkg,
+          currentVersion: '1.0.0',
+          version: '1.1.0',
+          error: new Error('makepkg failed')
+        },
+        { run }
+      )
+    ).resolves.toBe('https://github.com/test/repo/issues/1')
+
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['switch', '-C', 'update/demo'],
+      '/workspace'
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['push', '--force', '--set-upstream', 'origin', 'update/demo'],
+      '/workspace'
+    )
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      '/repos/test/repo/issues'
+    )
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(
+      'makepkg failed'
+    )
+    expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain(
+      'update/demo'
+    )
   })
 
   it('updates an existing package pull request without cherry-picking', async () => {
