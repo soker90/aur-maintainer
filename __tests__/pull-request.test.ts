@@ -68,7 +68,6 @@ describe('update pull request creation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
-
   it('creates a branch and issue for a validation failure', async () => {
     const pkg = {
       name: 'demo',
@@ -79,7 +78,7 @@ describe('update pull request creation', () => {
       config: { connector: 'github-release', config: {} }
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
-      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\\n'
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
       return ''
     })
     const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
