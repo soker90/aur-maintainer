@@ -48,9 +48,6 @@ jobs:
       - name: Build dist/ Directory
         id: build
         run: npm run bundle
-      - name: Debug formatted test
-        id: debug-format
-        run: git diff -- __tests__/pull-request.test.ts
 
       # This will fail the workflow if the `dist/` directory is different than
       # expected.
