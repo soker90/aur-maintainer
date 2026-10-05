@@ -13,7 +13,8 @@ A GitHub Action for automating the maintenance of Arch Linux AUR packages.
 - Update `PKGBUILD` and regenerate `.SRCINFO`.
 - Validate packages with Arch Linux tooling.
 - Create and maintain update pull requests.
-- Report package validation failures as GitHub issues with the failed update preserved on a branch.
+- Report package validation failures as GitHub issues with the failed update
+  preserved on a branch.
 - Optionally enable GitHub auto-merge after validation.
 - Publish maintained packages to the Arch User Repository (AUR).
 
