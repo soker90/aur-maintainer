@@ -36309,36 +36309,68 @@ function validateBranchName(branch) {
 }
 async function createValidationFailureIssue(workspace, options, git = hostGitRunner$1) {
     const relative = getRelativePackagePath(workspace, options.pkg.path);
-    const packagePaths = [path.join(relative, 'PKGBUILD'), path.join(relative, '.SRCINFO')];
+    const packagePaths = [
+        path.join(relative, 'PKGBUILD'),
+        path.join(relative, '.SRCINFO')
+    ];
     const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name);
     validateBranchName(branch);
     await git.run('git', ['add', '--', ...packagePaths], workspace);
     const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim()) throw new Error('No package changes are available for the validation failure branch');
+    if (!changed.trim()) {
+        throw new Error('No package changes are available for the validation failure branch');
+    }
     await git.run('git', ['switch', options.baseBranch], workspace);
     await git.run('git', ['switch', '-C', branch], workspace);
     await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', ['config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'], workspace);
+    await git.run('git', [
+        'config',
+        'user.email',
+        '41898282+github-actions[bot]@users.noreply.github.com'
+    ], workspace);
     await git.run('git', ['commit', '-m', 'validation failed: ' + options.pkg.name], workspace);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
-    if (!owner || !repo) throw new Error('GITHUB_REPOSITORY must use owner/name form');
+    if (!owner || !repo) {
+        throw new Error('GITHUB_REPOSITORY must use owner/name form');
+    }
     const branchUrl = 'https://github.com/' + options.repository + '/tree/' + branch;
     const errorDetails = formatErrorDetails(options.error);
-    const body = ['## AUR package validation failed', '', 'Package: ' + options.pkg.name, 'Detected update: ' + options.currentVersion + ' → ' + options.version, 'Branch: [' + branch + '](' + branchUrl + ')', '', '### Validation error', '', '~~~text', errorDetails, '~~~', '', 'The generated package changes were preserved on the branch above for investigation. No pull request was created.'].join('\n');
-    const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', { title: 'validation failed: ' + options.pkg.name, body });
-    if (!isIssue(created)) throw new Error('GitHub did not return the created validation issue URL');
+    const body = [
+        '## AUR package validation failed',
+        '',
+        'Package: `' + options.pkg.name + '`',
+        'Detected update: ' + options.currentVersion + ' → ' + options.version,
+        'Branch: [' + branch + '](' + branchUrl + ')',
+        '',
+        '### Validation error',
+        '',
+        '~~~text',
+        errorDetails,
+        '~~~',
+        '',
+        'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
+    ].join('\\n');
+    const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', {
+        title: 'validation failed: ' + options.pkg.name,
+        body
+    });
+    if (!isIssue(created)) {
+        throw new Error('GitHub did not return the created validation issue URL');
+    }
     return created.html_url;
 }
 function formatErrorDetails(error) {
     if (error instanceof Error) {
         const details = [error.message];
         const candidate = error;
-        if (candidate.stderr?.trim()) details.push(candidate.stderr.trim());
-        if (candidate.stdout?.trim()) details.push(candidate.stdout.trim());
-        return details.join('\n').slice(0, 12000);
+        if (candidate.stderr?.trim())
+            details.push(candidate.stderr.trim());
+        if (candidate.stdout?.trim())
+            details.push(candidate.stdout.trim());
+        return details.join('\\n').slice(0, 12_000);
     }
-    return String(error).slice(0, 12000);
+    return String(error).slice(0, 12_000);
 }
 async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1) {
     if (options.packages.length !== 1) {
@@ -36726,16 +36758,23 @@ async function run() {
                         await validatePackage(pkg);
                     }
                     catch (validationError) {
-                        if (!token || !repository) throw validationError;
+                        if (!token || !repository)
+                            throw validationError;
                         const issue = await createValidationFailureIssue(workspace, {
-                            token, repository,
+                            token,
+                            repository,
                             baseBranch: getInput('base-branch') || 'main',
                             updateBranch: getInput('update-branch') || 'update',
-                            pkg, currentVersion: update.currentVersion, version: update.version, error: validationError
+                            pkg,
+                            currentVersion: update.currentVersion,
+                            version: update.version,
+                            error: validationError
                         });
                         setOutput('validation-failure-issue', issue);
-                        error('Validation failed for ' + pkg.name + '; changes preserved and issue created: ' + issue);
-                        setFailed(validationError instanceof Error ? validationError.message : String(validationError));
+                        error(`Validation failed for ${pkg.name}; changes preserved and issue created: ${issue}`);
+                        setFailed(validationError instanceof Error
+                            ? validationError.message
+                            : String(validationError));
                         return;
                     }
                     if (aurPublish) {
