@@ -68,6 +68,9 @@ outputs:
     description: >-
       JSON array containing URLs of generated package-specific update pull
       requests
+  validation-failure-issue:
+    description: >-
+      URL of the issue created when package validation fails
 
 runs:
   using: node24

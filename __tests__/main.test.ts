@@ -16,6 +16,7 @@ const updatePackageMetadata = jest.fn()
 const validatePackage = jest.fn()
 const publishAurPackage = jest.fn()
 const createUpdatePullRequest = jest.fn()
+const createValidationFailureIssue = jest.fn()
 
 jest.unstable_mockModule('@actions/core', () => core)
 jest.unstable_mockModule('../src/discovery.js', () => ({ discoverPackages }))
@@ -39,7 +40,8 @@ jest.unstable_mockModule('../src/aur.js', () => ({
   publishAurPackage
 }))
 jest.unstable_mockModule('../src/pull-request.js', () => ({
-  createUpdatePullRequest
+  createUpdatePullRequest,
+  createValidationFailureIssue
 }))
 
 const { run } = await import('../src/main.js')
@@ -107,7 +109,7 @@ describe('main.ts', () => {
       changed: true,
       currentVersion: '1.0.0',
       version: '1.1.0',
-      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+      previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
     })
 
     await run()
@@ -154,7 +156,7 @@ describe('main.ts', () => {
       changed: true,
       currentVersion: '1.0.0',
       version: '1.1.0',
-      previousPkgbuild: 'pkgname=example\\npkgver=1.0.0\\n'
+      previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
     })
 
     await run()
@@ -208,6 +210,55 @@ describe('main.ts', () => {
       'pkgname=example\npkgver=1.0.0\n'
     )
     expect(core.setFailed).toHaveBeenCalled()
+  })
+
+  it('creates a validation failure issue and preserves the update', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const packagePath = path.join(directory, 'example')
+    const pkgbuildPath = path.join(packagePath, 'PKGBUILD')
+    const srcinfoPath = path.join(packagePath, '.SRCINFO')
+
+    await mkdir(packagePath, { recursive: true })
+    await writeFile(pkgbuildPath, 'pkgname=example\npkgver=1.0.0\n')
+    await writeFile(srcinfoPath, 'pkgname=example\npkgver=1.0.0\n')
+
+    const updatedPkg = {
+      ...pkg,
+      path: packagePath,
+      pkgbuildPath,
+      srcinfoPath
+    }
+    discoverPackages.mockResolvedValue([updatedPkg])
+    updatePackage.mockImplementation(async (item) => {
+      await writeFile(item.pkgbuildPath, 'pkgname=example\npkgver=1.1.0\n')
+      return {
+        changed: true,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        previousPkgbuild: 'pkgname=example\npkgver=1.0.0\n'
+      }
+    })
+    validatePackage.mockRejectedValue(new Error('makepkg failed'))
+    createValidationFailureIssue.mockResolvedValue(
+      'https://github.com/test/repo/issues/1'
+    )
+
+    await run()
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      'pkgname=example\npkgver=1.1.0\n'
+    )
+    expect(createValidationFailureIssue).toHaveBeenCalledWith(
+      '/workspace',
+      expect.objectContaining({
+        pkg: updatedPkg,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        error: expect.any(Error)
+      })
+    )
+    expect(rollbackPackageUpdate).not.toHaveBeenCalled()
+    expect(core.setFailed).toHaveBeenCalledWith('makepkg failed')
   })
 
   it('stops after the first package with an update', async () => {
