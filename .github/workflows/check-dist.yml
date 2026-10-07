@@ -51,6 +51,12 @@ jobs:
 
       # This will fail the workflow if the `dist/` directory is different than
       # expected.
+      - name: Show formatted configuration source
+        id: show-formatted
+        run: |
+          cat src/config.ts
+          cat __tests__/config.test.ts
+
       - name: Compare Directories
         id: diff
         run: |
