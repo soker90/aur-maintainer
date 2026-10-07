@@ -1,0 +1,36 @@
+name: Temporary generated-action sync
+
+on:
+  pull_request_target:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event.pull_request.head.ref == 'refactor/root-package-config' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run bundle
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/config.ts src/discovery.ts __tests__/config.test.ts dist/index.js
+          if git diff --cached --quiet; then
+            echo "Generated files are already synchronized"
+            exit 0
+          fi
+          git commit -m "build: update generated action"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
