@@ -159,10 +159,14 @@ describe('discoverPackages', () => {
       discoverPackages(root, { packages: ['packages/broken'] })
     ).rejects.toThrow('has no PKGBUILD')
   })
+
   it('uses package connector configuration from the root config', async () => {
     const root = await workspace()
     await mkdir(path.join(root, 'packages/foo-bin'), { recursive: true })
-    await writeFile(path.join(root, 'packages/foo-bin', 'PKGBUILD'), 'pkgname=foo-bin\npkgver=1\n')
+    await writeFile(
+      path.join(root, 'packages/foo-bin', 'PKGBUILD'),
+      'pkgname=foo-bin\npkgver=1\n'
+    )
     await writeFile(
       path.join(root, '.aur-maintainer.yml'),
       'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n'
