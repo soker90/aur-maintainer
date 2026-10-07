@@ -35714,6 +35714,9 @@ async function discoverPackage(workspace, entry) {
     if (!(await isFile$1(pkgbuildPath))) {
         throw new Error('Package directory has no PKGBUILD: ' + packagePath);
     }
+    const updateConfigPath = 'connector' in entry
+        ? path.join(workspace, '.aur-maintainer.yml')
+        : await findLegacyUpdateConfigPath(packagePath);
     const config = 'connector' in entry
         ? {
             connector: entry.connector,
@@ -35721,10 +35724,7 @@ async function discoverPackage(workspace, entry) {
             updates: entry.updates,
             timeout: entry.timeout
         }
-        : await loadLegacyPackageConfig(packagePath);
-    const updateConfigPath = 'connector' in entry
-        ? path.join(workspace, '.aur-maintainer.yml')
-        : await findLegacyUpdateConfigPath(packagePath);
+        : await loadPackageConfig(packagePath, path.relative(packagePath, updateConfigPath));
     return {
         name: path.basename(packagePath),
         path: packagePath,
@@ -35733,13 +35733,6 @@ async function discoverPackage(workspace, entry) {
         updateConfigPath,
         config
     };
-}
-async function loadLegacyPackageConfig(packagePath) {
-    const connectorDirectory = path.join(packagePath, 'connector');
-    if (await isFile$1(path.join(connectorDirectory, 'update.yml'))) {
-        return loadPackageConfig(packagePath, 'connector/update.yml');
-    }
-    return loadPackageConfig(packagePath);
 }
 async function findLegacyUpdateConfigPath(packagePath) {
     const rootConfigPath = path.join(packagePath, 'update.yml');
