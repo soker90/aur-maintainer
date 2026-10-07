@@ -83,16 +83,6 @@ async function discoverPackage(
   }
 }
 
-async function loadLegacyPackageConfig(
-  packagePath: string
-): Promise<PackageConfig> {
-  const connectorDirectory = path.join(packagePath, 'connector')
-  if (await isFile(path.join(connectorDirectory, 'update.yml'))) {
-    return loadPackageConfig(packagePath, 'connector/update.yml')
-  }
-  return loadPackageConfig(packagePath)
-}
-
 async function findLegacyUpdateConfigPath(
   packagePath: string
 ): Promise<string> {
