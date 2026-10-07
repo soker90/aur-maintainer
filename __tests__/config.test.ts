@@ -102,7 +102,7 @@ describe('config', () => {
     const workspace = await tempDirectory('aur-config')
     await writeFile(
       path.join(workspace, '.aur-maintainer.yml'),
-      'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n    updates:\n      source: \'source=("https://example.com/ + '{version}")\'\n'
+      'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n    updates:\n      source: \'source=("https://example.com/$' + '{version}")\'\n'
     )
     await expect(loadMaintainerConfig(workspace)).resolves.toEqual({
       packages: [
@@ -111,7 +111,7 @@ describe('config', () => {
           connector: 'github-release',
           config: { repository: 'example/project' },
           updates: {
-            source: 'source=("https://example.com/ + '{version}")'
+            source: 'source=("https://example.com/$' + '{version}")'
           },
           timeout: 30
         }
