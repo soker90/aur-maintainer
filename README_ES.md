@@ -171,7 +171,8 @@ repositorio.
 
 ## Configuración por paquete
 
-El repositorio consumidor no necesita un `update.yml` por paquete. La configuración de cada paquete vive en `.aur-maintainer.yml`:
+El repositorio consumidor no necesita un `update.yml` por paquete. La
+configuración de cada paquete vive en `.aur-maintainer.yml`:
 
 ```yaml
 packages:
@@ -200,4 +201,5 @@ packages:
 ```
 
 Este modelo deja `aur-packages` como un repositorio declarativo: `PKGBUILD`,
-configuración y únicamente el código necesario para sus conectores personalizados.
+configuración y únicamente el código necesario para sus conectores
+personalizados.
