@@ -98,4 +98,24 @@ describe('config', () => {
       '"updates.version" is not supported'
     )
   })
+  it('loads connector configuration inline for each package', async () => {
+    const workspace = await tempDirectory('aur-config')
+    await writeFile(
+      path.join(workspace, '.aur-maintainer.yml'),
+      'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n    updates:\n      source: \'source=("https://example.com/ + '{version}")\'\n'
+    )
+    await expect(loadMaintainerConfig(workspace)).resolves.toEqual({
+      packages: [
+        {
+          path: 'packages/foo-bin',
+          connector: 'github-release',
+          config: { repository: 'example/project' },
+          updates: {
+            source: 'source=("https://example.com/ + '{version}")'
+          },
+          timeout: 30
+        }
+      ]
+    })
+  })
 })
