@@ -1,5 +1,9 @@
 export interface MaintainerConfig {
-  packages?: string[]
+  packages?: Array<string | PackageConfigEntry>
+}
+
+export interface PackageConfigEntry extends PackageConfig {
+  path: string
 }
 
 export interface PackageConfig {

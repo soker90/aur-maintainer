@@ -48,6 +48,7 @@ describe('config', () => {
       timeout: 30
     })
   })
+
   it('loads package metadata update mappings', async () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
@@ -97,5 +98,24 @@ describe('config', () => {
     await expect(loadPackageConfig(packagePath)).rejects.toThrow(
       '"updates.version" is not supported'
     )
+  })
+
+  it('loads connector configuration inline for each package', async () => {
+    const workspace = await tempDirectory('aur-config')
+    await writeFile(
+      path.join(workspace, '.aur-maintainer.yml'),
+      'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n    timeout: 45\n'
+    )
+    await expect(loadMaintainerConfig(workspace)).resolves.toEqual({
+      packages: [
+        {
+          path: 'packages/foo-bin',
+          connector: 'github-release',
+          config: { repository: 'example/project' },
+          updates: {},
+          timeout: 45
+        }
+      ]
+    })
   })
 })

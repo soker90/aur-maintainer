@@ -102,6 +102,27 @@ describe('discoverPackages', () => {
     )
   })
 
+  it('uses the root update.yml for legacy packages without connectors', async () => {
+    const root = await workspace()
+    await packageDirectory(root, 'packages/foo-bin', 'github-release')
+    await writeFile(
+      path.join(root, 'packages/foo-bin', 'update.yml'),
+      'connector: github-release\nconfig:\n  repository: example/project\n'
+    )
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([
+      expect.objectContaining({
+        name: 'foo-bin',
+        config: {
+          connector: 'github-release',
+          config: { repository: 'example/project' },
+          updates: {},
+          timeout: 30
+        }
+      })
+    ])
+  })
+
   it('supports a package at repository root', async () => {
     const root = await workspace()
     await packageDirectory(root, '.', 'github-release')
@@ -158,5 +179,43 @@ describe('discoverPackages', () => {
     await expect(
       discoverPackages(root, { packages: ['packages/broken'] })
     ).rejects.toThrow('has no PKGBUILD')
+  })
+
+  it('uses package connector configuration from the root config', async () => {
+    const root = await workspace()
+    await mkdir(path.join(root, 'packages/foo-bin'), { recursive: true })
+    await writeFile(
+      path.join(root, 'packages/foo-bin', 'PKGBUILD'),
+      'pkgname=foo-bin\npkgver=1\n'
+    )
+    await writeFile(
+      path.join(root, '.aur-maintainer.yml'),
+      'packages:\n  - path: packages/foo-bin\n    connector: github-release\n    config:\n      repository: example/project\n'
+    )
+
+    await expect(
+      discoverPackages(root, {
+        packages: [
+          {
+            path: 'packages/foo-bin',
+            connector: 'github-release',
+            config: { repository: 'example/project' },
+            updates: {},
+            timeout: 30
+          }
+        ]
+      })
+    ).resolves.toEqual([
+      expect.objectContaining({
+        name: 'foo-bin',
+        updateConfigPath: path.join(root, '.aur-maintainer.yml'),
+        config: {
+          connector: 'github-release',
+          config: { repository: 'example/project' },
+          updates: {},
+          timeout: 30
+        }
+      })
+    ])
   })
 })
