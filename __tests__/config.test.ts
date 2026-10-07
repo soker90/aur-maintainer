@@ -48,6 +48,7 @@ describe('config', () => {
       timeout: 30
     })
   })
+
   it('loads package metadata update mappings', async () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
@@ -98,6 +99,7 @@ describe('config', () => {
       '"updates.version" is not supported'
     )
   })
+
   it('loads connector configuration inline for each package', async () => {
     const workspace = await tempDirectory('aur-config')
     await writeFile(
