@@ -70,8 +70,7 @@ export function parsePackageConfig(
     config: (value.config as Record<string, unknown> | undefined) ?? {},
     updates: updates as PackageConfig['updates'],
     timeout:
-      (value.timeout as number | undefined) ??
-      DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
+      (value.timeout as number | undefined) ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
   }
 }
 

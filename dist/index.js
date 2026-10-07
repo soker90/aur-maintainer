@@ -35613,42 +35613,28 @@ async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml')
     const content = await readFile(filePath, 'utf8');
     return parsePackageConfig(parse(content), filePath);
 }
-function parseMaintainerConfig(value, filePath) {
-    if (value === null || value === undefined)
-        return {};
-    if (!isRecord$1(value)) {
-        throw new Error(`${filePath} must contain a YAML object`);
-    }
-    if (value.packages !== undefined && !isStringArray(value.packages)) {
-        throw new Error(`${filePath}: "packages" must be an array of paths`);
-    }
-    return {
-        packages: value.packages
-    };
-}
 function parsePackageConfig(value, filePath) {
-    if (!isRecord$1(value)) {
-        throw new Error(`${filePath} must contain a YAML object`);
-    }
+    if (!isRecord$1(value))
+        throw new Error(filePath + ' must contain a YAML object');
     if (typeof value.connector !== 'string' || value.connector.trim() === '') {
-        throw new Error(`${filePath}: "connector" is required`);
+        throw new Error(filePath + ': "connector" is required');
     }
     if (value.config !== undefined && !isRecord$1(value.config)) {
-        throw new Error(`${filePath}: "config" must be an object`);
+        throw new Error(filePath + ': "config" must be an object');
     }
     if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
-        throw new Error(`${filePath}: "timeout" must be a positive integer number of seconds`);
+        throw new Error(filePath + ': "timeout" must be a positive integer number of seconds');
     }
     if (value.updates !== undefined && !isRecord$1(value.updates)) {
-        throw new Error(`${filePath}: "updates" must be an object`);
+        throw new Error(filePath + ': "updates" must be an object');
     }
     const updates = value.updates ?? {};
     for (const [key, template] of Object.entries(updates)) {
         if (!['source', 'sha256'].includes(key)) {
-            throw new Error(`${filePath}: "updates.${key}" is not supported`);
+            throw new Error(filePath + ': "updates.' + key + '" is not supported');
         }
         if (typeof template !== 'string' || template.trim() === '') {
-            throw new Error(`${filePath}: "updates.${key}" must be a non-empty string`);
+            throw new Error(filePath + ': "updates.' + key + '" must be a non-empty string');
         }
     }
     return {
@@ -35658,14 +35644,36 @@ function parsePackageConfig(value, filePath) {
         timeout: value.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
     };
 }
+function parseMaintainerConfig(value, filePath) {
+    if (value === null || value === undefined)
+        return {};
+    if (!isRecord$1(value))
+        throw new Error(filePath + ' must contain a YAML object');
+    if (value.packages !== undefined && !Array.isArray(value.packages)) {
+        throw new Error(filePath + ': "packages" must be an array');
+    }
+    const packages = value.packages?.map((entry, index) => {
+        if (typeof entry === 'string')
+            return entry;
+        if (!isRecord$1(entry)) {
+            throw new Error(filePath +
+                ': "packages[' +
+                index +
+                ']" must be a path string or object');
+        }
+        if (typeof entry.path !== 'string' || entry.path.trim() === '') {
+            throw new Error(filePath + ': "packages[' + index + '].path" is required');
+        }
+        const config = parsePackageConfig(entry, filePath + ':packages[' + index + ']');
+        return { path: entry.path, ...config };
+    });
+    return { packages };
+}
 function isRecord$1(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 function isPositiveInteger(value) {
     return typeof value === 'number' && Number.isInteger(value) && value > 0;
-}
-function isStringArray(value) {
-    return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 function isMissingFile$1(error) {
     return (typeof error === 'object' &&
@@ -35675,8 +35683,11 @@ function isMissingFile$1(error) {
 }
 
 async function discoverPackages(workspace, config) {
-    const packagePaths = config.packages?.map((packagePath) => path.resolve(workspace, packagePath)) ?? (await findDefaultPackagePaths(workspace));
-    const packages = await Promise.all(packagePaths.map((packagePath) => discoverPackage(packagePath, workspace)));
+    const packageEntries = config.packages?.map((entry) => typeof entry === 'string' ? { path: entry } : entry) ??
+        (await findDefaultPackagePaths(workspace)).map((packagePath) => ({
+            path: packagePath
+        }));
+    const packages = await Promise.all(packageEntries.map((entry) => discoverPackage(workspace, entry)));
     return packages.toSorted((left, right) => left.name.localeCompare(right.name));
 }
 async function findDefaultPackagePaths(workspace) {
@@ -35694,19 +35705,28 @@ async function findDefaultPackagePaths(workspace) {
     }
     return candidates;
 }
-async function discoverPackage(packagePath, workspace) {
+async function discoverPackage(workspace, entry) {
+    const packagePath = path.resolve(workspace, entry.path);
     if (!isWithinWorkspace(packagePath, workspace)) {
-        throw new Error(`Package path is outside the workspace: ${packagePath}`);
+        throw new Error('Package path is outside the workspace: ' + packagePath);
     }
     const pkgbuildPath = path.join(packagePath, 'PKGBUILD');
     if (!(await isFile$1(pkgbuildPath))) {
-        throw new Error(`Package directory has no PKGBUILD: ${packagePath}`);
+        throw new Error('Package directory has no PKGBUILD: ' + packagePath);
     }
-    const updateConfigPath = await findUpdateConfigPath(packagePath);
-    const config = await loadPackageConfig(packagePath, path.relative(packagePath, updateConfigPath));
-    const name = path.basename(packagePath);
+    const config = 'connector' in entry
+        ? {
+            connector: entry.connector,
+            config: entry.config,
+            updates: entry.updates,
+            timeout: entry.timeout
+        }
+        : await loadLegacyPackageConfig(packagePath);
+    const updateConfigPath = 'connector' in entry
+        ? path.join(workspace, '.aur-maintainer.yml')
+        : await findLegacyUpdateConfigPath(packagePath);
     return {
-        name,
+        name: path.basename(packagePath),
         path: packagePath,
         pkgbuildPath,
         srcinfoPath: path.join(packagePath, '.SRCINFO'),
@@ -35714,18 +35734,29 @@ async function discoverPackage(packagePath, workspace) {
         config
     };
 }
-async function findUpdateConfigPath(packagePath) {
+async function loadLegacyPackageConfig(packagePath) {
+    const connectorDirectory = path.join(packagePath, 'connector');
+    if (await isFile$1(path.join(connectorDirectory, 'update.yml'))) {
+        return loadPackageConfig(packagePath, 'connector/update.yml');
+    }
+    return loadPackageConfig(packagePath);
+}
+async function findLegacyUpdateConfigPath(packagePath) {
     const rootConfigPath = path.join(packagePath, 'update.yml');
     const connectorDirectory = path.join(packagePath, 'connector');
     const connectorConfigPath = path.join(connectorDirectory, 'update.yml');
     if (await isFile$1(connectorConfigPath)) {
         if (await isFile$1(rootConfigPath)) {
-            throw new Error(`Package "${path.basename(packagePath)}" must not define both update.yml and connector/update.yml`);
+            throw new Error('Package "' +
+                path.basename(packagePath) +
+                '" must not define both update.yml and connector/update.yml');
         }
         return connectorConfigPath;
     }
     if (await isDirectory$1(connectorDirectory)) {
-        throw new Error(`Package "${path.basename(packagePath)}" has connector/ but no connector/update.yml`);
+        throw new Error('Package "' +
+            path.basename(packagePath) +
+            '" has connector/ but no connector/update.yml');
     }
     return rootConfigPath;
 }
