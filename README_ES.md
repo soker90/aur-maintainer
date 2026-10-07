@@ -184,6 +184,7 @@ packages:
 
 La Action se encarga de detectar nuevas versiones, actualizar el `PKGBUILD`,
 validarlo y crear la rama y el pull request de actualización.
+
 Durante la migración, los `update.yml` existentes siguen siendo compatibles.
 
 Los conectores personalizados siguen siendo código del repositorio consumidor.
