@@ -168,3 +168,36 @@ npm run bundle
 El directorio generado `dist/` se incluye en el repositorio porque GitHub
 ejecuta las JavaScript Actions directamente desde el bundle incluido en el
 repositorio.
+
+## Configuración por paquete
+
+El repositorio consumidor no necesita un `update.yml` por paquete. La configuración de cada paquete vive en `.aur-maintainer.yml`:
+
+```yaml
+packages:
+  - path: packages/example-bin
+    connector: github-tag
+    config:
+      repository: owner/project
+```
+
+La Action se encarga de detectar nuevas versiones, actualizar el `PKGBUILD`,
+validarlo y crear la rama y el pull request de actualización.
+
+Los conectores personalizados siguen siendo código del repositorio consumidor.
+Por ejemplo, un paquete puede conservar su implementación específica en
+`packages/example-bin/connector/`, mientras `.aur-maintainer.yml` selecciona
+`connector: custom` y contiene sus `config`, `updates` y `timeout`.
+
+```yaml
+packages:
+  - path: packages/example-bin
+    connector: custom
+    config: {}
+    updates:
+      source: 'source=("example-${version}.tar.gz::${source}")'
+      sha256: '_sha256=${sha256}'
+```
+
+Este modelo deja `aur-packages` como un repositorio declarativo: `PKGBUILD`,
+configuración y únicamente el código necesario para sus conectores personalizados.
