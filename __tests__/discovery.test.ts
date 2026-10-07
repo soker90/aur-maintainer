@@ -102,6 +102,27 @@ describe('discoverPackages', () => {
     )
   })
 
+  it('uses the root update.yml for legacy packages without connectors', async () => {
+    const root = await workspace()
+    await packageDirectory(root, 'packages/foo-bin', 'github-release')
+    await writeFile(
+      path.join(root, 'packages/foo-bin', 'update.yml'),
+      'connector: github-release\nconfig:\n  repository: example/project\n'
+    )
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([
+      expect.objectContaining({
+        name: 'foo-bin',
+        config: {
+          connector: 'github-release',
+          config: { repository: 'example/project' },
+          updates: {},
+          timeout: 30
+        }
+      })
+    ])
+  })
+
   it('supports a package at repository root', async () => {
     const root = await workspace()
     await packageDirectory(root, '.', 'github-release')
