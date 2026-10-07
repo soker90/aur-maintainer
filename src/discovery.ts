@@ -1,15 +1,24 @@
 import { readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { loadPackageConfig } from './config.js'
-import type { MaintainerConfig, PackageConfig, PackageConfigEntry, PackageDefinition } from './types.js'
+import type {
+  MaintainerConfig,
+  PackageConfig,
+  PackageConfigEntry,
+  PackageDefinition
+} from './types.js'
 
 export async function discoverPackages(
   workspace: string,
   config: MaintainerConfig
 ): Promise<PackageDefinition[]> {
-  const packageEntries = config.packages?.map((entry) =>
-    typeof entry === 'string' ? { path: entry } : entry
-  ) ?? (await findDefaultPackagePaths(workspace)).map((packagePath) => ({ path: packagePath }))
+  const packageEntries =
+    config.packages?.map((entry) =>
+      typeof entry === 'string' ? { path: entry } : entry
+    ) ??
+    (await findDefaultPackagePaths(workspace)).map((packagePath) => ({
+      path: packagePath
+    }))
 
   const packages = await Promise.all(
     packageEntries.map((entry) => discoverPackage(workspace, entry))
@@ -24,7 +33,9 @@ async function findDefaultPackagePaths(workspace: string): Promise<string[]> {
   if (await isDirectory(packagesDirectory)) {
     const entries = await readdir(packagesDirectory, { withFileTypes: true })
     for (const entry of entries) {
-      if (entry.isDirectory()) candidates.push(path.join(packagesDirectory, entry.name))
+      if (entry.isDirectory()) {
+        candidates.push(path.join(packagesDirectory, entry.name))
+      }
     }
   }
   return candidates
@@ -69,7 +80,9 @@ async function discoverPackage(
   }
 }
 
-async function loadLegacyPackageConfig(packagePath: string): Promise<PackageConfig> {
+async function loadLegacyPackageConfig(
+  packagePath: string
+): Promise<PackageConfig> {
   const connectorDirectory = path.join(packagePath, 'connector')
   if (await isFile(path.join(connectorDirectory, 'update.yml'))) {
     return loadPackageConfig(packagePath, 'connector/update.yml')
@@ -77,37 +90,59 @@ async function loadLegacyPackageConfig(packagePath: string): Promise<PackageConf
   return loadPackageConfig(packagePath)
 }
 
-async function findLegacyUpdateConfigPath(packagePath: string): Promise<string> {
+async function findLegacyUpdateConfigPath(
+  packagePath: string
+): Promise<string> {
   const rootConfigPath = path.join(packagePath, 'update.yml')
   const connectorDirectory = path.join(packagePath, 'connector')
   const connectorConfigPath = path.join(connectorDirectory, 'update.yml')
   if (await isFile(connectorConfigPath)) {
     if (await isFile(rootConfigPath)) {
-      throw new Error('Package "' + path.basename(packagePath) +
-        '" must not define both update.yml and connector/update.yml')
+      throw new Error(
+        'Package "' +
+          path.basename(packagePath) +
+          '" must not define both update.yml and connector/update.yml'
+      )
     }
     return connectorConfigPath
   }
   if (await isDirectory(connectorDirectory)) {
-    throw new Error('Package "' + path.basename(packagePath) +
-      '" has connector/ but no connector/update.yml')
+    throw new Error(
+      'Package "' +
+        path.basename(packagePath) +
+        '" has connector/ but no connector/update.yml'
+    )
   }
   return rootConfigPath
 }
 
 async function isPackageDirectory(directory: string): Promise<boolean> {
-  return (await isDirectory(directory)) && (await isFile(path.join(directory, 'PKGBUILD')))
+  return (
+    (await isDirectory(directory)) &&
+    (await isFile(path.join(directory, 'PKGBUILD')))
+  )
 }
 
 async function isDirectory(filePath: string): Promise<boolean> {
-  try { return (await stat(filePath)).isDirectory() } catch { return false }
+  try {
+    return (await stat(filePath)).isDirectory()
+  } catch {
+    return false
+  }
 }
 
 async function isFile(filePath: string): Promise<boolean> {
-  try { return (await stat(filePath)).isFile() } catch { return false }
+  try {
+    return (await stat(filePath)).isFile()
+  } catch {
+    return false
+  }
 }
 
 function isWithinWorkspace(packagePath: string, workspace: string): boolean {
   const relative = path.relative(workspace, packagePath)
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+  return (
+    relative === '' ||
+    (!relative.startsWith('..') && !path.isAbsolute(relative))
+  )
 }
