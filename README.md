@@ -59,14 +59,14 @@ jobs:
 
       - uses: soker90/aur-maintainer@v1
         with:
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 For auto-merge:
 
 ```yaml
-          auto-merge: true
-          auto-merge-timeout: 1800
+auto-merge: true
+auto-merge-timeout: 1800
 ```
 
 ## Permissions
@@ -214,8 +214,8 @@ timeout: 120
 config:
   channel: stable
 updates:
-  source: 'source=("example-\${version}.tar.gz::\${source}")'
-  sha256: 'sha256sums=("\${sha256}")'
+  source: 'source=("example-${version}.tar.gz::${source}")'
+  sha256: 'sha256sums=("${sha256}")'
 ```
 
 Create connector/detect.sh. It receives AUR_MAINTAINER_PACKAGE,
@@ -236,7 +236,7 @@ All three fields are required. Default timeout: 30 seconds.
 pkgver is updated when a newer supported version is detected. Optional source
 and sha256 fields are updated only when their templates are configured.
 
-Templates support \${version}, \${source}, and \${sha256}.
+Templates support ${version}, ${source}, and ${sha256}.
 
 The action uses targeted replacements rather than rewriting the whole PKGBUILD.
 
@@ -289,10 +289,10 @@ required.
 ```yaml
 - uses: soker90/aur-maintainer@v1
   with:
-    github-token: \${{ secrets.GITHUB_TOKEN }}
+    github-token: ${{ secrets.GITHUB_TOKEN }}
     aur-publish: true
-    aur-ssh-key: \${{ secrets.AUR_SSH_PRIVATE_KEY }}
-    aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
+    aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    aur-known-hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
 ```
 
 Publishing happens after validation. SSH uses strict host-key checking and
