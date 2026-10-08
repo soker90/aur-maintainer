@@ -313,6 +313,9 @@ async function waitForChecksAndMerge(
   if (!pullRequest.head?.sha) {
     throw new Error('GitHub did not return the pull request head SHA')
   }
+  if (!pullRequest.number) {
+    throw new Error('GitHub did not return the pull request number')
+  }
 
   while (Date.now() < deadline) {
     const checks = await requestGitHub(
