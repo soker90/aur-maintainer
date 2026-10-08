@@ -173,6 +173,50 @@ describe('update pull request creation', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('rejects auto-merge when GitHub omits the pull request number', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      return ''
+    })
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            html_url: 'https://github.com/test/pr/3',
+            node_id: 'PR_node_3',
+            head: { sha: 'abc123' }
+          }),
+          { status: 201 }
+        )
+      )
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'update',
+          packages: [pkg],
+          autoMerge: true,
+          autoMergeTimeoutSeconds: 600
+        },
+        { run }
+      )
+    ).rejects.toThrow('GitHub did not return the pull request number')
+  })
+
   it('merges a clean pull request when no checks are configured', async () => {
     const pkg = {
       name: 'demo',
