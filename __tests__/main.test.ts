@@ -97,6 +97,20 @@ describe('main.ts', () => {
     jest.resetAllMocks()
   })
 
+  it('requires a GitHub token when auto-merge is enabled', async () => {
+    core.getBooleanInput.mockImplementation((name) => name === 'auto-merge')
+    core.getInput.mockImplementation((name) =>
+      name === 'github-token' ? '' : '.aur-maintainer.yml'
+    )
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'github-token is required when auto-merge is enabled'
+    )
+    expect(loadRepositoryConnectors).not.toHaveBeenCalled()
+  })
+
   it('publishes packages when AUR publishing is enabled', async () => {
     core.getBooleanInput.mockImplementation((name) => name === 'aur-publish')
     core.getInput.mockImplementation((name) => {
