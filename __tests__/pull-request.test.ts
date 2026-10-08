@@ -259,6 +259,7 @@ describe('update pull request creation', () => {
         new Response(
           JSON.stringify({
             html_url: 'https://github.com/test/pr/1',
+            number: 1,
             node_id: 'PR_node',
             head: { sha: 'abc123' }
           }),
