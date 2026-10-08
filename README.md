@@ -121,6 +121,7 @@ directory as the working directory. The Action exposes the package name and path
 through `AUR_MAINTAINER_PACKAGE` and `AUR_MAINTAINER_PACKAGE_PATH`. The
 package's `config:` object is passed as JSON in `AUR_MAINTAINER_CONFIG_JSON`, so
 the detector can use package-specific settings without parsing repository
+configuration itself:
 
 ```yaml
 connector: custom
