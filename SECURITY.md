@@ -6,9 +6,12 @@ Security fixes are applied to the current major release.
 
 ## Reporting a vulnerability
 
-Please do not open a public GitHub issue for an undisclosed security vulnerability.
+Please do not open a public GitHub issue for an undisclosed security
+vulnerability.
 
-Use GitHub's private vulnerability reporting for this repository when available. If private reporting is unavailable, contact the repository owner through a private GitHub channel before disclosing the issue publicly.
+Use GitHub's private vulnerability reporting for this repository when available.
+If private reporting is unavailable, contact the repository owner through a
+private GitHub channel before disclosing the issue publicly.
 
 Please include:
 
@@ -20,7 +23,9 @@ Please include:
 
 ## Security model
 
-AUR Maintainer intentionally executes Arch package build logic and custom connectors. A PKGBUILD, package-local connector, or repository-local connector must therefore be treated as trusted code.
+AUR Maintainer intentionally executes Arch package build logic and custom
+connectors. A PKGBUILD, package-local connector, or repository-local connector
+must therefore be treated as trusted code.
 
 Users should:
 
@@ -28,4 +33,5 @@ Users should:
 - keep AUR SSH keys dedicated and revocable;
 - use least-privilege GITHUB_TOKEN permissions;
 - prefer ephemeral runners for package builds;
-- separate detection/update workflows from credentialed AUR publishing when possible.
+- separate detection/update workflows from credentialed AUR publishing when
+  possible.
