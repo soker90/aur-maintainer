@@ -204,10 +204,9 @@ describe('update pull request creation', () => {
         new Response(JSON.stringify({ check_runs: [] }), { status: 200 })
       )
       .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ number: 2, mergeable_state: 'clean' }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ number: 2, mergeable_state: 'clean' }), {
+          status: 200
+        })
       )
       .mockResolvedValueOnce(
         new Response(
@@ -315,4 +314,3 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
 })
-

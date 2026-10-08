@@ -342,7 +342,10 @@ async function waitForChecksAndMerge(
         token,
         `/repos/${owner}/${repo}/pulls/${pullRequest.number}`
       )
-      if (isMergeablePullRequest(current) && current.mergeable_state === 'clean') {
+      if (
+        isMergeablePullRequest(current) &&
+        current.mergeable_state === 'clean'
+      ) {
         await squashMergePullRequest(token, pullRequest)
         return
       }
@@ -350,7 +353,9 @@ async function waitForChecksAndMerge(
         isMergeablePullRequest(current) &&
         current.mergeable_state === 'dirty'
       ) {
-        throw new Error('Pull request cannot be merged because it has conflicts')
+        throw new Error(
+          'Pull request cannot be merged because it has conflicts'
+        )
       }
     }
 
