@@ -147,6 +147,8 @@ export async function run(): Promise<void> {
               baseBranch: core.getInput('base-branch') || 'main',
               updateBranch: core.getInput('update-branch') || 'update',
               packages: [pkg],
+              currentVersion: update.currentVersion,
+              version: update.version,
               autoMerge: core.getBooleanInput('auto-merge'),
               autoMergeTimeoutSeconds:
                 getPositiveIntegerInput('auto-merge-timeout')
