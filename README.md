@@ -73,8 +73,8 @@ lines. The default timeout is 30 seconds.
 
 ## Pull requests
 
-Only one package update is processed per run. With the default `update-branch:
-update`, package `example-bin` uses `update/example-bin`.
+Only one package update is processed per run. With the default
+`update-branch: update`, package `example-bin` uses `update/example-bin`.
 
 The input is a branch **prefix**, not a complete branch name.
 
