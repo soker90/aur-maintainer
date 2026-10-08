@@ -5,9 +5,14 @@
 
 Automate maintenance of Arch Linux AUR packages from GitHub Actions.
 
-AUR Maintainer discovers packages, detects upstream versions, updates PKGBUILD files, regenerates .SRCINFO, validates packages, and creates focused GitHub pull requests. It can optionally auto-merge validated updates and publish them to the AUR.
+AUR Maintainer discovers packages, detects upstream versions, updates PKGBUILD
+files, regenerates .SRCINFO, validates packages, and creates focused GitHub pull
+requests. It can optionally auto-merge validated updates and publish them to the
+AUR.
 
-> **Security:** validation executes PKGBUILD build logic and custom connectors are executable code. Do not expose AUR credentials to workflows that execute untrusted pull requests.
+> **Security:** validation executes PKGBUILD build logic and custom connectors
+> are executable code. Do not expose AUR credentials to workflows that execute
+> untrusted pull requests.
 
 ## Features
 
@@ -26,9 +31,11 @@ AUR Maintainer discovers packages, detects upstream versions, updates PKGBUILD f
 
 ## Requirements
 
-Use a Linux runner, preferably ubuntu-latest. The repository must be checked out before the action runs.
+Use a Linux runner, preferably ubuntu-latest. The repository must be checked out
+before the action runs.
 
-The action uses Node.js 24. Validation uses Arch packaging tools when available and otherwise requires Docker.
+The action uses Node.js 24. Validation uses Arch packaging tools when available
+and otherwise requires Docker.
 
 ## Quick start
 
@@ -64,7 +71,8 @@ For auto-merge:
 
 ## Permissions
 
-The caller workflow controls GITHUB_TOKEN permissions. Grant only what is needed.
+The caller workflow controls GITHUB_TOKEN permissions. Grant only what is
+needed.
 
 Typical PR maintenance:
 
@@ -76,33 +84,34 @@ permissions:
 
 Add issues: write when you want validation-failure issues.
 
-github-token is required for auto-merge. Without a token, detection and local updates can still run, but no GitHub branch/PR is created.
+github-token is required for auto-merge. Without a token, detection and local
+updates can still run, but no GitHub branch/PR is created.
 
 ## Inputs
 
-| Input | Default | Description |
-|---|---|---|
-| config | .aur-maintainer.yml | Repository configuration path. |
-| github-token | — | GitHub API, branch, PR, issue, and merge authentication. |
-| update-branch | update | Prefix for generated package branches. |
-| base-branch | main | Base branch for generated PRs. |
-| auto-merge | false | Wait for checks and squash-merge the generated PR. |
-| auto-merge-timeout | 1800 | Maximum check-polling time in seconds. |
-| aur-publish | false | Publish an updated package after validation. |
-| aur-publish-only | false | Publish current package state without upstream detection; takes precedence over aur-publish. |
-| aur-ssh-key | — | Private SSH key authorized for the AUR account. |
-| aur-known-hosts | — | Trusted host-key data for aur.archlinux.org. |
+| Input              | Default             | Description                                                                                  |
+| ------------------ | ------------------- | -------------------------------------------------------------------------------------------- |
+| config             | .aur-maintainer.yml | Repository configuration path.                                                               |
+| github-token       | —                   | GitHub API, branch, PR, issue, and merge authentication.                                     |
+| update-branch      | update              | Prefix for generated package branches.                                                       |
+| base-branch        | main                | Base branch for generated PRs.                                                               |
+| auto-merge         | false               | Wait for checks and squash-merge the generated PR.                                           |
+| auto-merge-timeout | 1800                | Maximum check-polling time in seconds.                                                       |
+| aur-publish        | false               | Publish an updated package after validation.                                                 |
+| aur-publish-only   | false               | Publish current package state without upstream detection; takes precedence over aur-publish. |
+| aur-ssh-key        | —                   | Private SSH key authorized for the AUR account.                                              |
+| aur-known-hosts    | —                   | Trusted host-key data for aur.archlinux.org.                                                 |
 
 AUR SSH inputs are required when publishing is enabled.
 
 ## Outputs
 
-| Output | Description |
-|---|---|
-| packages | JSON containing inspected packages, candidates, and update results. |
-| pull-request | URL of the first generated PR. |
-| pull-requests | JSON array of generated PR URLs. |
-| validation-failure-issue | URL of the validation-failure issue. |
+| Output                   | Description                                                         |
+| ------------------------ | ------------------------------------------------------------------- |
+| packages                 | JSON containing inspected packages, candidates, and update results. |
+| pull-request             | URL of the first generated PR.                                      |
+| pull-requests            | JSON array of generated PR URLs.                                    |
+| validation-failure-issue | URL of the validation-failure issue.                                |
 
 ## Configuration
 
@@ -127,7 +136,8 @@ packages:
 
 Each entry supports path, connector, config, updates, and an optional timeout.
 
-If packages is not configured, the action discovers the repository root when it contains PKGBUILD and directories immediately below packages/.
+If packages is not configured, the action discovers the repository root when it
+contains PKGBUILD and directories immediately below packages/.
 
 ### Package-local configuration
 
@@ -140,7 +150,8 @@ config:
 updates: {}
 ```
 
-For package-local custom connectors, connector/update.yml is also supported. Do not define both files.
+For package-local custom connectors, connector/update.yml is also supported. Do
+not define both files.
 
 ## Built-in connectors
 
@@ -159,7 +170,8 @@ A leading v is removed from numeric tags such as v1.2.3.
 
 ### github-tag
 
-Reads GitHub tags, filters them to Arch-compatible versions, and selects the highest version using Arch package-version comparison:
+Reads GitHub tags, filters them to Arch-compatible versions, and selects the
+highest version using Arch package-version comparison:
 
 ```yaml
 connector: github-tag
@@ -189,7 +201,8 @@ export default function createConnector(context) {
 }
 ```
 
-The returned name must match the directory name. The factory receives context.fetch and the configured GitHub token, when available.
+The returned name must match the directory name. The factory receives
+context.fetch and the configured GitHub token, when available.
 
 ### Package shell connector
 
@@ -205,7 +218,8 @@ updates:
   sha256: 'sha256sums=("\${sha256}")'
 ```
 
-Create connector/detect.sh. It receives AUR_MAINTAINER_PACKAGE, AUR_MAINTAINER_PACKAGE_PATH, and AUR_MAINTAINER_CONFIG_JSON.
+Create connector/detect.sh. It receives AUR_MAINTAINER_PACKAGE,
+AUR_MAINTAINER_PACKAGE_PATH, and AUR_MAINTAINER_CONFIG_JSON.
 
 It must print:
 
@@ -219,7 +233,8 @@ All three fields are required. Default timeout: 30 seconds.
 
 ## PKGBUILD updates
 
-pkgver is updated when a newer supported version is detected. Optional source and sha256 fields are updated only when their templates are configured.
+pkgver is updated when a newer supported version is detected. Optional source
+and sha256 fields are updated only when their templates are configured.
 
 Templates support \${version}, \${source}, and \${sha256}.
 
@@ -239,17 +254,22 @@ After an update, AUR Maintainer:
 8. runs namcap on every artifact;
 9. installs artifacts with pacman -U --noconfirm.
 
-If the Arch tools are unavailable, validation is repeated in an Arch Linux Docker container.
+If the Arch tools are unavailable, validation is repeated in an Arch Linux
+Docker container.
 
-On validation failure, the updated files are preserved and an issue is created when GitHub authentication is available. The action then fails.
+On validation failure, the updated files are preserved and an issue is created
+when GitHub authentication is available. The action then fails.
 
 ## Pull requests and update cadence
 
-A valid update creates a package-specific branch using update-branch and a focused PR.
+A valid update creates a package-specific branch using update-branch and a
+focused PR.
 
-For example, update-branch: update and package vega-cli-bin produce update/vega-cli-bin.
+For example, update-branch: update and package vega-cli-bin produce
+update/vega-cli-bin.
 
-Only the first package that produces an update is processed in one run. This deliberately avoids multi-package PRs.
+Only the first package that produces an update is processed in one run. This
+deliberately avoids multi-package PRs.
 
 ## Auto-merge
 
@@ -258,9 +278,11 @@ auto-merge: true
 auto-merge-timeout: 1800
 ```
 
-The action waits for check runs on the generated PR head and squash-merges when GitHub reports the PR as mergeable.
+The action waits for check runs on the generated PR head and squash-merges when
+GitHub reports the PR as mergeable.
 
-The timeout is a maximum polling window, not a mandatory delay. github-token is required.
+The timeout is a maximum polling window, not a mandatory delay. github-token is
+required.
 
 ## Publishing to the AUR
 
@@ -273,9 +295,11 @@ The timeout is a maximum polling window, not a mandatory delay. github-token is 
     aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
 ```
 
-Publishing happens after validation. SSH uses strict host-key checking and pushes to the AUR master branch.
+Publishing happens after validation. SSH uses strict host-key checking and
+pushes to the AUR master branch.
 
-The AUR repository is synchronized with the managed package directory, including removal of tracked files that no longer exist locally.
+The AUR repository is synchronized with the managed package directory, including
+removal of tracked files that no longer exist locally.
 
 For publish-only synchronization:
 
@@ -287,9 +311,11 @@ This skips upstream detection and takes precedence over aur-publish.
 
 ## Security
 
-AUR Maintainer executes PKGBUILD build logic and optional custom connectors. Treat them as trusted code.
+AUR Maintainer executes PKGBUILD build logic and optional custom connectors.
+Treat them as trusted code.
 
-Never expose AUR SSH keys or other write credentials to untrusted pull requests. Avoid pull_request_target when it would check out and execute untrusted code.
+Never expose AUR SSH keys or other write credentials to untrusted pull requests.
+Avoid pull_request_target when it would check out and execute untrusted code.
 
 Prefer this architecture:
 
@@ -312,13 +338,17 @@ detect -> update -> validate -> PR
                              AUR
 ```
 
-Use least-privilege GITHUB_TOKEN permissions, a dedicated revocable AUR SSH key, and ephemeral runners where possible.
+Use least-privilege GITHUB_TOKEN permissions, a dedicated revocable AUR SSH key,
+and ephemeral runners where possible.
 
 ## Troubleshooting
 
-**No package discovered:** check config path, package paths, PKGBUILD files, and custom connector layout.
+**No package discovered:** check config path, package paths, PKGBUILD files, and
+custom connector layout.
 
-**GitHub API error:** verify owner/name repository syntax, repository access, token permissions, and rate limits. Real 403 responses are surfaced instead of being retried anonymously.
+**GitHub API error:** verify owner/name repository syntax, repository access,
+token permissions, and rate limits. Real 403 responses are surfaced instead of
+being retried anonymously.
 
 **Validation cannot start:** ensure Arch tools or Docker are available.
 
@@ -329,9 +359,11 @@ updpkgsums PKGBUILD
 makepkg --printsrcinfo > .SRCINFO
 ```
 
-**Auto-merge does not happen:** check auto-merge, github-token, token permissions, required checks, mergeability, and timeout.
+**Auto-merge does not happen:** check auto-merge, github-token, token
+permissions, required checks, mergeability, and timeout.
 
-**AUR publishing fails:** verify the dedicated AUR SSH key, known-hosts, package access, and master branch.
+**AUR publishing fails:** verify the dedicated AUR SSH key, known-hosts, package
+access, and master branch.
 
 ## Development
 
@@ -343,13 +375,17 @@ npm run ci-test
 npm run package
 ```
 
-dist is generated code and is committed because GitHub executes the bundled JavaScript when the action is consumed. CI verifies dist and runs the local action against the freshly generated bundle.
+dist is generated code and is committed because GitHub executes the bundled
+JavaScript when the action is consumed. CI verifies dist and runs the local
+action against the freshly generated bundle.
 
 ## Release process
 
 Releases use semantic tags such as v1.0.0 and the major tag v1.
 
-The release workflow is manually triggered from main. It validates the requested version, verifies the release commit, creates the release, moves v1, and verifies the resulting tags.
+The release workflow is manually triggered from main. It validates the requested
+version, verifies the release commit, creates the release, moves v1, and
+verifies the resulting tags.
 
 Use:
 
