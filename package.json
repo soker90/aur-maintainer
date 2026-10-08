@@ -1,7 +1,7 @@
 {
   "name": "aur-maintainer",
   "description": "GitHub Action for automated Arch Linux AUR package maintenance",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "author": "Eduardo Parra",
   "type": "module",
   "private": true,
