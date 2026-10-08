@@ -108,18 +108,18 @@ excludes the legacy `update.yml`.
 
 ## Inputs
 
-| Input | Default |
-| --- | --- |
-| `config` | `.aur-maintainer.yml` |
-| `github-token` | empty |
-| `update-branch` | `update` |
-| `base-branch` | `main` |
-| `auto-merge` | `false` |
-| `auto-merge-timeout` | `1800` |
-| `aur-publish` | `false` |
-| `aur-publish-only` | `false` |
-| `aur-ssh-key` | empty |
-| `aur-known-hosts` | empty |
+| Input                | Default               |
+| -------------------- | --------------------- |
+| `config`             | `.aur-maintainer.yml` |
+| `github-token`       | empty                 |
+| `update-branch`      | `update`              |
+| `base-branch`        | `main`                |
+| `auto-merge`         | `false`               |
+| `auto-merge-timeout` | `1800`                |
+| `aur-publish`        | `false`               |
+| `aur-publish-only`   | `false`               |
+| `aur-ssh-key`        | empty                 |
+| `aur-known-hosts`    | empty                 |
 
 ## Outputs
 
