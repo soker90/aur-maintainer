@@ -89,29 +89,31 @@ updates can still run, but no GitHub branch/PR is created.
 
 ## Inputs
 
-| Input              | Default             | Description                                                                                  |
-| ------------------ | ------------------- | -------------------------------------------------------------------------------------------- |
-| config             | .aur-maintainer.yml | Repository configuration path.                                                               |
-| github-token       | —                   | GitHub API, branch, PR, issue, and merge authentication.                                     |
-| update-branch      | update              | Prefix for generated package branches.                                                       |
-| base-branch        | main                | Base branch for generated PRs.                                                               |
-| auto-merge         | false               | Wait for checks and squash-merge the generated PR.                                           |
-| auto-merge-timeout | 1800                | Maximum check-polling time in seconds.                                                       |
-| aur-publish        | false               | Publish an updated package after validation.                                                 |
-| aur-publish-only   | false               | Publish current package state without upstream detection; takes precedence over aur-publish. |
-| aur-ssh-key        | —                   | Private SSH key authorized for the AUR account.                                              |
-| aur-known-hosts    | —                   | Trusted host-key data for aur.archlinux.org.                                                 |
+### Inputs
+
+- config: configuration path. Default: .aur-maintainer.yml.
+- github-token: GitHub API and repository automation token.
+- update-branch: prefix for generated update branches. Default: update.
+- base-branch: PR base branch. Default: main.
+- auto-merge: wait for checks and squash-merge. Default: false.
+- auto-merge-timeout: maximum check wait in seconds. Default: 1800.
+- aur-publish: publish an updated package after validation.
+- aur-publish-only: publish the current package state without upstream detection.
+- aur-ssh-key: private SSH key authorized for the AUR account.
+- aur-known-hosts: trusted host-key data for aur.archlinux.org.
+
 
 AUR SSH inputs are required when publishing is enabled.
 
 ## Outputs
 
-| Output                   | Description                                                         |
-| ------------------------ | ------------------------------------------------------------------- |
-| packages                 | JSON containing inspected packages, candidates, and update results. |
-| pull-request             | URL of the first generated PR.                                      |
-| pull-requests            | JSON array of generated PR URLs.                                    |
-| validation-failure-issue | URL of the validation-failure issue.                                |
+### Outputs
+
+- packages: JSON with inspected packages, candidates, and update results.
+- pull-request: URL of the first generated PR.
+- pull-requests: JSON array of generated PR URLs.
+- validation-failure-issue: URL of the validation-failure issue.
+
 
 ## Configuration
 
