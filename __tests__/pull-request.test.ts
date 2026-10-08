@@ -315,3 +315,4 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
 })
+
