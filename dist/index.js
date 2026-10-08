@@ -36463,6 +36463,9 @@ async function waitForChecksAndMerge(token, repository, pullRequest, timeoutSeco
     if (!pullRequest.head?.sha) {
         throw new Error('GitHub did not return the pull request head SHA');
     }
+    if (!pullRequest.number) {
+        throw new Error('GitHub did not return the pull request number');
+    }
     while (Date.now() < deadline) {
         const checks = await requestGitHub(token, `/repos/${owner}/${repo}/commits/${pullRequest.head.sha}/check-runs?per_page=100`);
         const checkRuns = isCheckRunsResponse(checks) ? checks.check_runs : [];
