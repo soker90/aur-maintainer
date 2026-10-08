@@ -39,8 +39,7 @@ jobs:
       - name: Check Format
         id: npm-format-check
         run: |
-          npm run format:write
-          git diff -- README.md SECURITY.md
+          npm audit --json || true
           exit 1
 
       - name: Lint
