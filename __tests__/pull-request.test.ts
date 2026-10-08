@@ -145,7 +145,9 @@ describe('update pull request creation', () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(
         new Response(
-          JSON.stringify([{ html_url: 'https://github.com/test/pr/1', number: 1 }]),
+          JSON.stringify([
+            { html_url: 'https://github.com/test/pr/1', number: 1 }
+          ]),
           { status: 200 }
         )
       )
@@ -175,7 +177,9 @@ describe('update pull request creation', () => {
     )
     expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(String(fetchMock.mock.calls[1]?.[0])).toContain('/repos/test/repo/pulls/1')
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+      '/repos/test/repo/pulls/1'
+    )
     expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PATCH')
     expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('1.0.0')
     expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('1.1.0')
