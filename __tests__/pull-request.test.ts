@@ -42,6 +42,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'update',
           packages: [pkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
           autoMerge: false,
           autoMergeTimeoutSeconds: 600
         },
@@ -141,12 +143,15 @@ describe('update pull request creation', () => {
     })
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
+      .mockResolvedValueOnce(
         new Response(
-          JSON.stringify([{ html_url: 'https://github.com/test/pr/1' }]),
+          JSON.stringify([
+            { html_url: 'https://github.com/test/pr/1', number: 1 }
+          ]),
           { status: 200 }
         )
       )
+      .mockResolvedValueOnce(new Response(JSON.stringify({}), { status: 200 }))
 
     await expect(
       createUpdatePullRequest(
@@ -157,6 +162,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'update',
           packages: [pkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
           autoMerge: false,
           autoMergeTimeoutSeconds: 600
         },
@@ -170,7 +177,13 @@ describe('update pull request creation', () => {
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+      '/repos/test/repo/pulls/1'
+    )
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe('PATCH')
+    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('1.0.0')
+    expect(String(fetchMock.mock.calls[1]?.[1]?.body)).toContain('1.1.0')
   })
 
   it('rejects auto-merge when GitHub omits the pull request number', async () => {
@@ -209,6 +222,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'update',
           packages: [pkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
           autoMerge: true,
           autoMergeTimeoutSeconds: 600
         },
@@ -272,6 +287,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'update',
           packages: [pkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
           autoMerge: true,
           autoMergeTimeoutSeconds: 600
         },
@@ -344,6 +361,8 @@ describe('update pull request creation', () => {
           baseBranch: 'main',
           updateBranch: 'update',
           packages: [pkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
           autoMerge: true,
           autoMergeTimeoutSeconds: 600
         },
