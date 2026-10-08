@@ -52,9 +52,9 @@ Package entries support:
 - `updates`: optional `source` and `sha256` PKGBUILD assignment templates.
 - `timeout`: package-local custom connector timeout in seconds; default `30`.
 
-The version returned by a connector always updates `pkgver`.
-For compatibility, a package path may still refer to a package-local
-`update.yml`. New configurations should use `.aur-maintainer.yml`.
+The version returned by a connector always updates `pkgver`. For compatibility,
+a package path may still refer to a package-local `update.yml`. New
+configurations should use `.aur-maintainer.yml`.
 
 ## Custom connectors
 
@@ -68,13 +68,13 @@ Package-local connectors use `connector: custom` and
 - `AUR_MAINTAINER_PACKAGE_PATH`
 - `AUR_MAINTAINER_CONFIG_JSON`
 
-It must output non-empty `version`, `source`, and `sha256` fields as
-`key=value` lines. The default timeout is 30 seconds.
+It must output non-empty `version`, `source`, and `sha256` fields as `key=value`
+lines. The default timeout is 30 seconds.
 
 ## Pull requests
 
-Only one package update is processed per run. With the default
-`update-branch: update`, package `example-bin` uses `update/example-bin`.
+Only one package update is processed per run. With the default `update-branch:
+update`, package `example-bin` uses `update/example-bin`.
 
 The input is a branch **prefix**, not a complete branch name.
 
@@ -83,28 +83,27 @@ duplicated. Their title and body are refreshed with the current version
 transition.
 
 If validation fails, no update PR is created. Generated `PKGBUILD` and
-`.SRCINFO` changes are preserved on the update branch and a validation issue
-is created when a token with `issues: write` is available.
+`.SRCINFO` changes are preserved on the update branch and a validation issue is
+created when a token with `issues: write` is available.
 
 ## Auto-merge
 
 Set `auto-merge: true` to wait for checks and squash-merge the generated PR.
 
 `auto-merge-timeout` defaults to `1800` seconds (30 minutes) and must be a
-positive integer. Failed checks, conflicts, or a timeout fail the Action
-without merging the PR.
+positive integer. Failed checks, conflicts, or a timeout fail the Action without
+merging the PR.
 
 ## AUR publishing
 
 `aur-publish` publishes a changed package during maintenance.
 
-`aur-publish-only` publishes the current package state without running
-upstream detection. It is intended for a workflow triggered after an update
-PR merges.
+`aur-publish-only` publishes the current package state without running upstream
+detection. It is intended for a workflow triggered after an update PR merges.
 
-Both publishing modes require `aur-ssh-key` and `aur-known-hosts`.
-The publisher syncs package-root files such as `PKGBUILD` and `.SRCINFO` and
-excludes the legacy `update.yml`.
+Both publishing modes require `aur-ssh-key` and `aur-known-hosts`. The publisher
+syncs package-root files such as `PKGBUILD` and `.SRCINFO` and excludes the
+legacy `update.yml`.
 
 ## Inputs
 
@@ -139,8 +138,8 @@ permissions:
   pull-requests: write
 ```
 
-`issues: write` is only needed for validation-failure issues.
-AUR publishing uses SSH credentials rather than GitHub permissions.
+`issues: write` is only needed for validation-failure issues. AUR publishing
+uses SSH credentials rather than GitHub permissions.
 
 ## Development
 
@@ -155,7 +154,7 @@ checked-in JavaScript bundle.
 
 ## Versioning
 
-Consumers should normally use `soker90/aur-maintainer@v1`.
-Releases use semantic tags such as `v1.0.9`; `v1` points to the latest
-compatible v1 release. Consumers needing reproducible supply-chain pinning can
-pin a specific release commit.
+Consumers should normally use `soker90/aur-maintainer@v1`. Releases use semantic
+tags such as `v1.0.9`; `v1` points to the latest compatible v1 release.
+Consumers needing reproducible supply-chain pinning can pin a specific release
+commit.
