@@ -11,42 +11,62 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test-typescript:
-    name: TypeScript Tests
+  test:
+    name: Validate Action
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         id: checkout
         uses: actions/checkout@v7
+
       - name: Setup Node.js
         id: setup-node
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
+
       - name: Install Dependencies
         id: npm-ci
         run: npm ci
+
       - name: Check Format
         id: npm-format-check
         run: npm run format:check
+
       - name: Lint
         id: npm-lint
         run: npm run lint
+
       - name: Test
         id: npm-ci-test
         run: npm run ci-test
 
-  test-action:
-    name: GitHub Actions Test
-    runs-on: ubuntu-latest
+      - name: Build dist/
+        id: npm-package
+        run: npm run package
 
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@v7
+      - name: Verify dist/
+        id: verify-dist
+        run: |
+          if [ ! -d dist/ ]; then
+            echo "Expected dist/ directory does not exist." >&2
+            exit 1
+          fi
+
+          if ! git diff --quiet --exit-code -- dist/; then
+            echo "dist/ is out of date. Run npm run package and commit the generated files." >&2
+            git diff --stat -- dist/
+            git diff --text -- dist/
+            exit 1
+          fi
+
       - name: Create fixture package
         id: fixture
         run: |
@@ -74,11 +94,13 @@ jobs:
           packages:
             - .github/test-fixture/packages/example-bin
           EOF
+
       - name: Test Local Action
         id: test-action
         uses: ./
         with:
           config: .github/test-fixture/.aur-maintainer.yml
+
       - name: Verify Package Update
         id: verify-update
         run: |
@@ -90,6 +112,7 @@ jobs:
           test -s .github/test-fixture/packages/example-bin/.SRCINFO
           grep -Eq '^sha256sums=\(' \
             .github/test-fixture/packages/example-bin/PKGBUILD
+
       - name: Print Output
         id: output
         run: echo '${{ steps.test-action.outputs.packages }}'
