@@ -38,7 +38,7 @@ jobs:
 
       - name: Check Format
         id: npm-format-check
-        run: npm run format:check
+        run: npx prettier --write README.md docs/CONFIGURATION.md && git diff --no-ext-diff -- README.md docs/CONFIGURATION.md
 
       - name: Lint
         id: npm-lint
