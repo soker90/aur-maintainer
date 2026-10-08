@@ -83,8 +83,8 @@ built-in connector name.
 
 Set `connector: custom` and create `<package>/connector/detect.sh`.
 
-The script runs with the package directory as its working directory and
-receives `AUR_MAINTAINER_PACKAGE`, `AUR_MAINTAINER_PACKAGE_PATH`, and
+The script runs with the package directory as its working directory and receives
+`AUR_MAINTAINER_PACKAGE`, `AUR_MAINTAINER_PACKAGE_PATH`, and
 `AUR_MAINTAINER_CONFIG_JSON`.
 
 It must emit non-empty `key=value` lines for all three fields:
@@ -131,21 +131,21 @@ With `update-branch: update`, package `example-bin` uses the branch
 `update/example-bin`. The input is a branch prefix, not a complete branch name.
 
 If an update PR already exists for the same package and base branch, it is
-updated instead of duplicated. Its title and body are refreshed with the
-current version transition.
+updated instead of duplicated. Its title and body are refreshed with the current
+version transition.
 
-Before a PR is created, package metadata is regenerated and validation runs.
-If validation fails, the generated `PKGBUILD` and `.SRCINFO` are preserved on
-the update branch. When `github-token` and `issues: write` are available, a
-GitHub issue is created with the validation error.
+Before a PR is created, package metadata is regenerated and validation runs. If
+validation fails, the generated `PKGBUILD` and `.SRCINFO` are preserved on the
+update branch. When `github-token` and `issues: write` are available, a GitHub
+issue is created with the validation error.
 
 ## Auto-merge
 
 With `auto-merge: true`, the Action waits for GitHub checks. When all reported
 checks complete without a failing conclusion, the PR is squash-merged.
 
-The default timeout is 1800 seconds (30 minutes). Failed checks, conflicts, or
-a timeout fail the Action without merging the PR.
+The default timeout is 1800 seconds (30 minutes). Failed checks, conflicts, or a
+timeout fail the Action without merging the PR.
 
 ## AUR publishing
 
