@@ -1,7 +1,5 @@
 # AUR Maintainer
 
-[![CI](https://github.com/soker90/aur-maintainer/actions/workflows/ci.yml/badge.svg)](https://github.com/soker90/aur-maintainer/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/soker90/aur-maintainer/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/soker90/aur-maintainer/actions/workflows/codeql-analysis.yml)
 
 Automate maintenance of Arch Linux AUR packages from GitHub Actions.
 
@@ -98,7 +96,8 @@ updates can still run, but no GitHub branch/PR is created.
 - auto-merge: wait for checks and squash-merge. Default: false.
 - auto-merge-timeout: maximum check wait in seconds. Default: 1800.
 - aur-publish: publish an updated package after validation.
-- aur-publish-only: publish the current package state without upstream detection.
+- aur-publish-only: publish the current package state without upstream
+  detection.
 - aur-ssh-key: private SSH key authorized for the AUR account.
 - aur-known-hosts: trusted host-key data for aur.archlinux.org.
 
