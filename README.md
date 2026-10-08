@@ -73,6 +73,7 @@ packages:
       source: 'source=("example-${version}.tar.gz::${source}")'
       sha256: '_sha256=${sha256}'
 ```
+
 Repository-local custom connectors live under `connectors/`. Each connector uses
 a directory named after the connector and an ESM module at
 `connectors/<name>/index.js`:
