@@ -34,30 +34,45 @@ repository/
     └── example/
 ```
 
-A package declares how its upstream is discovered in `update.yml`:
+Package configuration can be declared directly in the repository-level
+`.aur-maintainer.yml`. This is the preferred format:
 
 ```yaml
-connector: github-tag
-config:
-  repository: stacklok/toolhive-studio
+packages:
+  - path: packages/example-bin
+    connector: github-tag
+    config:
+      repository: owner/project
+    updates: {}
 ```
 
 For repositories that publish versions as Git tags without GitHub Releases, use
-the `github-tag` connector:
-
-```yaml
-connector: github-tag
-config:
-  repository: owner/project
-```
-
-The global configuration can restrict which package directories are managed:
+the `github-tag` connector. The `packages` list may also contain plain path
+strings when a package still uses the legacy package-local `update.yml` format:
 
 ```yaml
 packages:
   - packages/example-bin
 ```
 
+The Action keeps that legacy discovery path for migration, but new
+configurations should use inline package entries so all maintenance settings
+live in one repository-level file.
+
+The optional `updates` mapping controls which connector fields are written to
+the PKGBUILD. The `version` field always updates `pkgver`; source and
+checksum mappings are explicit because package layouts differ:
+
+```yaml
+packages:
+  - path: packages/example-bin
+    connector: github-release
+    config:
+      repository: owner/project
+    updates:
+      source: 'source=("example-${version}.tar.gz::${source}")'
+      sha256: '_sha256=${sha256}'
+```
 Repository-local custom connectors live under `connectors/`. Each connector uses
 a directory named after the connector and an ESM module at
 `connectors/<name>/index.js`:
@@ -84,12 +99,15 @@ export default (context) => ({
 })
 ```
 
-The package selects it normally from `update.yml`:
+The package selects it from its repository-level `.aur-maintainer.yml` entry:
 
 ```yaml
-connector: example
-config:
-  url: https://example.com/releases/latest.json
+packages:
+  - path: packages/example-bin
+    connector: example
+    config:
+      url: https://example.com/releases/latest.json
+    updates: {}
 ```
 
 Repository-local connectors are loaded only from the repository's
