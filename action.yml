@@ -1,6 +1,5 @@
 name: AUR Maintainer
-description: >-
-  Automate the maintenance of Arch Linux AUR packages
+description: Automate Arch Linux AUR package maintenance
 author: Eduardo Parra
 branding:
   icon: package
@@ -8,69 +7,53 @@ branding:
 
 inputs:
   config:
-    description: >-
-      Path to the optional repository configuration file
+    description: Path to the optional repository configuration file
     required: false
     default: .aur-maintainer.yml
   github-token:
-    description: >-
-      GitHub token used for GitHub API requests and to create the update pull
-      request
+    description: GitHub token for API requests and update automation
     required: false
   update-branch:
-    description: >-
-      Prefix used for generated package-specific update pull request branches
+    description: Prefix for generated package-specific update branches
     required: false
     default: update
   base-branch:
     description: >-
-      Branch that receives the generated update pull request
+      Base branch that receives generated update pull requests
     required: false
     default: main
   auto-merge:
-    description: >-
-      Wait for pull request checks and squash-merge the generated pull request
+    description: Wait for checks and squash-merge the generated pull request
     required: false
     default: 'false'
   auto-merge-timeout:
-    description: >-
-      Maximum number of seconds to wait for pull request checks before merging
+    description: Maximum seconds to wait for pull request checks
     required: false
     default: '1800'
   aur-publish:
-    description: >-
-      Publish managed packages to the Arch User Repository
+    description: Publish the updated package to the Arch User Repository
     required: false
     default: 'false'
   aur-publish-only:
-    description: >-
-      Publish the current package state to the AUR without checking upstream
-      updates
+    description: Publish current package state without upstream detection
     required: false
     default: 'false'
   aur-ssh-key:
-    description: >-
-      Private SSH key authorized for the AUR account
+    description: Private SSH key authorized for the AUR account
     required: false
   aur-known-hosts:
-    description: >-
-      Known hosts entry for aur.archlinux.org
+    description: Trusted known hosts entry for aur.archlinux.org
     required: false
 
 outputs:
   packages:
-    description: >-
-      JSON array containing discovered packages and detected update candidates
+    description: JSON with inspected packages and update results
   pull-request:
-    description: >-
-      URL of the first generated update pull request, when one is created
+    description: URL of the first generated update pull request
   pull-requests:
-    description: >-
-      JSON array containing URLs of generated package-specific update pull
-      requests
+    description: JSON array of generated update pull request URLs
   validation-failure-issue:
-    description: >-
-      URL of the issue created when package validation fails
+    description: URL of the validation failure issue
 
 runs:
   using: node24
