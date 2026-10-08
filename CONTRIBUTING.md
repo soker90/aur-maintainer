@@ -10,18 +10,18 @@ Requirements:
 
 Install dependencies:
 
-~~~bash
+```bash
 npm ci
-~~~
+```
 
 Run the local checks:
 
-~~~bash
+```bash
 npm run format:check
 npm run lint
 npm run ci-test
 npm run package
-~~~
+```
 
 The generated dist directory is committed because GitHub executes the bundled JavaScript when the Action is consumed.
 
