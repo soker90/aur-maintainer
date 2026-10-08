@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: soker90/aur-maintainer@v1
         with:
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Inputs
@@ -121,8 +121,8 @@ timeout: 120
 config:
   channel: stable
 updates:
-  source: 'source=("example-\${version}.tar.gz::\${source}")'
-  sha256: 'sha256sums=("\${sha256}")'
+  source: 'source=("example-${version}.tar.gz::${source}")'
+  sha256: 'sha256sums=("${sha256}")'
 ```
 
 El script connector/detect.sh recibe AUR_MAINTAINER_PACKAGE,
@@ -172,10 +172,10 @@ obligatorio.
 ```yaml
 - uses: soker90/aur-maintainer@v1
   with:
-    github-token: \${{ secrets.GITHUB_TOKEN }}
+    github-token: ${{ secrets.GITHUB_TOKEN }}
     aur-publish: true
-    aur-ssh-key: \${{ secrets.AUR_SSH_PRIVATE_KEY }}
-    aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
+    aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    aur-known-hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
 ```
 
 La publicación ocurre después de validar el paquete, usa comprobación estricta
