@@ -20,7 +20,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npm run format
+      - run: npx prettier --write src/pull-request.ts __tests__/pull-request.test.ts
       - run: npm run bundle
       - name: Commit generated files
         run: |
