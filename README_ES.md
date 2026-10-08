@@ -19,7 +19,7 @@ Documentación en español de la GitHub Action para automatizar el mantenimiento
 
 ## Uso básico
 
-~~~yaml
+```yaml
 name: Maintain AUR
 
 on:
@@ -39,7 +39,7 @@ jobs:
       - uses: soker90/aur-maintainer@v1
         with:
           github-token: \${{ secrets.GITHUB_TOKEN }}
-~~~
+```
 
 ## Inputs
 
@@ -69,25 +69,25 @@ github-token es obligatorio si auto-merge está activado. Los inputs SSH son obl
 
 Configuración central:
 
-~~~yaml
+```yaml
 packages:
   - path: example-bin
     connector: github-release
     config:
       repository: owner/project
     updates: {}
-~~~
+```
 
 Si no se define packages, se descubre la raíz si contiene PKGBUILD y los directorios directos de packages/.
 
 Configuración local:
 
-~~~yaml
+```yaml
 connector: github-release
 config:
   repository: owner/project
 updates: {}
-~~~
+```
 
 También se admite connector/update.yml para conectores personalizados de paquete. No deben existir a la vez update.yml y connector/update.yml.
 
@@ -97,15 +97,15 @@ github-release usa el último GitHub Release. github-tag consulta los tags y sel
 
 Conector JavaScript de repositorio:
 
-~~~text
+```text
 connectors/<name>/index.js
-~~~
+```
 
 Debe exportar por defecto una factoría que devuelva un conector con name coincidente.
 
 Conector shell de paquete:
 
-~~~yaml
+```yaml
 connector: custom
 timeout: 120
 config:
@@ -113,15 +113,15 @@ config:
 updates:
   source: 'source=("example-\${version}.tar.gz::\${source}")'
   sha256: 'sha256sums=("\${sha256}")'
-~~~
+```
 
 El script connector/detect.sh recibe AUR_MAINTAINER_PACKAGE, AUR_MAINTAINER_PACKAGE_PATH y AUR_MAINTAINER_CONFIG_JSON y debe imprimir:
 
-~~~text
+```text
 version=1.2.3
 source=https://example.com/example-1.2.3.tar.gz
 sha256=0123456789abcdef...
-~~~
+```
 
 El timeout por defecto es 30 segundos.
 
@@ -153,14 +153,14 @@ Con auto-merge: true la Action espera los check runs y hace squash-merge cuando 
 
 ## Publicación AUR
 
-~~~yaml
+```yaml
 - uses: soker90/aur-maintainer@v1
   with:
     github-token: \${{ secrets.GITHUB_TOKEN }}
     aur-publish: true
     aur-ssh-key: \${{ secrets.AUR_SSH_PRIVATE_KEY }}
     aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
-~~~
+```
 
 La publicación ocurre después de validar el paquete, usa comprobación estricta de host SSH y publica en master. El contenido del repositorio AUR se sincroniza con el directorio gestionado, incluyendo la eliminación de archivos versionados que ya no existen.
 
@@ -185,13 +185,13 @@ Usa permisos mínimos para GITHUB_TOKEN, una clave AUR dedicada y revocable y ru
 
 ## Desarrollo
 
-~~~bash
+```bash
 npm ci
 npm run format:check
 npm run lint
 npm run ci-test
 npm run package
-~~~
+```
 
 dist se versiona porque GitHub ejecuta el bundle incluido en la Action.
 
@@ -201,9 +201,9 @@ Las versiones siguen SemVer: v1.0.0, v1.0.1, etc. El tag v1 apunta a la última 
 
 Uso recomendado:
 
-~~~yaml
+```yaml
 uses: soker90/aur-maintainer@v1
-~~~
+```
 
 También puedes fijar un SHA completo.
 
