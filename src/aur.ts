@@ -71,7 +71,12 @@ export async function publishAurPackage(
     await git.run('git', ['clone', remote, repositoryPath], undefined, env)
 
     const files = await getAurPackageFiles(pkg.path)
-    await git.run('git', ['rm', '-r', '--ignore-unmatch', '--', '.'], repositoryPath, env)
+    await git.run(
+      'git',
+      ['rm', '-r', '--ignore-unmatch', '--', '.'],
+      repositoryPath,
+      env
+    )
     for (const file of files) {
       await cp(path.join(pkg.path, file), path.join(repositoryPath, file))
     }
