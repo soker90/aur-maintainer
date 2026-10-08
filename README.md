@@ -60,8 +60,8 @@ configurations should use inline package entries so all maintenance settings
 live in one repository-level file.
 
 The optional `updates` mapping controls which connector fields are written to
-the PKGBUILD. The `version` field always updates `pkgver`; source and
-checksum mappings are explicit because package layouts differ:
+the PKGBUILD. The `version` field always updates `pkgver`; source and checksum
+mappings are explicit because package layouts differ:
 
 ```yaml
 packages:
@@ -235,5 +235,3 @@ npm run bundle
 
 The generated `dist/` directory is committed because GitHub runs JavaScript
 Actions directly from the checked-in bundle.
-
-
