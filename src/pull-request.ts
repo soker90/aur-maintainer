@@ -321,23 +321,37 @@ async function waitForChecksAndMerge(
     )
     const checkRuns = isCheckRunsResponse(checks) ? checks.check_runs : []
 
-    if (
-      checkRuns.length > 0 &&
-      checkRuns.every((check) => check.status === 'completed')
-    ) {
-      const failed = checkRuns.find(
-        (check) =>
-          check.conclusion !== 'success' &&
-          check.conclusion !== 'neutral' &&
-          check.conclusion !== 'skipped'
-      )
-      if (failed) {
-        throw new Error(
-          `Pull request checks failed: ${failed.name} (${failed.conclusion ?? 'unknown'})`
+    if (checkRuns.length > 0) {
+      if (checkRuns.every((check) => check.status === 'completed')) {
+        const failed = checkRuns.find(
+          (check) =>
+            check.conclusion !== 'success' &&
+            check.conclusion !== 'neutral' &&
+            check.conclusion !== 'skipped'
         )
+        if (failed) {
+          throw new Error(
+            `Pull request checks failed: ${failed.name} (${failed.conclusion ?? 'unknown'})`
+          )
+        }
+        await squashMergePullRequest(token, pullRequest)
+        return
       }
-      await squashMergePullRequest(token, pullRequest)
-      return
+    } else {
+      const current = await requestGitHub(
+        token,
+        `/repos/${owner}/${repo}/pulls/${pullRequest.number}`
+      )
+      if (isMergeablePullRequest(current) && current.mergeable_state === 'clean') {
+        await squashMergePullRequest(token, pullRequest)
+        return
+      }
+      if (
+        isMergeablePullRequest(current) &&
+        current.mergeable_state === 'dirty'
+      ) {
+        throw new Error('Pull request cannot be merged because it has conflicts')
+      }
     }
 
     await new Promise((resolve) =>
@@ -417,6 +431,19 @@ interface PullRequest {
   number?: number
   node_id?: string
   head?: { sha: string }
+}
+
+interface MergeablePullRequest {
+  mergeable_state: string
+}
+
+function isMergeablePullRequest(value: unknown): value is MergeablePullRequest {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'mergeable_state' in value &&
+    typeof value.mergeable_state === 'string'
+  )
 }
 
 interface CheckRun {
