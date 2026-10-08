@@ -260,7 +260,14 @@ export async function createUpdatePullRequest(
     if (current.number === undefined) {
       throw new Error('GitHub did not return the existing pull request number')
     }
-    await updatePullRequestMetadata(options.token, options.repository, current.number, pkg.name, options.currentVersion, options.version)
+    await updatePullRequestMetadata(
+      options.token,
+      options.repository,
+      current.number,
+      pkg.name,
+      options.currentVersion,
+      options.version
+    )
     if (options.autoMerge) {
       await waitForChecksAndMerge(
         options.token,
@@ -279,7 +286,11 @@ export async function createUpdatePullRequest(
     'POST',
     {
       title: `update: ${pkg.name}`,
-      body: getUpdatePullRequestBody(pkg.name, options.currentVersion, options.version),
+      body: getUpdatePullRequestBody(
+        pkg.name,
+        options.currentVersion,
+        options.version
+      ),
       head: branch,
       base: options.baseBranch
     }
