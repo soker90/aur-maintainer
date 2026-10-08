@@ -32,7 +32,7 @@ The action uses Node.js 24. Validation uses Arch packaging tools when available 
 
 ## Quick start
 
-~~~yaml
+```yaml
 name: Maintain AUR
 
 on:
@@ -53,14 +53,14 @@ jobs:
       - uses: soker90/aur-maintainer@v1
         with:
           github-token: \${{ secrets.GITHUB_TOKEN }}
-~~~
+```
 
 For auto-merge:
 
-~~~yaml
+```yaml
           auto-merge: true
           auto-merge-timeout: 1800
-~~~
+```
 
 ## Permissions
 
@@ -68,11 +68,11 @@ The caller workflow controls GITHUB_TOKEN permissions. Grant only what is needed
 
 Typical PR maintenance:
 
-~~~yaml
+```yaml
 permissions:
   contents: write
   pull-requests: write
-~~~
+```
 
 Add issues: write when you want validation-failure issues.
 
@@ -110,7 +110,7 @@ AUR SSH inputs are required when publishing is enabled.
 
 Create .aur-maintainer.yml:
 
-~~~yaml
+```yaml
 packages:
   - path: github-copilot-app-bin
     connector: github-release
@@ -123,7 +123,7 @@ packages:
     config:
       repository: stacklok/toolhive-studio
     updates: {}
-~~~
+```
 
 Each entry supports path, connector, config, updates, and an optional timeout.
 
@@ -133,12 +133,12 @@ If packages is not configured, the action discovers the repository root when it 
 
 A discovered package can use update.yml:
 
-~~~yaml
+```yaml
 connector: github-release
 config:
   repository: owner/project
 updates: {}
-~~~
+```
 
 For package-local custom connectors, connector/update.yml is also supported. Do not define both files.
 
@@ -148,12 +148,12 @@ For package-local custom connectors, connector/update.yml is also supported. Do 
 
 Selects the latest GitHub Release:
 
-~~~yaml
+```yaml
 connector: github-release
 config:
   repository: owner/project
 updates: {}
-~~~
+```
 
 A leading v is removed from numeric tags such as v1.2.3.
 
@@ -161,12 +161,12 @@ A leading v is removed from numeric tags such as v1.2.3.
 
 Reads GitHub tags, filters them to Arch-compatible versions, and selects the highest version using Arch package-version comparison:
 
-~~~yaml
+```yaml
 connector: github-tag
 config:
   repository: owner/project
 updates: {}
-~~~
+```
 
 ## Custom connectors
 
@@ -174,7 +174,7 @@ updates: {}
 
 Create connectors/name/index.js:
 
-~~~js
+```js
 export default function createConnector(context) {
   return {
     name: 'name',
@@ -187,7 +187,7 @@ export default function createConnector(context) {
     }
   }
 }
-~~~
+```
 
 The returned name must match the directory name. The factory receives context.fetch and the configured GitHub token, when available.
 
@@ -195,7 +195,7 @@ The returned name must match the directory name. The factory receives context.fe
 
 Use:
 
-~~~yaml
+```yaml
 connector: custom
 timeout: 120
 config:
@@ -203,17 +203,17 @@ config:
 updates:
   source: 'source=("example-\${version}.tar.gz::\${source}")'
   sha256: 'sha256sums=("\${sha256}")'
-~~~
+```
 
 Create connector/detect.sh. It receives AUR_MAINTAINER_PACKAGE, AUR_MAINTAINER_PACKAGE_PATH, and AUR_MAINTAINER_CONFIG_JSON.
 
 It must print:
 
-~~~text
+```text
 version=1.2.3
 source=https://example.com/example-1.2.3.tar.gz
 sha256=0123456789abcdef...
-~~~
+```
 
 All three fields are required. Default timeout: 30 seconds.
 
@@ -253,10 +253,10 @@ Only the first package that produces an update is processed in one run. This del
 
 ## Auto-merge
 
-~~~yaml
+```yaml
 auto-merge: true
 auto-merge-timeout: 1800
-~~~
+```
 
 The action waits for check runs on the generated PR head and squash-merges when GitHub reports the PR as mergeable.
 
@@ -264,14 +264,14 @@ The timeout is a maximum polling window, not a mandatory delay. github-token is 
 
 ## Publishing to the AUR
 
-~~~yaml
+```yaml
 - uses: soker90/aur-maintainer@v1
   with:
     github-token: \${{ secrets.GITHUB_TOKEN }}
     aur-publish: true
     aur-ssh-key: \${{ secrets.AUR_SSH_PRIVATE_KEY }}
     aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
-~~~
+```
 
 Publishing happens after validation. SSH uses strict host-key checking and pushes to the AUR master branch.
 
@@ -279,9 +279,9 @@ The AUR repository is synchronized with the managed package directory, including
 
 For publish-only synchronization:
 
-~~~yaml
+```yaml
 aur-publish-only: true
-~~~
+```
 
 This skips upstream detection and takes precedence over aur-publish.
 
@@ -293,7 +293,7 @@ Never expose AUR SSH keys or other write credentials to untrusted pull requests.
 
 Prefer this architecture:
 
-~~~text
+```text
 trusted scheduled/manual workflow
         |
         v
@@ -310,7 +310,7 @@ detect -> update -> validate -> PR
                               |
                               v
                              AUR
-~~~
+```
 
 Use least-privilege GITHUB_TOKEN permissions, a dedicated revocable AUR SSH key, and ephemeral runners where possible.
 
@@ -324,10 +324,10 @@ Use least-privilege GITHUB_TOKEN permissions, a dedicated revocable AUR SSH key,
 
 **.SRCINFO mismatch:**
 
-~~~bash
+```bash
 updpkgsums PKGBUILD
 makepkg --printsrcinfo > .SRCINFO
-~~~
+```
 
 **Auto-merge does not happen:** check auto-merge, github-token, token permissions, required checks, mergeability, and timeout.
 
@@ -335,13 +335,13 @@ makepkg --printsrcinfo > .SRCINFO
 
 ## Development
 
-~~~bash
+```bash
 npm ci
 npm run format:check
 npm run lint
 npm run ci-test
 npm run package
-~~~
+```
 
 dist is generated code and is committed because GitHub executes the bundled JavaScript when the action is consumed. CI verifies dist and runs the local action against the freshly generated bundle.
 
@@ -353,9 +353,9 @@ The release workflow is manually triggered from main. It validates the requested
 
 Use:
 
-~~~yaml
+```yaml
 uses: soker90/aur-maintainer@v1
-~~~
+```
 
 or pin a full commit SHA for an immutable reference.
 
