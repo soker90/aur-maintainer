@@ -1,170 +1,212 @@
 # AUR Maintainer
 
-Una GitHub Action para automatizar el mantenimiento de paquetes de Arch Linux en
-AUR.
+Documentación en español de la GitHub Action para automatizar el mantenimiento de paquetes de Arch Linux en AUR. La documentación inglesa está en [README.md](README.md).
 
-> **Estado:** desarrollo inicial. La API pública y el formato de configuración
-> todavía no son estables.
+> **Importante:** la validación ejecuta PKGBUILD y conectores personalizados. Son código ejecutable. No expongas credenciales AUR a pull requests no confiables.
 
-## Funcionalidades previstas
+## Qué hace
 
-- Detectar nuevas versiones upstream mediante conectores reutilizables.
-- Admitir releases de GitHub y tags de versión de GitHub.
-- Admitir conectores personalizados a nivel de repositorio y de paquete.
-- Actualizar `PKGBUILD` y regenerar `.SRCINFO`.
-- Validar paquetes con las herramientas de Arch Linux.
-- Crear y mantener pull requests de actualización.
-- Permitir opcionalmente el merge automático después de la validación.
-- Publicar los paquetes mantenidos en Arch User Repository (AUR).
+- Descubre paquetes desde .aur-maintainer.yml o mediante descubrimiento automático.
+- Detecta versiones con github-release o github-tag.
+- Permite conectores JavaScript de repositorio y conectores shell por paquete.
+- Actualiza pkgver y, mediante plantillas, source y SHA-256.
+- Regenera y comprueba .SRCINFO.
+- Valida con namcap, makepkg y pacman, con fallback Docker de Arch Linux.
+- Crea una rama y una PR por actualización.
+- Puede hacer squash-merge automático.
+- Puede publicar en AUR mediante SSH.
+- Puede sincronizar el estado actual mediante aur-publish-only.
 
-## Estructura del repositorio
+## Uso básico
 
-El modelo previsto para los usuarios es deliberadamente pequeño:
+~~~yaml
+name: Maintain AUR
 
-```text
-repository/
-├── .aur-maintainer.yml       # configuración global opcional
-├── packages/                 # opcional; los paquetes también pueden estar
-│                              # en la raíz
-│   └── example-bin/
-│       ├── PKGBUILD
-│       ├── .SRCINFO
-│       └── update.yml
-└── connectors/               # conectores locales opcionales del repositorio
-    └── example/
-```
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
 
-Un paquete declara cómo se descubre su upstream en `update.yml`:
-
-```yaml
-connector: github-tag
-config:
-  repository: stacklok/toolhive-studio
-```
-
-Para repositorios que publican versiones como Git tags sin GitHub Releases,
-utiliza el conector `github-tag`:
-
-```yaml
-connector: github-tag
-config:
-  repository: owner/project
-```
-
-La configuración global puede restringir qué directorios de paquetes se
-gestionan:
-
-```yaml
-packages:
-  - packages/example-bin
-```
-
-Los conectores personalizados locales del repositorio se encuentran en
-`connectors/`. Cada conector utiliza un directorio con el nombre del conector y
-un módulo ESM en `connectors/<name>/index.js`:
-
-```text
-connectors/
-└── example/
-    └── index.js
-```
-
-El módulo debe exportar por defecto una factoría que reciba el mismo contexto de
-conector que los conectores integrados y devuelva un conector con un `name`
-coincidente:
-
-```js
-export default (context) => ({
-  name: 'example',
-  detect: async (pkg, config) => {
-    const response = await context.fetch(config.url)
-    const data = await response.json()
-
-    return { version: data.version }
-  }
-})
-```
-
-El paquete lo selecciona normalmente desde `update.yml`:
-
-```yaml
-connector: example
-config:
-  url: https://example.com/releases/latest.json
-```
-
-Los conectores locales del repositorio solo se cargan desde los directorios
-`connectors/<name>/index.js` del propio repositorio. Un conector local no puede
-sustituir a un conector integrado con el mismo nombre, y el nombre del conector
-devuelto debe coincidir con el nombre del directorio. Los conectores genéricos
-siguen siendo proporcionados por esta Action.
-
-Un paquete puede mapear opcionalmente los metadatos del conector a asignaciones
-de PKGBUILD mediante la sección `updates`. El campo `version` siempre actualiza
-`pkgver`; los campos de origen y checksum son opcionales porque la estructura de
-los paquetes puede variar:
-
-```yaml
-connector: custom
-config: {}
-timeout: 60 # sobrescribe el valor predeterminado de 30 segundos
-updates:
-  source: 'source=("vega-${version}.tar.gz::${source}")'
-  sha256: '_sha256=${sha256}'
-```
-
-Los conectores locales tienen un tiempo máximo de ejecución de 30 segundos por
-defecto. Puedes sobrescribirlo con `timeout`, expresado en segundos. Debe ser un
-entero positivo. Si se alcanza, la Action indica el paquete afectado y conserva
-la causa original para facilitar el diagnóstico y conservar el contexto del
-error.
-
-Cada mapeo es una plantilla completa de asignación de PKGBUILD. Los placeholders
-admitidos son `${version}`, `${source}` y `${sha256}`. Esto mantiene explícita
-la nomenclatura de los sources específica de cada paquete, en lugar de hacer que
-la Action tenga que inferir la estructura del PKGBUILD.
-
-## Uso
-
-La interfaz prevista es una única Action:
-
-```yaml
 permissions:
   contents: write
   pull-requests: write
 
-steps:
-  - uses: soker90/aur-maintainer@v1
-    with:
-      github-token: ${{ secrets.GITHUB_TOKEN }}
-```
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: soker90/aur-maintainer@v1
+        with:
+          github-token: \${{ secrets.GITHUB_TOKEN }}
+~~~
 
-Cuando se proporciona `github-token`, la Action confirma las actualizaciones de
-los paquetes validadas en `update-branch` y abre un pull request de
-actualización contra `base-branch`. Sin un token, las actualizaciones de los
-paquetes siguen aplicándose al workspace, pero no se crea ningún pull request.
+## Inputs
 
-La configuración y el conjunto final de inputs se documentarán cuando esté lista
-la primera implementación estable.
+| Input | Por defecto | Descripción |
+|---|---|---|
+| config | .aur-maintainer.yml | Configuración global. |
+| github-token | — | Token para API, ramas, PR, issues y merge. |
+| update-branch | update | Prefijo de ramas de actualización. |
+| base-branch | main | Rama base de las PR. |
+| auto-merge | false | Esperar checks y hacer squash-merge. |
+| auto-merge-timeout | 1800 | Tiempo máximo de espera de checks, en segundos. |
+| aur-publish | false | Publicar la actualización validada en AUR. |
+| aur-publish-only | false | Publicar el estado actual sin detectar upstream; tiene prioridad. |
+| aur-ssh-key | — | Clave SSH privada autorizada en AUR. |
+| aur-known-hosts | — | Host keys confiables de aur.archlinux.org. |
+
+github-token es obligatorio si auto-merge está activado. Los inputs SSH son obligatorios para publicar.
+
+## Outputs
+
+- packages: JSON con paquetes inspeccionados, candidatos y resultados.
+- pull-request: URL de la primera PR creada.
+- pull-requests: JSON con las URLs de las PR.
+- validation-failure-issue: URL del issue creado tras un fallo de validación.
+
+## Configuración
+
+Configuración central:
+
+~~~yaml
+packages:
+  - path: example-bin
+    connector: github-release
+    config:
+      repository: owner/project
+    updates: {}
+~~~
+
+Si no se define packages, se descubre la raíz si contiene PKGBUILD y los directorios directos de packages/.
+
+Configuración local:
+
+~~~yaml
+connector: github-release
+config:
+  repository: owner/project
+updates: {}
+~~~
+
+También se admite connector/update.yml para conectores personalizados de paquete. No deben existir a la vez update.yml y connector/update.yml.
+
+## Conectores
+
+github-release usa el último GitHub Release. github-tag consulta los tags y selecciona la versión Arch más alta.
+
+Conector JavaScript de repositorio:
+
+~~~text
+connectors/<name>/index.js
+~~~
+
+Debe exportar por defecto una factoría que devuelva un conector con name coincidente.
+
+Conector shell de paquete:
+
+~~~yaml
+connector: custom
+timeout: 120
+config:
+  channel: stable
+updates:
+  source: 'source=("example-\${version}.tar.gz::\${source}")'
+  sha256: 'sha256sums=("\${sha256}")'
+~~~
+
+El script connector/detect.sh recibe AUR_MAINTAINER_PACKAGE, AUR_MAINTAINER_PACKAGE_PATH y AUR_MAINTAINER_CONFIG_JSON y debe imprimir:
+
+~~~text
+version=1.2.3
+source=https://example.com/example-1.2.3.tar.gz
+sha256=0123456789abcdef...
+~~~
+
+El timeout por defecto es 30 segundos.
+
+## Validación
+
+La secuencia es:
+
+1. updpkgsums.
+2. Regeneración de .SRCINFO.
+3. namcap sobre PKGBUILD.
+4. makepkg --verifysource.
+5. Comprobación de .SRCINFO.
+6. makepkg -sf --noconfirm.
+7. Comprobación de artefactos.
+8. namcap sobre artefactos.
+9. pacman -U --noconfirm.
+
+Si las herramientas no están disponibles, se usa Docker con Arch Linux.
+
+Si falla la validación, los cambios se conservan y se crea un issue cuando hay autenticación de GitHub.
+
+## Pull requests y auto-merge
+
+Cada actualización genera una rama específica, por ejemplo update/vega-cli-bin si update-branch es update.
+
+Solo se procesa el primer paquete actualizado de cada ejecución para mantener PR pequeñas.
+
+Con auto-merge: true la Action espera los check runs y hace squash-merge cuando la PR es mergeable. auto-merge-timeout es la ventana máxima, no un retraso obligatorio.
+
+## Publicación AUR
+
+~~~yaml
+- uses: soker90/aur-maintainer@v1
+  with:
+    github-token: \${{ secrets.GITHUB_TOKEN }}
+    aur-publish: true
+    aur-ssh-key: \${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    aur-known-hosts: \${{ secrets.AUR_KNOWN_HOSTS }}
+~~~
+
+La publicación ocurre después de validar el paquete, usa comprobación estricta de host SSH y publica en master. El contenido del repositorio AUR se sincroniza con el directorio gestionado, incluyendo la eliminación de archivos versionados que ya no existen.
+
+aur-publish-only evita la detección upstream y publica el estado actual.
+
+## Seguridad
+
+No ejecutes esta Action con claves AUR ni otros secretos de escritura sobre código no confiable.
+
+Evita pull_request_target cuando se haga checkout y ejecución de código no confiable. Para publicar es preferible un workflow programado/manual de confianza.
+
+Usa permisos mínimos para GITHUB_TOKEN, una clave AUR dedicada y revocable y runners efímeros cuando sea posible.
+
+## Problemas habituales
+
+- No hay paquetes: revisa config, rutas y PKGBUILD.
+- Error API: comprueba owner/name, permisos y rate limits.
+- No hay validación: comprueba herramientas Arch o Docker.
+- .SRCINFO incorrecto: ejecuta updpkgsums PKGBUILD y makepkg --printsrcinfo > .SRCINFO.
+- No hay auto-merge: revisa token, permisos, checks y timeout.
+- Falla AUR: revisa clave SSH, known-hosts, acceso y rama master.
 
 ## Desarrollo
 
-Este repositorio se inició a partir de la
-[plantilla de GitHub para Actions en TypeScript](https://github.com/actions/typescript-action).
+~~~bash
+npm ci
+npm run format:check
+npm run lint
+npm run ci-test
+npm run package
+~~~
 
-Instala las dependencias y ejecuta la suite de tests con:
+dist se versiona porque GitHub ejecuta el bundle incluido en la Action.
 
-```bash
-npm install
-npm test
-```
+## Releases
 
-El bundle distribuible se genera con:
+Las versiones siguen SemVer: v1.0.0, v1.0.1, etc. El tag v1 apunta a la última release compatible.
 
-```bash
-npm run bundle
-```
+Uso recomendado:
 
-El directorio generado `dist/` se incluye en el repositorio porque GitHub
-ejecuta las JavaScript Actions directamente desde el bundle incluido en el
-repositorio.
+~~~yaml
+uses: soker90/aur-maintainer@v1
+~~~
+
+También puedes fijar un SHA completo.
+
+## Licencia
+
+MIT. Consulta LICENSE.
