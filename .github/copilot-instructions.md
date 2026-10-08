@@ -3,11 +3,11 @@
 This GitHub Action is written in TypeScript and transpiled to JavaScript. Both
 the TypeScript sources and the **generated** JavaScript code are contained in
 this repository. The TypeScript sources are contained in the `src` directory and
-the JavaScript code is contained in the `dist` directory. A GitHub Actions
-workflow checks that the JavaScript code in `dist` is up-to-date. Therefore, you
-should not review any changes to the contents of the `dist` folder and it is
-expected that the JavaScript code in `dist` closely mirrors the TypeScript code
-it is generated from.
+the JavaScript code is contained in the `dist` directory. The Continuous
+Integration workflow checks that the JavaScript code in `dist` is up-to-date.
+Therefore, you should not review any changes to the contents of the `dist`
+folder and it is expected that the JavaScript code in `dist` closely mirrors the
+TypeScript code it is generated from.
 
 ## Repository Structure
 
@@ -63,7 +63,7 @@ Any time files in the `src` directory are changed, you should run the following
 command to bundle the TypeScript code into JavaScript:
 
 ```bash
-npm run bundle
+npm run package
 ```
 
 ## General Coding Guidelines
