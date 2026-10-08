@@ -36463,19 +36463,35 @@ async function waitForChecksAndMerge(token, repository, pullRequest, timeoutSeco
     if (!pullRequest.head?.sha) {
         throw new Error('GitHub did not return the pull request head SHA');
     }
+    if (!pullRequest.number) {
+        throw new Error('GitHub did not return the pull request number');
+    }
     while (Date.now() < deadline) {
         const checks = await requestGitHub(token, `/repos/${owner}/${repo}/commits/${pullRequest.head.sha}/check-runs?per_page=100`);
         const checkRuns = isCheckRunsResponse(checks) ? checks.check_runs : [];
-        if (checkRuns.length > 0 &&
-            checkRuns.every((check) => check.status === 'completed')) {
-            const failed = checkRuns.find((check) => check.conclusion !== 'success' &&
-                check.conclusion !== 'neutral' &&
-                check.conclusion !== 'skipped');
-            if (failed) {
-                throw new Error(`Pull request checks failed: ${failed.name} (${failed.conclusion ?? 'unknown'})`);
+        if (checkRuns.length > 0) {
+            if (checkRuns.every((check) => check.status === 'completed')) {
+                const failed = checkRuns.find((check) => check.conclusion !== 'success' &&
+                    check.conclusion !== 'neutral' &&
+                    check.conclusion !== 'skipped');
+                if (failed) {
+                    throw new Error(`Pull request checks failed: ${failed.name} (${failed.conclusion ?? 'unknown'})`);
+                }
+                await squashMergePullRequest(token, pullRequest);
+                return;
             }
-            await squashMergePullRequest(token, pullRequest);
-            return;
+        }
+        else {
+            const current = await requestGitHub(token, `/repos/${owner}/${repo}/pulls/${pullRequest.number}`);
+            if (isMergeablePullRequest(current) &&
+                current.mergeable_state === 'clean') {
+                await squashMergePullRequest(token, pullRequest);
+                return;
+            }
+            if (isMergeablePullRequest(current) &&
+                current.mergeable_state === 'dirty') {
+                throw new Error('Pull request cannot be merged because it has conflicts');
+            }
         }
         await new Promise((resolve) => setTimeout(resolve, Math.min(AUTO_MERGE_POLL_INTERVAL_MS, Math.max(0, deadline - Date.now()))));
     }
@@ -36516,6 +36532,12 @@ function isIssue(value) {
         value !== null &&
         'html_url' in value &&
         typeof value.html_url === 'string');
+}
+function isMergeablePullRequest(value) {
+    return (typeof value === 'object' &&
+        value !== null &&
+        'mergeable_state' in value &&
+        typeof value.mergeable_state === 'string');
 }
 function isCheckRunsResponse(value) {
     if (typeof value !== 'object' ||
