@@ -165,7 +165,7 @@ export async function createValidationFailureIssue(
     '~~~',
     '',
     'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
-  ].join('\\n')
+  ].join('\n')
 
   const created = await requestGitHub(
     options.token,
@@ -188,7 +188,7 @@ function formatErrorDetails(error: unknown): string {
     const candidate = error as Error & { stderr?: string; stdout?: string }
     if (candidate.stderr?.trim()) details.push(candidate.stderr.trim())
     if (candidate.stdout?.trim()) details.push(candidate.stdout.trim())
-    return details.join('\\n').slice(0, 12_000)
+    return details.join('\n').slice(0, 12_000)
   }
   return String(error).slice(0, 12_000)
 }
