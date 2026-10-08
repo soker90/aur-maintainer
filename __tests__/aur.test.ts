@@ -93,6 +93,14 @@ describe('AUR publishing', () => {
       })
     )
 
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['rm', '-r', '--ignore-unmatch', '--', '.'],
+      expect.any(String),
+      expect.objectContaining({
+        GIT_SSH_COMMAND: expect.stringContaining('StrictHostKeyChecking=yes')
+      })
+    )
     expect(
       run.mock.calls.some(
         (call) => call[1]?.[0] === 'add' && call[1]?.[1] === '-A'
