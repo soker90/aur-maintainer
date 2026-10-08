@@ -17,13 +17,13 @@ packages:
 
 Each package object supports:
 
-| Field | Required | Description |
-| --- | --- | --- |
-| `path` | yes | Package directory relative to the workspace |
-| `connector` | yes | Connector name |
-| `config` | no | Connector-specific object; defaults to `{}` |
-| `updates` | no | `source` and/or `sha256` PKGBUILD assignment templates |
-| `timeout` | no | Package-local custom connector timeout; defaults to `30` seconds |
+| Field       | Required | Description                                                      |
+| ----------- | -------- | ---------------------------------------------------------------- |
+| `path`      | yes      | Package directory relative to the workspace                      |
+| `connector` | yes      | Connector name                                                   |
+| `config`    | no       | Connector-specific object; defaults to `{}`                      |
+| `updates`   | no       | `source` and/or `sha256` PKGBUILD assignment templates           |
+| `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds |
 
 The connector version always updates `pkgver`. Update templates can use the
 placeholders `${version}`, `${source}`, and `${sha256}`.
@@ -99,18 +99,18 @@ The default timeout is 30 seconds. `timeout` must be a positive integer.
 
 ## Action inputs
 
-| Input | Default | Description |
-| --- | --- | --- |
-| `config` | `.aur-maintainer.yml` | Repository configuration path |
-| `github-token` | empty | GitHub API token and PR authentication |
-| `update-branch` | `update` | Prefix for generated package branches |
-| `base-branch` | `main` | Branch receiving generated update PRs |
-| `auto-merge` | `false` | Wait for checks and squash-merge generated PRs |
-| `auto-merge-timeout` | `1800` | Maximum auto-merge wait in seconds |
-| `aur-publish` | `false` | Publish changed packages to AUR |
-| `aur-publish-only` | `false` | Publish current state without upstream detection |
-| `aur-ssh-key` | empty | SSH private key for AUR publishing |
-| `aur-known-hosts` | empty | Known-hosts entry for `aur.archlinux.org` |
+| Input                | Default               | Description                                      |
+| -------------------- | --------------------- | ------------------------------------------------ |
+| `config`             | `.aur-maintainer.yml` | Repository configuration path                    |
+| `github-token`       | empty                 | GitHub API token and PR authentication           |
+| `update-branch`      | `update`              | Prefix for generated package branches            |
+| `base-branch`        | `main`                | Branch receiving generated update PRs            |
+| `auto-merge`         | `false`               | Wait for checks and squash-merge generated PRs   |
+| `auto-merge-timeout` | `1800`                | Maximum auto-merge wait in seconds               |
+| `aur-publish`        | `false`               | Publish changed packages to AUR                  |
+| `aur-publish-only`   | `false`               | Publish current state without upstream detection |
+| `aur-ssh-key`        | empty                 | SSH private key for AUR publishing               |
+| `aur-known-hosts`    | empty                 | Known-hosts entry for `aur.archlinux.org`        |
 
 `auto-merge-timeout` must be a positive integer. Both AUR publishing modes
 require `aur-ssh-key` and `aur-known-hosts` when publishing is performed.
