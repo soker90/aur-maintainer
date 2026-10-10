@@ -313,8 +313,9 @@ describe('main.ts', () => {
         previousPkgbuild: `pkgname=${item.name}\npkgver=1.0.0\n`
       }
     })
-    createUpdatePullRequest.mockImplementation(async (_workspace, options) =>
-      `https://github.com/test/repo/pull/${options.packages[0].name}`
+    createUpdatePullRequest.mockImplementation(
+      async (_workspace, options) =>
+        `https://github.com/test/repo/pull/${options.packages[0].name}`
     )
 
     await run()
