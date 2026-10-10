@@ -93,7 +93,7 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      "connector: custom\\nupdates:\\n  version: '_npmver=${version}'\\n"
+      "connector: custom\nupdates:\n  version: '_npmver=${version}'\n"
     )
     await expect(loadPackageConfig(packagePath)).resolves.toMatchObject({
       updates: { version: '_npmver=${version}' }
@@ -104,7 +104,7 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      'connector: custom\\nupdates:\\n  unknown: value\\n'
+      'connector: custom\nupdates:\n  unknown: value\n'
     )
     await expect(loadPackageConfig(packagePath)).rejects.toThrow(
       '"updates.unknown" is not supported'
