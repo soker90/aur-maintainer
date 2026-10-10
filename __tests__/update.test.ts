@@ -98,7 +98,7 @@ describe('package updates', () => {
       'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
       "sha1sums=('old')",
       ''
-    ].join('\\n')
+    ].join('\n')
     await writeFile(pkgbuildPath, original)
     const pkg = {
       name: 'nodejs-npm-check',
@@ -126,7 +126,7 @@ describe('package updates', () => {
       'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
       "sha1sums=('old')",
       ''
-    ].join('\\n'))
+    ].join('\n'))
   })
 
   it('ignores optional connector metadata without update mappings', async () => {
