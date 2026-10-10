@@ -179,7 +179,7 @@ export async function run(): Promise<void> {
           `Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`
         )
         snapshots.pop()
-      } catch (error) {
+      } catch (caught) {
         if (update?.changed) {
           await rollbackPackageUpdate(pkg, update)
           if (snapshot) {
@@ -187,7 +187,7 @@ export async function run(): Promise<void> {
             if (snapshotIndex >= 0) snapshots.splice(snapshotIndex, 1)
           }
         }
-        const message = error instanceof Error ? error.message : String(error)
+        const message = caught instanceof Error ? caught.message : String(caught)
         core.error(`Failed to process ${pkg.name}: ${message}`)
         core.setFailed(message)
       }
