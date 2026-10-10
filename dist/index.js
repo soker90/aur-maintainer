@@ -36406,6 +36406,25 @@ function validateBranchName(branch) {
         throw new Error('Invalid update branch name');
     }
 }
+async function commitPackageChanges(workspace, packagePaths, message, git) {
+    await git.run('git', ['add', '--', ...packagePaths], workspace);
+    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
+    if (!changed.trim())
+        return null;
+    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
+    await git.run('git', [
+        'config',
+        'user.email',
+        '41898282+github-actions[bot]@users.noreply.github.com'
+    ], workspace);
+    await git.run('git', ['commit', '-m', message], workspace);
+    return (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim();
+}
+async function switchToUpdateBranch(baseBranch, branch, commit, workspace, git) {
+    await switchToBaseBranch(baseBranch, workspace, git);
+    await git.run('git', ['switch', '-C', branch], workspace);
+    await git.run('git', ['cherry-pick', commit], workspace);
+}
 async function switchToBaseBranch(baseBranch, workspace, git) {
     const remoteRef = `refs/remotes/origin/${baseBranch}`;
     await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
@@ -36419,20 +36438,11 @@ async function createValidationFailureIssue(workspace, options, git = hostGitRun
     ];
     const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name);
     validateBranchName(branch);
-    await git.run('git', ['add', '--', ...packagePaths], workspace);
-    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim()) {
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, 'validation failed: ' + options.pkg.name, git);
+    if (!updateCommit) {
         throw new Error('No package changes are available for the validation failure branch');
     }
-    await switchToBaseBranch(options.baseBranch, workspace, git);
-    await git.run('git', ['switch', '-C', branch], workspace);
-    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', [
-        'config',
-        'user.email',
-        '41898282+github-actions[bot]@users.noreply.github.com'
-    ], workspace);
-    await git.run('git', ['commit', '-m', 'validation failed: ' + options.pkg.name], workspace);
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
     if (!owner || !repo) {
@@ -36488,19 +36498,10 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     ];
     const branch = getPackageUpdateBranch(options.updateBranch, pkg.name);
     validateBranchName(branch);
-    await git.run('git', ['add', '--', ...packagePaths], workspace);
-    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim())
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, `update: ${pkg.name}`, git);
+    if (!updateCommit)
         return null;
-    await switchToBaseBranch(options.baseBranch, workspace, git);
-    await git.run('git', ['switch', '-C', branch], workspace);
-    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', [
-        'config',
-        'user.email',
-        '41898282+github-actions[bot]@users.noreply.github.com'
-    ], workspace);
-    await git.run('git', ['commit', '-m', `update: ${pkg.name}`], workspace);
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
     if (!owner || !repo)
@@ -36885,98 +36886,103 @@ async function run() {
         const candidates = [];
         const repository = process.env.GITHUB_REPOSITORY;
         for (const pkg of packages) {
-            const factory = pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
-                ? loadPackageConnector(pkg)
-                : registry.get(pkg.config.connector);
-            if (!factory)
-                throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`);
-            const candidate = await factory(registryContext).detect(pkg, pkg.config.config);
-            const update = await updatePackage(pkg, candidate);
-            candidates.push({ package: pkg.name, candidate, update });
-            if (update.changed) {
-                const snapshot = {
+            let update;
+            let snapshot;
+            try {
+                const factory = pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
+                    ? loadPackageConnector(pkg)
+                    : registry.get(pkg.config.connector);
+                if (!factory) {
+                    throw new Error(`Unknown connector "${pkg.config.connector}" for package "${pkg.name}"`);
+                }
+                const candidate = await factory(registryContext).detect(pkg, pkg.config.config);
+                update = await updatePackage(pkg, candidate);
+                candidates.push({ package: pkg.name, candidate, update });
+                if (!update.changed) {
+                    info(`Package ${pkg.name} is already at ${update.version}`);
+                    continue;
+                }
+                snapshot = {
                     pkg,
                     pkgbuild: update.previousPkgbuild ?? '',
                     srcinfo: undefined
                 };
                 snapshots.push(snapshot);
+                await completePackageSnapshot(snapshot);
+                await updatePackageMetadata(pkg);
                 try {
-                    await completePackageSnapshot(snapshot);
+                    await validatePackage(pkg);
                 }
-                catch (error) {
-                    await rollbackPackageUpdate(pkg, update);
+                catch (validationError) {
+                    if (!token || !repository)
+                        throw validationError;
+                    const issue = await createValidationFailureIssue(workspace, {
+                        token,
+                        repository,
+                        baseBranch: getInput('base-branch') || 'main',
+                        updateBranch: getInput('update-branch') || 'update',
+                        pkg,
+                        currentVersion: update.currentVersion,
+                        version: update.version,
+                        error: validationError
+                    });
+                    setOutput('validation-failure-issue', issue);
+                    error(`Validation failed for ${pkg.name}; changes preserved and issue created: ${issue}`);
+                    setFailed(validationError instanceof Error
+                        ? validationError.message
+                        : String(validationError));
                     snapshots.pop();
-                    throw error;
+                    continue;
                 }
-                try {
-                    await updatePackageMetadata(pkg);
-                    try {
-                        await validatePackage(pkg);
+                if (aurPublish) {
+                    if (!aurSshKey || !aurKnownHosts) {
+                        throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
                     }
-                    catch (validationError) {
-                        if (!token || !repository)
-                            throw validationError;
-                        const issue = await createValidationFailureIssue(workspace, {
-                            token,
-                            repository,
-                            baseBranch: getInput('base-branch') || 'main',
-                            updateBranch: getInput('update-branch') || 'update',
-                            pkg,
-                            currentVersion: update.currentVersion,
-                            version: update.version,
-                            error: validationError
-                        });
-                        setOutput('validation-failure-issue', issue);
-                        error(`Validation failed for ${pkg.name}; changes preserved and issue created: ${issue}`);
-                        setFailed(validationError instanceof Error
-                            ? validationError.message
-                            : String(validationError));
-                        return;
-                    }
-                    if (aurPublish) {
-                        if (!aurSshKey || !aurKnownHosts) {
-                            throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
-                        }
-                        const published = await publishAurPackage(pkg, {
-                            sshKey: aurSshKey,
-                            knownHosts: aurKnownHosts
-                        });
-                        if (published)
-                            info(`Published ${pkg.name} to the AUR`);
-                        else
-                            info(`AUR package ${pkg.name} is already up to date`);
-                    }
-                    if (token) {
-                        if (!repository)
-                            throw new Error('GITHUB_REPOSITORY is required');
-                        const pullRequest = await createUpdatePullRequest(workspace, {
-                            token,
-                            repository,
-                            baseBranch: getInput('base-branch') || 'main',
-                            updateBranch: getInput('update-branch') || 'update',
-                            packages: [pkg],
-                            currentVersion: update.currentVersion,
-                            version: update.version,
-                            autoMerge,
-                            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
-                        });
-                        if (pullRequest)
-                            pullRequests.push(pullRequest);
-                    }
-                    else {
-                        warning(`Updated ${pkg.name}, but github-token was not provided; ` +
-                            'no GitHub branch or pull request was created.');
-                    }
-                    info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
+                    const published = await publishAurPackage(pkg, {
+                        sshKey: aurSshKey,
+                        knownHosts: aurKnownHosts
+                    });
+                    if (published)
+                        info(`Published ${pkg.name} to the AUR`);
+                    else
+                        info(`AUR package ${pkg.name} is already up to date`);
                 }
-                catch (error) {
-                    await rollbackPackageUpdate(pkg, update);
-                    throw error;
+                if (token) {
+                    if (!repository)
+                        throw new Error('GITHUB_REPOSITORY is required');
+                    const pullRequest = await createUpdatePullRequest(workspace, {
+                        token,
+                        repository,
+                        baseBranch: getInput('base-branch') || 'main',
+                        updateBranch: getInput('update-branch') || 'update',
+                        packages: [pkg],
+                        currentVersion: update.currentVersion,
+                        version: update.version,
+                        autoMerge,
+                        autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+                    });
+                    if (pullRequest)
+                        pullRequests.push(pullRequest);
                 }
-                break;
+                else {
+                    warning(`Updated ${pkg.name}, but github-token was not provided; ` +
+                        'no GitHub branch or pull request was created.');
+                }
+                info(`Updated ${pkg.name} from ${update.currentVersion} to ${update.version}`);
+                snapshots.pop();
             }
-            else {
-                info(`Package ${pkg.name} is already at ${update.version}`);
+            catch (caught) {
+                if (update?.changed) {
+                    await rollbackPackageUpdate(pkg, update);
+                    if (snapshot) {
+                        const snapshotIndex = snapshots.indexOf(snapshot);
+                        if (snapshotIndex >= 0)
+                            snapshots.splice(snapshotIndex, 1);
+                    }
+                }
+                const message = caught instanceof Error ? caught.message : String(caught);
+                error(`Failed to process ${pkg.name}: ${message}`);
+                setFailed(message);
             }
         }
         setOutput('packages', JSON.stringify(candidates));

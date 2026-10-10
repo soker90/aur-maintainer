@@ -21,6 +21,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     const fetchMock = jest
@@ -95,6 +96,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     const fetchMock = jest
@@ -142,7 +144,7 @@ describe('update pull request creation', () => {
     expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('update/demo')
   })
 
-  it('updates an existing package pull request without cherry-picking', async () => {
+  it('updates an existing package pull request after cherry-picking the package commit', async () => {
     const pkg = {
       name: 'demo',
       path: '/workspace/packages/demo',
@@ -153,6 +155,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     const fetchMock = jest
@@ -185,9 +188,9 @@ describe('update pull request creation', () => {
       )
     ).resolves.toBe('https://github.com/test/pr/1')
 
-    expect(run).not.toHaveBeenCalledWith(
+    expect(run).toHaveBeenCalledWith(
       'git',
-      ['cherry-pick', expect.any(String)],
+      ['cherry-pick', 'update-commit-sha'],
       '/workspace'
     )
     expect(run).toHaveBeenCalledWith(
@@ -225,6 +228,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     jest
@@ -271,6 +275,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     const fetchMock = jest
@@ -339,6 +344,7 @@ describe('update pull request creation', () => {
     } satisfies PackageDefinition
     const run = jest.fn().mockImplementation(async (_command, args) => {
       if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
       return ''
     })
     const fetchMock = jest

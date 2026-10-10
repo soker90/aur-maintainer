@@ -84,6 +84,50 @@ interface PullRequestOptions {
   autoMergeTimeoutSeconds: number
 }
 
+async function commitPackageChanges(
+  workspace: string,
+  packagePaths: string[],
+  message: string,
+  git: GitRunner
+): Promise<string | null> {
+  await git.run('git', ['add', '--', ...packagePaths], workspace)
+  const changed = await git.run(
+    'git',
+    ['diff', '--cached', '--name-only'],
+    workspace
+  )
+  if (!changed.trim()) return null
+
+  await git.run(
+    'git',
+    ['config', 'user.name', 'github-actions[bot]'],
+    workspace
+  )
+  await git.run(
+    'git',
+    [
+      'config',
+      'user.email',
+      '41898282+github-actions[bot]@users.noreply.github.com'
+    ],
+    workspace
+  )
+  await git.run('git', ['commit', '-m', message], workspace)
+  return (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim()
+}
+
+async function switchToUpdateBranch(
+  baseBranch: string,
+  branch: string,
+  commit: string,
+  workspace: string,
+  git: GitRunner
+): Promise<void> {
+  await switchToBaseBranch(baseBranch, workspace, git)
+  await git.run('git', ['switch', '-C', branch], workspace)
+  await git.run('git', ['cherry-pick', commit], workspace)
+}
+
 async function switchToBaseBranch(
   baseBranch: string,
   workspace: string,
@@ -120,38 +164,24 @@ export async function createValidationFailureIssue(
   const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name)
   validateBranchName(branch)
 
-  await git.run('git', ['add', '--', ...packagePaths], workspace)
-  const changed = await git.run(
-    'git',
-    ['diff', '--cached', '--name-only'],
-    workspace
+  const updateCommit = await commitPackageChanges(
+    workspace,
+    packagePaths,
+    'validation failed: ' + options.pkg.name,
+    git
   )
-  if (!changed.trim()) {
+  if (!updateCommit) {
     throw new Error(
       'No package changes are available for the validation failure branch'
     )
   }
 
-  await switchToBaseBranch(options.baseBranch, workspace, git)
-  await git.run('git', ['switch', '-C', branch], workspace)
-  await git.run(
-    'git',
-    ['config', 'user.name', 'github-actions[bot]'],
-    workspace
-  )
-  await git.run(
-    'git',
-    [
-      'config',
-      'user.email',
-      '41898282+github-actions[bot]@users.noreply.github.com'
-    ],
-    workspace
-  )
-  await git.run(
-    'git',
-    ['commit', '-m', 'validation failed: ' + options.pkg.name],
-    workspace
+  await switchToUpdateBranch(
+    options.baseBranch,
+    branch,
+    updateCommit,
+    workspace,
+    git
   )
   await git.run(
     'git',
@@ -227,31 +257,21 @@ export async function createUpdatePullRequest(
   const branch = getPackageUpdateBranch(options.updateBranch, pkg.name)
   validateBranchName(branch)
 
-  await git.run('git', ['add', '--', ...packagePaths], workspace)
-  const changed = await git.run(
-    'git',
-    ['diff', '--cached', '--name-only'],
-    workspace
+  const updateCommit = await commitPackageChanges(
+    workspace,
+    packagePaths,
+    `update: ${pkg.name}`,
+    git
   )
-  if (!changed.trim()) return null
+  if (!updateCommit) return null
 
-  await switchToBaseBranch(options.baseBranch, workspace, git)
-  await git.run('git', ['switch', '-C', branch], workspace)
-  await git.run(
-    'git',
-    ['config', 'user.name', 'github-actions[bot]'],
-    workspace
+  await switchToUpdateBranch(
+    options.baseBranch,
+    branch,
+    updateCommit,
+    workspace,
+    git
   )
-  await git.run(
-    'git',
-    [
-      'config',
-      'user.email',
-      '41898282+github-actions[bot]@users.noreply.github.com'
-    ],
-    workspace
-  )
-  await git.run('git', ['commit', '-m', `update: ${pkg.name}`], workspace)
   await git.run(
     'git',
     ['push', '--force', '--set-upstream', 'origin', branch],

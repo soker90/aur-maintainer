@@ -276,9 +276,9 @@ describe('main.ts', () => {
     expect(core.setFailed).toHaveBeenCalledWith('makepkg failed')
   })
 
-  it('stops after the first package with an update', async () => {
+  it('creates a separate update pull request for every outdated package', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
-    const packages = ['first', 'second'].map((name) => ({
+    const packages = ['first', 'second', 'third'].map((name) => ({
       ...pkg,
       name,
       path: path.join(directory, name),
@@ -313,25 +313,87 @@ describe('main.ts', () => {
         previousPkgbuild: `pkgname=${item.name}\npkgver=1.0.0\n`
       }
     })
-    createUpdatePullRequest.mockResolvedValue(
-      'https://github.com/test/repo/pull/1'
+    createUpdatePullRequest.mockImplementation(
+      async (_workspace, options) =>
+        `https://github.com/test/repo/pull/${options.packages[0].name}`
     )
 
     await run()
 
-    expect(updatePackage).toHaveBeenCalledTimes(1)
-    expect(updatePackage).toHaveBeenCalledWith(
-      packages[0],
-      expect.objectContaining({ version: '1.1.0' })
+    expect(updatePackage).toHaveBeenCalledTimes(3)
+    expect(createUpdatePullRequest).toHaveBeenCalledTimes(3)
+    for (const item of packages) {
+      expect(createUpdatePullRequest).toHaveBeenCalledWith(
+        '/workspace',
+        expect.objectContaining({ packages: [item] })
+      )
+    }
+    expect(core.setFailed).not.toHaveBeenCalled()
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'pull-requests',
+      JSON.stringify([
+        'https://github.com/test/repo/pull/first',
+        'https://github.com/test/repo/pull/second',
+        'https://github.com/test/repo/pull/third'
+      ])
     )
+  })
+
+  it('continues processing packages after a validation failure', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const packages = ['invalid', 'valid'].map((name) => ({
+      ...pkg,
+      name,
+      path: path.join(directory, name),
+      pkgbuildPath: path.join(directory, name, 'PKGBUILD'),
+      srcinfoPath: path.join(directory, name, '.SRCINFO')
+    }))
+
+    for (const item of packages) {
+      await mkdir(item.path, { recursive: true })
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
+      await writeFile(item.srcinfoPath, `pkgname=${item.name}\npkgver=1.0.0\n`)
+    }
+
+    discoverPackages.mockResolvedValue(packages)
+    loadRepositoryConnectors.mockResolvedValue(
+      new Map([
+        [
+          'github-tag',
+          () => ({
+            name: 'github-tag',
+            detect: jest.fn().mockResolvedValue({ version: '1.1.0' })
+          })
+        ]
+      ])
+    )
+    updatePackage.mockImplementation(async (item) => {
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\npkgver=1.1.0\n`)
+      return {
+        changed: true,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        previousPkgbuild: `pkgname=${item.name}\npkgver=1.0.0\n`
+      }
+    })
+    validatePackage.mockImplementation(async (item) => {
+      if (item.name === 'invalid') throw new Error('invalid PKGBUILD')
+    })
+    createValidationFailureIssue.mockResolvedValue(
+      'https://github.com/test/repo/issues/invalid'
+    )
+    createUpdatePullRequest.mockResolvedValue(
+      'https://github.com/test/repo/pull/valid'
+    )
+
+    await run()
+
+    expect(createValidationFailureIssue).toHaveBeenCalledTimes(1)
     expect(createUpdatePullRequest).toHaveBeenCalledTimes(1)
     expect(createUpdatePullRequest).toHaveBeenCalledWith(
       '/workspace',
-      expect.objectContaining({ packages: [packages[0]] })
+      expect.objectContaining({ packages: [packages[1]] })
     )
-    await expect(readFile(packages[1].pkgbuildPath, 'utf8')).resolves.toBe(
-      'pkgname=second\npkgver=1.0.0\n'
-    )
-    expect(core.setFailed).not.toHaveBeenCalled()
+    expect(core.setFailed).toHaveBeenCalledWith('invalid PKGBUILD')
   })
 })
