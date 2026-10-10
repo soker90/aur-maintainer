@@ -164,7 +164,8 @@ export async function run(): Promise<void> {
             currentVersion: update.currentVersion,
             version: update.version,
             autoMerge,
-            autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+            autoMergeTimeoutSeconds:
+              getPositiveIntegerInput('auto-merge-timeout')
           })
           if (pullRequest) pullRequests.push(pullRequest)
         } else {
