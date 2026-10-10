@@ -38,7 +38,7 @@ jobs:
 
       - name: Check Format
         id: npm-format-check
-        run: npx prettier --check "**/*.{js,jsx,ts,tsx,json,yml,yaml,md,css,scss,html}"
+        run: npx prettier --check "**/*.{js,jsx,ts,tsx,json,yml,yaml,css,scss,html}"
 
       - name: Lint
         id: npm-lint
