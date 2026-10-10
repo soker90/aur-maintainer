@@ -338,4 +338,62 @@ describe('main.ts', () => {
     )
   })
 
+
+  it('continues processing packages after a validation failure', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const packages = ['invalid', 'valid'].map((name) => ({
+      ...pkg,
+      name,
+      path: path.join(directory, name),
+      pkgbuildPath: path.join(directory, name, 'PKGBUILD'),
+      srcinfoPath: path.join(directory, name, '.SRCINFO')
+    }))
+
+    for (const item of packages) {
+      await mkdir(item.path, { recursive: true })
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\\npkgver=1.0.0\\n`)
+      await writeFile(item.srcinfoPath, `pkgname=${item.name}\\npkgver=1.0.0\\n`)
+    }
+
+    discoverPackages.mockResolvedValue(packages)
+    loadRepositoryConnectors.mockResolvedValue(
+      new Map([
+        [
+          'github-tag',
+          () => ({
+            name: 'github-tag',
+            detect: jest.fn().mockResolvedValue({ version: '1.1.0' })
+          })
+        ]
+      ])
+    )
+    updatePackage.mockImplementation(async (item) => {
+      await writeFile(item.pkgbuildPath, `pkgname=${item.name}\\npkgver=1.1.0\\n`)
+      return {
+        changed: true,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        previousPkgbuild: `pkgname=${item.name}\\npkgver=1.0.0\\n`
+      }
+    })
+    validatePackage.mockImplementation(async (item) => {
+      if (item.name === 'invalid') throw new Error('invalid PKGBUILD')
+    })
+    createValidationFailureIssue.mockResolvedValue(
+      'https://github.com/test/repo/issues/invalid'
+    )
+    createUpdatePullRequest.mockResolvedValue(
+      'https://github.com/test/repo/pull/valid'
+    )
+
+    await run()
+
+    expect(createValidationFailureIssue).toHaveBeenCalledTimes(1)
+    expect(createUpdatePullRequest).toHaveBeenCalledTimes(1)
+    expect(createUpdatePullRequest).toHaveBeenCalledWith(
+      '/workspace',
+      expect.objectContaining({ packages: [packages[1]] })
+    )
+    expect(core.setFailed).toHaveBeenCalledWith('invalid PKGBUILD')
+  })
 })
