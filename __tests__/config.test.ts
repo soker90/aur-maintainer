@@ -93,10 +93,21 @@ describe('config', () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
-      'connector: custom\nupdates:\n  version: pkgver\n'
+      "connector: custom\\nupdates:\\n  version: '_npmver=${version}'\\n"
+    )
+    await expect(loadPackageConfig(packagePath)).resolves.toMatchObject({
+      updates: { version: '_npmver=${version}' }
+    })
+  })
+
+  it('rejects unsupported package metadata mappings', async () => {
+    const packagePath = await tempDirectory('aur-package')
+    await writeFile(
+      path.join(packagePath, 'update.yml'),
+      'connector: custom\\nupdates:\\n  unknown: value\\n'
     )
     await expect(loadPackageConfig(packagePath)).rejects.toThrow(
-      '"updates.version" is not supported'
+      '"updates.unknown" is not supported'
     )
   })
 
