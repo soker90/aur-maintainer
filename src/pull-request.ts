@@ -84,6 +84,25 @@ interface PullRequestOptions {
   autoMergeTimeoutSeconds: number
 }
 
+async function switchToBaseBranch(
+  baseBranch: string,
+  workspace: string,
+  git: GitRunner
+): Promise<void> {
+  const remoteRef = `refs/remotes/origin/${baseBranch}`
+  await git.run(
+    'git',
+    [
+      'fetch',
+      '--no-tags',
+      'origin',
+      `+refs/heads/${baseBranch}:${remoteRef}`
+    ],
+    workspace
+  )
+  await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace)
+}
+
 export async function createValidationFailureIssue(
   workspace: string,
   options: {
@@ -118,7 +137,7 @@ export async function createValidationFailureIssue(
     )
   }
 
-  await git.run('git', ['switch', options.baseBranch], workspace)
+  await switchToBaseBranch(options.baseBranch, workspace, git)
   await git.run('git', ['switch', '-C', branch], workspace)
   await git.run(
     'git',
@@ -221,7 +240,7 @@ export async function createUpdatePullRequest(
   )
   if (!changed.trim()) return null
 
-  await git.run('git', ['switch', options.baseBranch], workspace)
+  await switchToBaseBranch(options.baseBranch, workspace, git)
   await git.run('git', ['switch', '-C', branch], workspace)
   await git.run(
     'git',
@@ -276,7 +295,7 @@ export async function createUpdatePullRequest(
         options.autoMergeTimeoutSeconds
       )
     }
-    await git.run('git', ['switch', options.baseBranch], workspace)
+    await switchToBaseBranch(options.baseBranch, workspace, git)
     return current.html_url
   }
 
@@ -305,7 +324,7 @@ export async function createUpdatePullRequest(
       options.autoMergeTimeoutSeconds
     )
   }
-  await git.run('git', ['switch', options.baseBranch], workspace)
+  await switchToBaseBranch(options.baseBranch, workspace, git)
   return created.html_url
 }
 
