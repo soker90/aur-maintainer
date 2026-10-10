@@ -7,7 +7,7 @@ AUR Maintainer detects upstream releases and tags, updates package metadata, reg
 - **Automated updates:** detect new upstream versions and prepare package changes.
 - **Pull requests:** create or update one PR per package, with optional automatic merging.
 - **AUR publishing:** publish changed packages or the current package state using SSH.
-- **Extensible:** built-in GitHub connectors and support for custom connectors.
+- **Extensible:** built-in GitHub and npm connectors, plus support for custom connectors.
 
 ## Quick start
 
@@ -68,7 +68,7 @@ Each package entry supports:
 | `path` | Package directory relative to the repository root |
 | `connector` | Connector used to detect new versions |
 | `config` | Connector-specific settings |
-| `updates` | Optional templates for updating `source` and `sha256` assignments in the `PKGBUILD` |
+| `updates` | Optional templates for updating version-derived, `source`, and `sha256` assignments in the `PKGBUILD` |
 | `timeout` | Timeout in seconds for package-local custom connectors; defaults to `30` |
 
 The detected version updates `pkgver`. For compatibility, package-local `update.yml` files are still supported, but new configurations should use the repository-level `.aur-maintainer.yml`.
@@ -77,6 +77,22 @@ The detected version updates `pkgver`. For compatibility, package-local `update.
 
 - `github-release`: detects versions from GitHub Releases.
 - `github-tag`: detects versions from GitHub Tags.
+- `npm`: detects the latest npm registry dist-tag and calculates the tarball SHA-256.
+
+For example, to track an npm package and update its tarball metadata:
+
+```yaml
+packages:
+  - path: packages/example-node-module
+    connector: npm
+    config:
+      package: example-node-module
+    updates:
+      source: 'source=("${source}")'
+      sha256: '_sha256=${sha256}'
+```
+
+Use `updates.version` for additional assignments derived from the detected version, such as `version: '_npmver=${version}'`. This mapping is applied even when the connector returns no source or checksum.
 
 For example, to track GitHub Releases:
 
