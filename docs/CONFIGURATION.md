@@ -22,11 +22,10 @@ Each package object supports:
 | `path`      | yes      | Package directory relative to the workspace                      |
 | `connector` | yes      | Connector name                                                   |
 | `config`    | no       | Connector-specific object; defaults to `{}`                      |
-| `updates`   | no       | `source` and/or `sha256` PKGBUILD assignment templates           |
+| `updates`   | no       | Optional `version`, `source`, and/or `sha256` PKGBUILD assignment templates |
 | `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds |
 
-The connector version always updates `pkgver`. Update templates can use the
-placeholders `${version}`, `${source}`, and `${sha256}`.
+The connector version always updates `pkgver`. The optional `updates.version` template can also update version-derived assignments such as `_npmver=${version}`; it runs even when the connector returns only a version. The `source` and `sha256` templates run only when the connector returns those fields. Templates can use `${version}`, `${source}`, and `${sha256}`.
 
 For compatibility, `packages` may also contain directory strings that use a
 package-local `update.yml`. New configurations should use the repository-level
@@ -58,6 +57,25 @@ config:
 ```
 
 Tags without a supported package version are ignored.
+
+### `npm`
+
+Reads the package's `latest` dist-tag from the npm registry and returns its
+version, tarball URL, and a SHA-256 calculated from the downloaded tarball.
+
+```yaml
+connector: npm
+config:
+  package: npm-check
+updates:
+  source: 'source=("${source}")'
+  sha256: '_sha256=${sha256}'
+```
+
+The `config.package` value may be an unscoped or scoped npm package name.
+Downloading the tarball to calculate SHA-256 adds one request per detection.
+If a package's upstream source is GitHub Releases or GitHub Tags, prefer the
+corresponding GitHub connector instead.
 
 ## Repository-local connectors
 
