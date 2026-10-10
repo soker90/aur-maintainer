@@ -32,12 +32,17 @@ export async function run(): Promise<void> {
     const config = await loadMaintainerConfig(workspace, configPath)
     const packages = await discoverPackages(workspace, config)
     const token = core.getInput('github-token')
+    const autoMerge = core.getBooleanInput('auto-merge')
     const aurPublish = core.getBooleanInput('aur-publish')
     const aurPublishOnly = core.getBooleanInput('aur-publish-only')
     const aurSshKey = core.getInput('aur-ssh-key')
     const aurKnownHosts = core.getInput('aur-known-hosts')
     const pullRequests: string[] = []
     core.setOutput('pull-requests', JSON.stringify(pullRequests))
+
+    if (autoMerge && !token) {
+      throw new Error('github-token is required when auto-merge is enabled')
+    }
 
     if (aurPublishOnly) {
       if (!aurSshKey || !aurKnownHosts) {
@@ -46,6 +51,7 @@ export async function run(): Promise<void> {
         )
       }
       for (const pkg of packages) {
+        await validatePackage(pkg)
         const published = await publishAurPackage(pkg, {
           sshKey: aurSshKey,
           knownHosts: aurKnownHosts
@@ -149,7 +155,7 @@ export async function run(): Promise<void> {
               packages: [pkg],
               currentVersion: update.currentVersion,
               version: update.version,
-              autoMerge: core.getBooleanInput('auto-merge'),
+              autoMerge,
               autoMergeTimeoutSeconds:
                 getPositiveIntegerInput('auto-merge-timeout')
             })
