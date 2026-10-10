@@ -87,6 +87,48 @@ describe('package updates', () => {
     )
   })
 
+  it('updates version-derived assignments when the connector only returns a version', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    const original = [
+      'pkgname=nodejs-npm-check',
+      '_npmname=npm-check',
+      '_npmver=6.0.1',
+      'pkgver=6.0.1',
+      'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
+      "sha1sums=('old')",
+      ''
+    ].join('\\n')
+    await writeFile(pkgbuildPath, original)
+    const pkg = {
+      name: 'nodejs-npm-check',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: {
+        connector: 'github-release',
+        config: { repository: 'dylang/npm-check' },
+        updates: { version: '_npmver=${version}' }
+      }
+    } satisfies PackageDefinition
+
+    await expect(updatePackage(pkg, { version: '6.1.0' })).resolves.toMatchObject({
+      changed: true,
+      currentVersion: '6.0.1',
+      version: '6.1.0'
+    })
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe([
+      'pkgname=nodejs-npm-check',
+      '_npmname=npm-check',
+      '_npmver=6.1.0',
+      'pkgver=6.1.0',
+      'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
+      "sha1sums=('old')",
+      ''
+    ].join('\\n'))
+  })
+
   it('ignores optional connector metadata without update mappings', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const pkgbuildPath = path.join(directory, 'PKGBUILD')
