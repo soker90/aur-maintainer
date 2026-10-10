@@ -244,7 +244,9 @@ class NpmConnector implements Connector {
       !packageName.trim() ||
       packageName.trim() !== packageName
     ) {
-      throw new Error('npm connector requires config.package to be a package name')
+      throw new Error(
+        'npm connector requires config.package to be a package name'
+      )
     }
 
     const encodedName = packageName.startsWith('@')
@@ -262,18 +264,29 @@ class NpmConnector implements Connector {
 
     const metadata = (await response.json()) as unknown
     if (!isRecord(metadata) || !isRecord(metadata['dist-tags'])) {
-      throw new Error(`npm registry response for ${packageName} has no dist-tags`)
+      throw new Error(
+        `npm registry response for ${packageName} has no dist-tags`
+      )
     }
     const version = metadata['dist-tags'].latest
     if (typeof version !== 'string' || !isSupportedPackageVersion(version)) {
-      throw new Error(`npm latest dist-tag for ${packageName} is not a supported version`)
+      throw new Error(
+        `npm latest dist-tag for ${packageName} is not a supported version`
+      )
     }
     if (!isRecord(metadata.versions) || !isRecord(metadata.versions[version])) {
-      throw new Error(`npm registry response for ${packageName} has no metadata for ${version}`)
+      throw new Error(
+        `npm registry response for ${packageName} has no metadata for ${version}`
+      )
     }
     const versionMetadata = metadata.versions[version]
-    if (!isRecord(versionMetadata.dist) || typeof versionMetadata.dist.tarball !== 'string') {
-      throw new Error(`npm registry response for ${packageName}@${version} has no tarball URL`)
+    if (
+      !isRecord(versionMetadata.dist) ||
+      typeof versionMetadata.dist.tarball !== 'string'
+    ) {
+      throw new Error(
+        `npm registry response for ${packageName}@${version} has no tarball URL`
+      )
     }
 
     const tarballUrl = versionMetadata.dist.tarball

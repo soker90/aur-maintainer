@@ -113,20 +113,24 @@ describe('package updates', () => {
       }
     } satisfies PackageDefinition
 
-    await expect(updatePackage(pkg, { version: '6.1.0' })).resolves.toMatchObject({
+    await expect(
+      updatePackage(pkg, { version: '6.1.0' })
+    ).resolves.toMatchObject({
       changed: true,
       currentVersion: '6.0.1',
       version: '6.1.0'
     })
-    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe([
-      'pkgname=nodejs-npm-check',
-      '_npmname=npm-check',
-      '_npmver=6.1.0',
-      'pkgver=6.1.0',
-      'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
-      "sha1sums=('old')",
-      ''
-    ].join('\n'))
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      [
+        'pkgname=nodejs-npm-check',
+        '_npmname=npm-check',
+        '_npmver=6.1.0',
+        'pkgver=6.1.0',
+        'source=(http://registry.npmjs.org/$_npmname/-/$_npmname-$_npmver.tgz)',
+        "sha1sums=('old')",
+        ''
+      ].join('\n')
+    )
   })
 
   it('ignores optional connector metadata without update mappings', async () => {

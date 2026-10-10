@@ -17,15 +17,19 @@ packages:
 
 Each package object supports:
 
-| Field       | Required | Description                                                      |
-| ----------- | -------- | ---------------------------------------------------------------- |
-| `path`      | yes      | Package directory relative to the workspace                      |
-| `connector` | yes      | Connector name                                                   |
-| `config`    | no       | Connector-specific object; defaults to `{}`                      |
+| Field       | Required | Description                                                                 |
+| ----------- | -------- | --------------------------------------------------------------------------- |
+| `path`      | yes      | Package directory relative to the workspace                                 |
+| `connector` | yes      | Connector name                                                              |
+| `config`    | no       | Connector-specific object; defaults to `{}`                                 |
 | `updates`   | no       | Optional `version`, `source`, and/or `sha256` PKGBUILD assignment templates |
-| `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds |
+| `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds            |
 
-The connector version always updates `pkgver`. The optional `updates.version` template can also update version-derived assignments such as `_npmver=${version}`; it runs even when the connector returns only a version. The `source` and `sha256` templates run only when the connector returns those fields. Templates can use `${version}`, `${source}`, and `${sha256}`.
+The connector version always updates `pkgver`. The optional `updates.version`
+template can also update version-derived assignments such as
+`_npmver=${version}`; it runs even when the connector returns only a version.
+The `source` and `sha256` templates run only when the connector returns those
+fields. Templates can use `${version}`, `${source}`, and `${sha256}`.
 
 For compatibility, `packages` may also contain directory strings that use a
 package-local `update.yml`. New configurations should use the repository-level
@@ -73,8 +77,8 @@ updates:
 ```
 
 The `config.package` value may be an unscoped or scoped npm package name.
-Downloading the tarball to calculate SHA-256 adds one request per detection.
-If a package's upstream source is GitHub Releases or GitHub Tags, prefer the
+Downloading the tarball to calculate SHA-256 adds one request per detection. If
+a package's upstream source is GitHub Releases or GitHub Tags, prefer the
 corresponding GitHub connector instead.
 
 ## Repository-local connectors
