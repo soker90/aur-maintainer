@@ -36386,12 +36386,7 @@ function validateBranchName(branch) {
 }
 async function switchToBaseBranch(baseBranch, workspace, git) {
     const remoteRef = `refs/remotes/origin/${baseBranch}`;
-    await git.run('git', [
-        'fetch',
-        '--no-tags',
-        'origin',
-        `+refs/heads/${baseBranch}:${remoteRef}`
-    ], workspace);
+    await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
     await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace);
 }
 async function createValidationFailureIssue(workspace, options, git = hostGitRunner$1) {

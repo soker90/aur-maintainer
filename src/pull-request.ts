@@ -92,12 +92,7 @@ async function switchToBaseBranch(
   const remoteRef = `refs/remotes/origin/${baseBranch}`
   await git.run(
     'git',
-    [
-      'fetch',
-      '--no-tags',
-      'origin',
-      `+refs/heads/${baseBranch}:${remoteRef}`
-    ],
+    ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`],
     workspace
   )
   await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace)
