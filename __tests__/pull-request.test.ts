@@ -56,7 +56,21 @@ describe('update pull request creation', () => {
       ['add', '--', 'packages/demo/PKGBUILD', 'packages/demo/.SRCINFO'],
       '/workspace'
     )
-    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      [
+        'fetch',
+        '--no-tags',
+        'origin',
+        '+refs/heads/main:refs/remotes/origin/main'
+      ],
+      '/workspace'
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['switch', '-C', 'main', 'refs/remotes/origin/main'],
+      '/workspace'
+    )
     expect(run).toHaveBeenCalledWith(
       'git',
       ['switch', '-C', 'update/demo'],
@@ -176,7 +190,21 @@ describe('update pull request creation', () => {
       ['cherry-pick', expect.any(String)],
       '/workspace'
     )
-    expect(run).toHaveBeenCalledWith('git', ['switch', 'main'], '/workspace')
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      [
+        'fetch',
+        '--no-tags',
+        'origin',
+        '+refs/heads/main:refs/remotes/origin/main'
+      ],
+      '/workspace'
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['switch', '-C', 'main', 'refs/remotes/origin/main'],
+      '/workspace'
+    )
     expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       '/repos/test/repo/pulls/1'

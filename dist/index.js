@@ -36384,6 +36384,11 @@ function validateBranchName(branch) {
         throw new Error('Invalid update branch name');
     }
 }
+async function switchToBaseBranch(baseBranch, workspace, git) {
+    const remoteRef = `refs/remotes/origin/${baseBranch}`;
+    await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
+    await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace);
+}
 async function createValidationFailureIssue(workspace, options, git = hostGitRunner$1) {
     const relative = getRelativePackagePath(workspace, options.pkg.path);
     const packagePaths = [
@@ -36397,7 +36402,7 @@ async function createValidationFailureIssue(workspace, options, git = hostGitRun
     if (!changed.trim()) {
         throw new Error('No package changes are available for the validation failure branch');
     }
-    await git.run('git', ['switch', options.baseBranch], workspace);
+    await switchToBaseBranch(options.baseBranch, workspace, git);
     await git.run('git', ['switch', '-C', branch], workspace);
     await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
     await git.run('git', [
@@ -36465,7 +36470,7 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
     if (!changed.trim())
         return null;
-    await git.run('git', ['switch', options.baseBranch], workspace);
+    await switchToBaseBranch(options.baseBranch, workspace, git);
     await git.run('git', ['switch', '-C', branch], workspace);
     await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
     await git.run('git', [
@@ -36489,7 +36494,7 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
         if (options.autoMerge) {
             await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
         }
-        await git.run('git', ['switch', options.baseBranch], workspace);
+        await switchToBaseBranch(options.baseBranch, workspace, git);
         return current.html_url;
     }
     const created = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls`, 'POST', {
@@ -36503,7 +36508,7 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     if (options.autoMerge) {
         await waitForChecksAndMerge(options.token, options.repository, created, options.autoMergeTimeoutSeconds);
     }
-    await git.run('git', ['switch', options.baseBranch], workspace);
+    await switchToBaseBranch(options.baseBranch, workspace, git);
     return created.html_url;
 }
 function getUpdatePullRequestBody(packageName, currentVersion, version) {
