@@ -187,7 +187,8 @@ export async function run(): Promise<void> {
             if (snapshotIndex >= 0) snapshots.splice(snapshotIndex, 1)
           }
         }
-        const message = caught instanceof Error ? caught.message : String(caught)
+        const message =
+          caught instanceof Error ? caught.message : String(caught)
         core.error(`Failed to process ${pkg.name}: ${message}`)
         core.setFailed(message)
       }
