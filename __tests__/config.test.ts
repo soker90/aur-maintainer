@@ -89,7 +89,7 @@ describe('config', () => {
     )
   })
 
-  it('rejects unsupported package metadata mappings', async () => {
+  it('accepts version-derived package metadata mappings', async () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(
       path.join(packagePath, 'update.yml'),
