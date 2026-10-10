@@ -36406,6 +36406,25 @@ function validateBranchName(branch) {
         throw new Error('Invalid update branch name');
     }
 }
+async function commitPackageChanges(workspace, packagePaths, message, git) {
+    await git.run('git', ['add', '--', ...packagePaths], workspace);
+    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
+    if (!changed.trim())
+        return null;
+    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
+    await git.run('git', [
+        'config',
+        'user.email',
+        '41898282+github-actions[bot]@users.noreply.github.com'
+    ], workspace);
+    await git.run('git', ['commit', '-m', message], workspace);
+    return (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim();
+}
+async function switchToUpdateBranch(baseBranch, branch, commit, workspace, git) {
+    await switchToBaseBranch(baseBranch, workspace, git);
+    await git.run('git', ['switch', '-C', branch], workspace);
+    await git.run('git', ['cherry-pick', commit], workspace);
+}
 async function switchToBaseBranch(baseBranch, workspace, git) {
     const remoteRef = `refs/remotes/origin/${baseBranch}`;
     await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
@@ -36419,20 +36438,11 @@ async function createValidationFailureIssue(workspace, options, git = hostGitRun
     ];
     const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name);
     validateBranchName(branch);
-    await git.run('git', ['add', '--', ...packagePaths], workspace);
-    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim()) {
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, 'validation failed: ' + options.pkg.name, git);
+    if (!updateCommit) {
         throw new Error('No package changes are available for the validation failure branch');
     }
-    await switchToBaseBranch(options.baseBranch, workspace, git);
-    await git.run('git', ['switch', '-C', branch], workspace);
-    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', [
-        'config',
-        'user.email',
-        '41898282+github-actions[bot]@users.noreply.github.com'
-    ], workspace);
-    await git.run('git', ['commit', '-m', 'validation failed: ' + options.pkg.name], workspace);
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
     if (!owner || !repo) {
@@ -36488,19 +36498,10 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     ];
     const branch = getPackageUpdateBranch(options.updateBranch, pkg.name);
     validateBranchName(branch);
-    await git.run('git', ['add', '--', ...packagePaths], workspace);
-    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim())
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, `update: ${pkg.name}`, git);
+    if (!updateCommit)
         return null;
-    await switchToBaseBranch(options.baseBranch, workspace, git);
-    await git.run('git', ['switch', '-C', branch], workspace);
-    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', [
-        'config',
-        'user.email',
-        '41898282+github-actions[bot]@users.noreply.github.com'
-    ], workspace);
-    await git.run('git', ['commit', '-m', `update: ${pkg.name}`], workspace);
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
     await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
     const [owner, repo] = options.repository.split('/');
     if (!owner || !repo)
