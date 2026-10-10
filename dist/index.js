@@ -36981,6 +36981,7 @@ async function run() {
                     }
                 }
                 const message = caught instanceof Error ? caught.message : String(caught);
+                error(`Failed to process ${pkg.name}: ${message}`);
                 setFailed(message);
             }
         }
