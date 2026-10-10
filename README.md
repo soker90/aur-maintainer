@@ -1,28 +1,43 @@
 # AUR Maintainer
 
-**Automatically maintain and publish Arch Linux AUR packages with GitHub
-Actions.**
+Automate maintenance of Arch Linux AUR packages from GitHub Actions.
 
-AUR Maintainer detects upstream releases and tags, updates package metadata,
-regenerates `.SRCINFO`, validates changes, and creates or updates
-package-specific pull requests. It can optionally squash-merge updates and
-publish packages directly to the Arch User Repository (AUR) over SSH.
+AUR Maintainer discovers packages, detects upstream versions, updates PKGBUILD
+files, regenerates .SRCINFO, validates packages, and creates focused GitHub pull
+requests. It can optionally auto-merge validated updates and publish them to the
+AUR.
 
-- **Automated updates:** detect new upstream versions and prepare package
-  changes.
-- **Pull requests:** create or update one PR per package, with optional
-  automatic merging.
-- **AUR publishing:** publish changed packages or the current package state
-  using SSH.
-- **Extensible:** built-in GitHub and npm connectors, plus support for custom
-  connectors.
+> **Security:** validation executes PKGBUILD build logic and custom connectors
+> are executable code. Do not expose AUR credentials to workflows that execute
+> untrusted pull requests.
+
+## Features
+
+- Central or package-local configuration and automatic package discovery.
+- Built-in github-release and github-tag connectors.
+- Repository-local JavaScript connectors.
+- Package-local shell connectors with configurable timeouts.
+- Automatic pkgver updates plus optional source/SHA-256 templates.
+- .SRCINFO regeneration and package validation.
+- Arch Linux Docker fallback when packaging tools are unavailable.
+- One focused update branch/PR per package update.
+- Optional squash auto-merge with a configurable timeout.
+- Validation-failure issues with the failed update preserved.
+- Strict SSH host-key checking for AUR publishing.
+- Publish-only mode.
+
+## Requirements
+
+Use a Linux runner, preferably ubuntu-latest. The repository must be checked out
+before the action runs.
+
+The action uses Node.js 24. Validation uses Arch packaging tools when available
+and otherwise requires Docker.
 
 ## Quick start
 
-Create `.github/workflows/aur-maintainer.yml` in your repository:
-
 ```yaml
-name: AUR Maintainer
+name: Maintain AUR
 
 on:
   schedule:
@@ -39,115 +54,172 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Maintain AUR packages
-        uses: soker90/aur-maintainer@v1
+      - uses: soker90/aur-maintainer@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-branch: master
-          update-branch: update
-          auto-merge: false
 ```
 
-This workflow checks for updates every six hours and can also be triggered
-manually.
+For auto-merge:
 
-Configure your packages in `.aur-maintainer.yml`. If your repository uses a
-different default branch, adjust `base-branch` accordingly.
+```yaml
+auto-merge: true
+auto-merge-timeout: 1800
+```
 
-For automatic PR creation, enable **Settings → Actions → General → Allow GitHub
-Actions to create and approve pull requests** when using the repository's
-default `GITHUB_TOKEN`. A dedicated token may be needed for your repository's
-permission requirements.
+## Permissions
 
-See the [configuration reference](docs/CONFIGURATION.md) for all supported
-options.
+The caller workflow controls GITHUB_TOKEN permissions. Grant only what is
+needed.
 
-## Package configuration
+Typical PR maintenance:
 
-Create `.aur-maintainer.yml` in the repository root:
+```yaml
+permissions:
+  contents: write
+  pull-requests: write
+```
+
+Add issues: write when you want validation-failure issues.
+
+github-token is required for auto-merge. Without a token, detection and local
+updates can still run, but no GitHub branch/PR is created.
+
+## Inputs
+
+### Inputs
+
+- config: configuration path. Default: .aur-maintainer.yml.
+- github-token: GitHub API and repository automation token.
+- update-branch: prefix for generated update branches. Default: update.
+- base-branch: PR base branch. Default: main.
+- auto-merge: wait for checks and squash-merge. Default: false.
+- auto-merge-timeout: maximum check wait in seconds. Default: 1800.
+- aur-publish: publish an updated package after validation.
+- aur-publish-only: publish the current package state without upstream
+  detection.
+- aur-ssh-key: private SSH key authorized for the AUR account.
+- aur-known-hosts: trusted host-key data for aur.archlinux.org.
+
+AUR SSH inputs are required when publishing is enabled.
+
+## Outputs
+
+### Outputs
+
+- packages: JSON with inspected packages, candidates, and update results.
+- pull-request: URL of the first generated PR.
+- pull-requests: JSON array of generated PR URLs.
+- validation-failure-issue: URL of the validation-failure issue.
+
+## Configuration
+
+### Central configuration
+
+Create .aur-maintainer.yml:
 
 ```yaml
 packages:
-  - path: packages/example-bin
+  - path: github-copilot-app-bin
     connector: github-release
     config:
-      repository: owner/project
+      repository: github/copilot
+    updates: {}
+
+  - path: toolhive-studio-bin
+    connector: github-release
+    config:
+      repository: stacklok/toolhive-studio
     updates: {}
 ```
 
-Each package entry supports:
+Each entry supports path, connector, config, updates, and an optional timeout.
 
-| Field       | Description                                                                                           |
-| ----------- | ----------------------------------------------------------------------------------------------------- |
-| `path`      | Package directory relative to the repository root                                                     |
-| `connector` | Connector used to detect new versions                                                                 |
-| `config`    | Connector-specific settings                                                                           |
-| `updates`   | Optional templates for updating version-derived, `source`, and `sha256` assignments in the `PKGBUILD` |
-| `timeout`   | Timeout in seconds for package-local custom connectors; defaults to `30`                              |
+If packages is not configured, the action discovers the repository root when it
+contains PKGBUILD and directories immediately below packages/.
 
-The detected version updates `pkgver`. For compatibility, package-local
-`update.yml` files are still supported, but new configurations should use the
-repository-level `.aur-maintainer.yml`.
+### Package-local configuration
+
+A discovered package can use update.yml:
+
+```yaml
+connector: github-release
+config:
+  repository: owner/project
+updates: {}
+```
+
+For package-local custom connectors, connector/update.yml is also supported. Do
+not define both files.
 
 ## Built-in connectors
 
-- `github-release`: detects versions from GitHub Releases.
-- `github-tag`: detects versions from GitHub Tags.
-- `npm`: detects the latest npm registry dist-tag and calculates the tarball
-  SHA-256.
+### github-release
 
-For example, to track an npm package and update its tarball metadata:
+Selects the latest GitHub Release:
 
 ```yaml
-packages:
-  - path: packages/example-node-module
-    connector: npm
-    config:
-      package: example-node-module
-    updates:
-      source: 'source=("${source}")'
-      sha256: '_sha256=${sha256}'
+connector: github-release
+config:
+  repository: owner/project
+updates: {}
 ```
 
-Use `updates.version` for additional assignments derived from the detected
-version, such as `version: '_npmver=${version}'`. This mapping is applied even
-when the connector returns no source or checksum.
+A leading v is removed from numeric tags such as v1.2.3.
 
-For example, to track GitHub Releases:
+### github-tag
+
+Reads GitHub tags, filters them to Arch-compatible versions, and selects the
+highest version using Arch package-version comparison:
 
 ```yaml
-packages:
-  - path: packages/example-bin
-    connector: github-release
-    config:
-      repository: owner/project
+connector: github-tag
+config:
+  repository: owner/project
+updates: {}
 ```
 
 ## Custom connectors
 
-Use a custom connector when the upstream project cannot be handled by a built-in
-connector.
+### Repository JavaScript connector
 
-### Repository-level connectors
+Create connectors/name/index.js:
 
-Create `connectors/<name>/index.js`. The module must default-export a factory
-returning a connector with the same name as its directory.
+```js
+export default function createConnector(context) {
+  return {
+    name: 'name',
+    async detect(pkg, config) {
+      return {
+        version: '1.2.3',
+        source: 'https://example.com/example-1.2.3.tar.gz',
+        sha256: '0123456789abcdef...'
+      }
+    }
+  }
+}
+```
 
-The factory receives a context containing `fetch` and, when available, a GitHub
-token.
+The returned name must match the directory name. The factory receives
+context.fetch and the configured GitHub token, when available.
 
-### Package-level connectors
+### Package shell connector
 
-Set `connector: custom` and create `<package>/connector/detect.sh`.
+Use:
 
-The script runs from the package directory and receives:
+```yaml
+connector: custom
+timeout: 120
+config:
+  channel: stable
+updates:
+  source: 'source=("example-${version}.tar.gz::${source}")'
+  sha256: 'sha256sums=("${sha256}")'
+```
 
-- `AUR_MAINTAINER_PACKAGE`
-- `AUR_MAINTAINER_PACKAGE_PATH`
-- `AUR_MAINTAINER_CONFIG_JSON`
+Create connector/detect.sh. It receives AUR_MAINTAINER_PACKAGE,
+AUR_MAINTAINER_PACKAGE_PATH, and AUR_MAINTAINER_CONFIG_JSON.
 
-It must output non-empty `version`, `source`, and `sha256` fields as `key=value`
-lines:
+It must print:
 
 ```text
 version=1.2.3
@@ -155,189 +227,183 @@ source=https://example.com/example-1.2.3.tar.gz
 sha256=0123456789abcdef...
 ```
 
-The default timeout is 30 seconds. The `timeout` field must be a positive
-integer.
+All three fields are required. Default timeout: 30 seconds.
 
-## Pull requests and validation
+## PKGBUILD updates
 
-AUR Maintainer processes **one package update per run**, following the order in
-`.aur-maintainer.yml`.
+pkgver is updated when a newer supported version is detected. Optional source
+and sha256 fields are updated only when their templates are configured.
 
-With `update-branch: update`, a package named `example-bin` uses the branch
-`update/example-bin`. The input is a branch prefix, not a complete branch name.
+Templates support ${version}, ${source}, and ${sha256}.
 
-Existing update PRs for the same package and base branch are reused instead of
-duplicated. Their titles and descriptions are refreshed with the current version
-transition.
+The action uses targeted replacements rather than rewriting the whole PKGBUILD.
 
-Before creating a PR, the Action regenerates package metadata and validates the
-changes. If validation fails:
+## Validation
 
-- No update PR is created.
-- The generated `PKGBUILD` and `.SRCINFO` changes are preserved on the update
-  branch.
-- A GitHub issue is created with the validation error when the token has
-  `issues: write` permission.
+After an update, AUR Maintainer:
 
-### Automatic merging
+1. runs updpkgsums;
+2. regenerates .SRCINFO;
+3. runs namcap on PKGBUILD;
+4. runs makepkg --verifysource;
+5. verifies .SRCINFO matches the generated metadata;
+6. builds with makepkg -sf --noconfirm;
+7. verifies every artifact from makepkg --packagelist;
+8. runs namcap on every artifact;
+9. installs artifacts with pacman -U --noconfirm.
 
-Set `auto-merge: true` to wait for GitHub checks and squash-merge the generated
-PR.
+If the Arch tools are unavailable, validation is repeated in an Arch Linux
+Docker container.
 
-`auto-merge-timeout` defaults to `1800` seconds (30 minutes) and must be a
-positive integer. Failed checks, conflicts, or a timeout cause the Action to
-fail without merging the PR.
+On validation failure, the updated files are preserved and an issue is created
+when GitHub authentication is available. The action then fails.
 
-## Publishing packages to the AUR
+## Pull requests and update cadence
 
-AUR publishing is optional and requires an AUR account and an SSH key authorized
-for that account. It is separate from the GitHub token used for maintenance and
-pull requests.
+A valid update creates a package-specific branch using update-branch and a
+focused PR.
 
-### 1. Generate an SSH key
+For example, update-branch: update and package vega-cli-bin produce
+update/vega-cli-bin.
 
-Generate a dedicated key pair on your local machine:
+Only the first package that produces an update is processed in one run. This
+deliberately avoids multi-package PRs.
+
+## Auto-merge
+
+```yaml
+auto-merge: true
+auto-merge-timeout: 1800
+```
+
+The action waits for check runs on the generated PR head and squash-merges when
+GitHub reports the PR as mergeable.
+
+The timeout is a maximum polling window, not a mandatory delay. github-token is
+required.
+
+## Publishing to the AUR
+
+```yaml
+- uses: soker90/aur-maintainer@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    aur-publish: true
+    aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+    aur-known-hosts: ${{ secrets.AUR_KNOWN_HOSTS }}
+```
+
+Publishing happens after validation. SSH uses strict host-key checking and
+pushes to the AUR master branch.
+
+The AUR repository is synchronized with the managed package directory, including
+removal of tracked files that no longer exist locally.
+
+For publish-only synchronization:
+
+```yaml
+aur-publish-only: true
+```
+
+This skips upstream detection, validates the current package state, and then publishes it. It takes precedence over aur-publish.
+
+## Security
+
+AUR Maintainer executes PKGBUILD build logic and optional custom connectors.
+Treat them as trusted code.
+
+Never expose AUR SSH keys or other write credentials to untrusted pull requests.
+Avoid pull_request_target when it would check out and execute untrusted code.
+
+Prefer this architecture:
+
+```text
+trusted scheduled/manual workflow
+        |
+        v
+detect -> update -> validate -> PR
+                              |
+                              v
+                         required CI
+                              |
+                              v
+                            merge
+                              |
+                              v
+                       trusted publish
+                              |
+                              v
+                             AUR
+```
+
+Use least-privilege GITHUB_TOKEN permissions, a dedicated revocable AUR SSH key,
+and ephemeral runners where possible.
+
+## Troubleshooting
+
+**No package discovered:** check config path, package paths, PKGBUILD files, and
+custom connector layout.
+
+**GitHub API error:** verify owner/name repository syntax, repository access,
+token permissions, and rate limits. Real 403 responses are surfaced instead of
+being retried anonymously.
+
+**Validation cannot start:** ensure Arch tools or Docker are available.
+
+**.SRCINFO mismatch:**
 
 ```bash
-ssh-keygen -t ed25519 -C "aur-publishing" -f ~/.ssh/aur
+updpkgsums PKGBUILD
+makepkg --printsrcinfo > .SRCINFO
 ```
 
-This creates:
+**Auto-merge does not happen:** check auto-merge, github-token, token
+permissions, required checks, mergeability, and timeout.
 
-- `~/.ssh/aur`: your private key.
-- `~/.ssh/aur.pub`: your public key.
-
-Sign in to [aur.archlinux.org](https://aur.archlinux.org/) and add the public
-key to your account's SSH public keys.
-
-### 2. Configure GitHub Secrets
-
-In your repository, open **Settings → Secrets and variables → Actions → New
-repository secret**.
-
-Create the following repository secret:
-
-| Secret                | Value                                 |
-| --------------------- | ------------------------------------- |
-| `AUR_SSH_PRIVATE_KEY` | The complete contents of `~/.ssh/aur` |
-
-Never commit your private key to the repository.
-
-### 3. Enable publishing
-
-AUR Maintainer supports two publishing modes:
-
-- `aur-publish: true`: publishes a changed package as part of maintenance.
-- `aur-publish-only: true`: publishes the current package state without checking
-  upstream for updates. This is useful after an update PR has been merged.
-
-Both modes require the `aur-ssh-key` and `aur-known-hosts` inputs.
-
-For example, publish the current package state after merging an update PR:
-
-```yaml
-- name: Resolve AUR known hosts
-  id: known-hosts
-  run: |
-    {
-      echo 'hosts<<EOF'
-      ssh-keyscan -H aur.archlinux.org
-      echo 'EOF'
-    } >> "$GITHUB_OUTPUT"
-
-- name: Publish packages to AUR
-  uses: soker90/aur-maintainer@v1
-  with:
-    aur-publish-only: true
-    aur-ssh-key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-    aur-known-hosts: ${{ steps.known-hosts.outputs.hosts }}
-```
-
-This follows the workflow structure used by
-[aur-packages](https://github.com/soker90/aur-packages/blob/master/.github/workflows/aur-maintainer.yml).
-
-The publisher synchronizes package-root files such as `PKGBUILD` and `.SRCINFO`
-with the corresponding AUR repository and excludes the legacy `update.yml`.
-
-**Security:** verify the SSH host key for `aur.archlinux.org` against a trusted
-source before relying on it. `ssh-keyscan` retrieves a host key but does not
-independently authenticate it.
-
-## Inputs
-
-| Input                | Default               | Description                                              |
-| -------------------- | --------------------- | -------------------------------------------------------- |
-| `config`             | `.aur-maintainer.yml` | Repository configuration path                            |
-| `github-token`       | Empty                 | GitHub API and pull request authentication               |
-| `update-branch`      | `update`              | Prefix for generated package branches                    |
-| `base-branch`        | `main`                | Branch receiving update PRs                              |
-| `auto-merge`         | `false`               | Wait for checks and squash-merge generated PRs           |
-| `auto-merge-timeout` | `1800`                | Maximum auto-merge wait in seconds                       |
-| `aur-publish`        | `false`               | Publish changed packages during maintenance              |
-| `aur-publish-only`   | `false`               | Publish current package state without upstream detection |
-| `aur-ssh-key`        | Empty                 | Private SSH key for AUR publishing                       |
-| `aur-known-hosts`    | Empty                 | Known-hosts entry for `aur.archlinux.org`                |
-
-## Outputs
-
-- `packages`: JSON array of discovered packages and detected update candidates.
-- `pull-request`: URL of the first generated update PR.
-- `pull-requests`: JSON array containing generated update PR URLs.
-- `validation-failure-issue`: URL of a validation-failure issue, when created.
-
-## Permissions
-
-For maintenance with PR creation:
-
-```yaml
-permissions:
-  contents: write
-  pull-requests: write
-```
-
-Add `issues: write` if you want the Action to create issues when package
-validation fails:
-
-```yaml
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
-```
-
-The repository must also allow GitHub Actions to create pull requests when using
-`GITHUB_TOKEN`. A dedicated token can be used when the workflow needs different
-permissions or behavior.
-
-AUR publishing uses SSH credentials rather than GitHub permissions.
+**AUR publishing fails:** verify the dedicated AUR SSH key, known-hosts, package
+access, and master branch.
 
 ## Development
 
-The Action uses Node.js 24.
-
 ```bash
-npm install
-npm test
-npm run bundle
+npm ci
+npm run format:check
+npm run lint
+npm run ci-test
+npm run package
 ```
 
-The generated `dist/` directory is committed because GitHub Actions executes the
-bundled JavaScript.
+dist is generated code and is committed because GitHub executes the bundled
+JavaScript when the action is consumed. CI verifies dist and runs the local
+action against the freshly generated bundle.
 
-## Versioning
+## Release process
 
-Use the stable major tag in workflows:
+Releases use semantic tags such as v1.0.0 and the major tag v1.
+
+The release workflow is manually triggered from main. It validates the requested
+version, verifies the release commit, creates the release, moves v1, and
+verifies the resulting tags.
+
+Use:
 
 ```yaml
 uses: soker90/aur-maintainer@v1
 ```
 
-The `v1` tag is intended to track the latest compatible stable v1 release. For
-reproducible pinning, use a specific release tag, such as `v1.10.2`.
+or pin a full commit SHA for an immutable reference.
 
-## Documentation and examples
+## Contributing
 
-- [Configuration reference](docs/CONFIGURATION.md)
-- [Example consumer repository](https://github.com/soker90/aur-packages)
-- [Releases](https://github.com/soker90/aur-maintainer/releases)
-- [GitHub Marketplace](https://github.com/marketplace/actions/aur-maintainer)
+When changing public behavior:
+
+1. update TypeScript;
+2. add or update tests;
+3. regenerate dist;
+4. update README.md and README_ES.md;
+5. run CI;
+6. keep the PR focused.
+
+## License
+
+MIT. See LICENSE.

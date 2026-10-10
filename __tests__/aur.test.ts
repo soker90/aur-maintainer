@@ -86,6 +86,14 @@ describe('AUR publishing', () => {
     )
     expect(run).toHaveBeenCalledWith(
       'git',
+      ['rm', '-r', '--ignore-unmatch', '--', '.'],
+      expect.any(String),
+      expect.objectContaining({
+        GIT_SSH_COMMAND: expect.stringContaining('StrictHostKeyChecking=yes')
+      })
+    )
+    expect(run).toHaveBeenCalledWith(
+      'git',
       ['push', 'origin', 'master'],
       expect.any(String),
       expect.objectContaining({
