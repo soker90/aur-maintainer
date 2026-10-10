@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { afterEach, describe, expect, it, jest } from '@jest/globals'
@@ -41,6 +42,87 @@ function response(body: unknown, init?: ResponseInit): Response {
     ...init
   })
 }
+
+describe('npm connector', () => {
+  it('detects the latest dist-tag and computes the tarball SHA-256', async () => {
+    const tarball = new TextEncoder().encode('test npm tarball')
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          'dist-tags': { latest: '2.3.4' },
+          versions: {
+            '2.3.4': {
+              dist: {
+                tarball: 'https://registry.npmjs.org/demo/-/demo-2.3.4.tgz'
+              }
+            }
+          }
+        })
+      )
+      .mockResolvedValueOnce(new Response(tarball, { status: 200 }))
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('npm')!(
+      {}
+    )
+
+    await expect(connector.detect(pkg, { package: 'demo' })).resolves.toEqual({
+      version: '2.3.4',
+      source: 'https://registry.npmjs.org/demo/-/demo-2.3.4.tgz',
+      sha256: createHash('sha256').update(tarball).digest('hex'),
+      metadata: { package: 'demo', distTag: 'latest' }
+    })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://registry.npmjs.org/demo',
+      { headers: { accept: 'application/vnd.npm.install-v1+json' } }
+    )
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'https://registry.npmjs.org/demo/-/demo-2.3.4.tgz'
+    )
+  })
+
+  it('supports scoped npm package names', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          'dist-tags': { latest: '1.0.0' },
+          versions: {
+            '1.0.0': { dist: { tarball: 'https://example.test/pkg.tgz' } }
+          }
+        })
+      )
+      .mockResolvedValueOnce(new Response('archive'))
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('npm')!(
+      {}
+    )
+    await connector.detect(pkg, { package: '@scope/demo' })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://registry.npmjs.org/@scope%2fdemo',
+      expect.anything()
+    )
+  })
+
+  it('rejects missing package configuration', async () => {
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('npm')!(
+      {}
+    )
+    await expect(connector.detect(pkg, {})).rejects.toThrow('config.package')
+  })
+
+  it('reports missing packages from the registry', async () => {
+    const connector = createConnectorRegistry({
+      fetch: jest.fn(async () =>
+        response({}, { status: 404, statusText: 'Not Found' })
+      )
+    }).get('npm')!({})
+    await expect(
+      connector.detect(pkg, { package: 'missing-demo' })
+    ).rejects.toThrow('404 Not Found')
+  })
+})
 
 describe('github-release connector', () => {
   it('retries public API requests without the repository token after a 403', async () => {

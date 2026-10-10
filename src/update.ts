@@ -97,9 +97,9 @@ export function applyPackageUpdates(
     'pkgver',
     `pkgver=${candidate.version}`
   )
-  for (const field of ['source', 'sha256'] as const) {
+  for (const field of ['version', 'source', 'sha256'] as const) {
     const template = updates[field]
-    const value = fields[field]
+    const value = field === 'version' ? candidate.version : fields[field]
     if (template === undefined || value === undefined) continue
     const rendered = renderUpdateTemplate(template, {
       version: candidate.version,
