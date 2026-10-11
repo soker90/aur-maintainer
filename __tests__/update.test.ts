@@ -35,6 +35,89 @@ describe('package updates', () => {
     )
   })
 
+  it('preserves PKGBUILD variable references when only pkgver changes', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    const original = [
+      'pkgname=demo',
+      'pkgver=1.0.0',
+      'pkgrel=1',
+      'source=("${pkgname}-${pkgver}.tar.gz")',
+      "sha256sums=('old')",
+      ''
+    ].join('\n')
+    await writeFile(pkgbuildPath, original)
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { connector: 'github-release', config: {}, updates: {} }
+    } satisfies PackageDefinition
+
+    await updatePackage(pkg, { version: '1.1.0' })
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      [
+        'pkgname=demo',
+        'pkgver=1.1.0',
+        'pkgrel=1',
+        'source=("${pkgname}-${pkgver}.tar.gz")',
+        "sha256sums=('old')",
+        ''
+      ].join('\n')
+    )
+  })
+
+  it('preserves PKGBUILD variables in source templates while updating connector values', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    await writeFile(
+      pkgbuildPath,
+      [
+        'pkgname=demo',
+        'pkgver=1.0.0',
+        'pkgrel=1',
+        'source=("${pkgname}-${pkgver}.tar.gz")',
+        "sha256sums=('old')",
+        ''
+      ].join('\n')
+    )
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: {
+        connector: 'pip',
+        config: { package: 'demo' },
+        updates: {
+          source: 'source=("${pkgname}-${pkgver}.tar.gz::${source}")',
+          sha256: 'sha256sums=("${sha256}")'
+        }
+      }
+    } satisfies PackageDefinition
+
+    await updatePackage(pkg, {
+      version: '1.1.0',
+      source: 'https://example.test/demo-1.1.0.tar.gz',
+      sha256: 'a'.repeat(64)
+    })
+
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      [
+        'pkgname=demo',
+        'pkgver=1.1.0',
+        'pkgrel=1',
+        'source=("${pkgname}-${pkgver}.tar.gz::https://example.test/demo-1.1.0.tar.gz")',
+        'sha256sums=("'+ 'a'.repeat(64) +'")',
+        ''
+      ].join('\n')
+    )
+  })
+
   it('updates source and checksum fields from connector metadata', async () => {
     const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
     const pkgbuildPath = path.join(directory, 'PKGBUILD')
