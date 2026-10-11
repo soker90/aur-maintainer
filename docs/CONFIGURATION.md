@@ -25,13 +25,17 @@ Each package object supports:
 | `updates`   | no       | Optional `version`, `source`, and/or `sha256` PKGBUILD assignment templates |
 | `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds            |
 
-The connector version always updates `pkgver`. Shell references such as `${pkgname}`, `${pkgver}`, `$pkgver`, and custom variables are preserved unless their assignment is explicitly mapped in `updates`. In templates, only `${version}`, `${source}`, and `${sha256}` are replaced by connector values; other shell references remain literal.
+The connector version always updates `pkgver`. Shell references such as
+`${pkgname}`, `${pkgver}`, `$pkgver`, and custom variables are preserved unless
+their assignment is explicitly mapped in `updates`. In templates, only
+`${version}`, `${source}`, and `${sha256}` are replaced by connector values;
+other shell references remain literal.
 
- The optional `updates.version`
-template can also update version-derived assignments such as
-`_npmver=${version}`; it runs even when the connector returns only a version.
-The `source` and `sha256` templates run only when the connector returns those
-fields. Templates can use `${version}`, `${source}`, and `${sha256}`.
+The optional `updates.version` template can also update version-derived
+assignments such as `_npmver=${version}`; it runs even when the connector
+returns only a version. The `source` and `sha256` templates run only when the
+connector returns those fields. Templates can use `${version}`, `${source}`, and
+`${sha256}`.
 
 For compatibility, `packages` may also contain directory strings that use a
 package-local `update.yml`. New configurations should use the repository-level

@@ -97,8 +97,11 @@ export function applyPackageUpdates(
     'pkgver',
     `pkgver=${candidate.version}`
   )
+  if (readPkgver(content) !== candidate.version) {
+    updated = resetPkgrel(updated)
+  }
   for (const field of ['version', 'source', 'sha256'] as const) {
-    const template = updates[field]
+    const template = updates?.[field]
     const value = field === 'version' ? candidate.version : fields[field]
     if (template === undefined || value === undefined) continue
     const rendered = renderUpdateTemplate(template, {
@@ -139,4 +142,11 @@ function replaceAssignment(
     throw new Error(`PKGBUILD must contain a "${name}" assignment`)
   }
   return content.replace(pattern, replacement)
+}
+
+function resetPkgrel(content: string): string {
+  if (/^pkgrel=[^\n\r]+$/m.test(content)) {
+    return content.replace(/^pkgrel=[^\n\r]+$/m, 'pkgrel=1')
+  }
+  return content
 }

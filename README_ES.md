@@ -12,7 +12,8 @@ de paquetes de Arch Linux en AUR. La documentación inglesa está en
 
 - Descubre paquetes desde .aur-maintainer.yml o mediante descubrimiento
   automático.
-- Incluye conectores integrados `github-release`, `github-tag`, `npm`, `pip` y `git`.
+- Incluye conectores integrados `github-release`, `github-tag`, `npm`, `pip` y
+  `git`.
 - Permite conectores JavaScript de repositorio y conectores shell por paquete.
 - Actualiza pkgver y, mediante plantillas, source y SHA-256.
 - Regenera y comprueba .SRCINFO.
@@ -104,9 +105,14 @@ paquete. No deben existir a la vez update.yml y connector/update.yml.
 github-release usa el último GitHub Release. github-tag consulta los tags y
 selecciona la versión Arch más alta.
 
-- `npm`: consulta el dist-tag `latest`, descarga el tarball npm y calcula SHA-256. Usa `config.package`.
-- `pip`: consulta PyPI, selecciona el archivo sdist de la versión actual y usa su SHA-256 publicado o calcula el hash descargándolo. Usa `config.package`.
-- `git`: selecciona el tag compatible más alto de un repositorio GitHub, descarga su archivo fuente y calcula SHA-256. Usa `config.repository: owner/name`; no es un conector universal para cualquier servidor Git.
+- `npm`: consulta el dist-tag `latest`, descarga el tarball npm y calcula
+  SHA-256. Usa `config.package`.
+- `pip`: consulta PyPI, selecciona el archivo sdist de la versión actual y usa
+  su SHA-256 publicado o calcula el hash descargándolo. Usa `config.package`.
+- `git`: selecciona el tag compatible más alto de un repositorio GitHub,
+  descarga su archivo fuente y calcula SHA-256. Usa
+  `config.repository: owner/name`; no es un conector universal para cualquier
+  servidor Git.
 
 Para aplicar la URL y el hash devueltos:
 
@@ -148,7 +154,11 @@ sha256=0123456789abcdef...
 
 El timeout por defecto es 30 segundos.
 
-Las actualizaciones modifican las asignaciones necesarias sin expandir referencias de shell existentes. Por ejemplo, `source=("${pkgname}-${pkgver}.tar.gz")` conserva `${pkgname}` y `${pkgver}` al cambiar `pkgver`. En las plantillas, solo `${version}`, `${source}` y `${sha256}` son marcadores de AUR Maintainer; otras referencias se conservan.
+Las actualizaciones modifican las asignaciones necesarias sin expandir
+referencias de shell existentes. Por ejemplo,
+`source=("${pkgname}-${pkgver}.tar.gz")` conserva `${pkgname}` y `${pkgver}` al
+cambiar `pkgver`. En las plantillas, solo `${version}`, `${source}` y
+`${sha256}` son marcadores de AUR Maintainer; otras referencias se conservan.
 
 ## Validación
 

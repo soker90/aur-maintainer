@@ -1,5 +1,9 @@
 import { createHash } from 'node:crypto'
-import type { Connector, ConnectorContext } from '../connectors.js'
+import {
+  isRecord,
+  type Connector,
+  type ConnectorContext
+} from '../connectors.js'
 import { isSupportedPackageVersion } from '../version.js'
 import type { PackageDefinition, UpdateCandidate } from '../types.js'
 
@@ -62,10 +66,12 @@ export function createPipConnector(context: ConnectorContext): Connector {
         )
       }
 
-      let sha256: unknown = isRecord(sourceFile.digests)
-        ? sourceFile.digests.sha256
-        : undefined
-      if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(sha256)) {
+      let sha256 =
+        isRecord(sourceFile.digests) &&
+        typeof sourceFile.digests.sha256 === 'string'
+          ? sourceFile.digests.sha256
+          : undefined
+      if (!sha256 || !/^[a-f0-9]{64}$/i.test(sha256)) {
         const archive = await context.fetch(sourceFile.url)
         if (!archive.ok) {
           throw new Error(
@@ -85,8 +91,4 @@ export function createPipConnector(context: ConnectorContext): Connector {
       }
     }
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

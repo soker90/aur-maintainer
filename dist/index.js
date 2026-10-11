@@ -3687,9 +3687,9 @@ var hasRequiredConstants$3;
 function requireConstants$3 () {
 	if (hasRequiredConstants$3) return constants$3;
 	hasRequiredConstants$3 = 1;
-	(function (exports) {
-		Object.defineProperty(exports, "__esModule", { value: true });
-		exports.SPECIAL_HEADERS = exports.HEADER_STATE = exports.MINOR = exports.MAJOR = exports.CONNECTION_TOKEN_CHARS = exports.HEADER_CHARS = exports.TOKEN = exports.STRICT_TOKEN = exports.HEX = exports.URL_CHAR = exports.STRICT_URL_CHAR = exports.USERINFO_CHARS = exports.MARK = exports.ALPHANUM = exports.NUM = exports.HEX_MAP = exports.NUM_MAP = exports.ALPHA = exports.FINISH = exports.H_METHOD_MAP = exports.METHOD_MAP = exports.METHODS_RTSP = exports.METHODS_ICE = exports.METHODS_HTTP = exports.METHODS = exports.LENIENT_FLAGS = exports.FLAGS = exports.TYPE = exports.ERROR = void 0;
+	(function (exports$1) {
+		Object.defineProperty(exports$1, "__esModule", { value: true });
+		exports$1.SPECIAL_HEADERS = exports$1.HEADER_STATE = exports$1.MINOR = exports$1.MAJOR = exports$1.CONNECTION_TOKEN_CHARS = exports$1.HEADER_CHARS = exports$1.TOKEN = exports$1.STRICT_TOKEN = exports$1.HEX = exports$1.URL_CHAR = exports$1.STRICT_URL_CHAR = exports$1.USERINFO_CHARS = exports$1.MARK = exports$1.ALPHANUM = exports$1.NUM = exports$1.HEX_MAP = exports$1.NUM_MAP = exports$1.ALPHA = exports$1.FINISH = exports$1.H_METHOD_MAP = exports$1.METHOD_MAP = exports$1.METHODS_RTSP = exports$1.METHODS_ICE = exports$1.METHODS_HTTP = exports$1.METHODS = exports$1.LENIENT_FLAGS = exports$1.FLAGS = exports$1.TYPE = exports$1.ERROR = void 0;
 		const utils_1 = requireUtils();
 		(function (ERROR) {
 		    ERROR[ERROR["OK"] = 0] = "OK";
@@ -3717,12 +3717,12 @@ function requireConstants$3 () {
 		    ERROR[ERROR["PAUSED_UPGRADE"] = 22] = "PAUSED_UPGRADE";
 		    ERROR[ERROR["PAUSED_H2_UPGRADE"] = 23] = "PAUSED_H2_UPGRADE";
 		    ERROR[ERROR["USER"] = 24] = "USER";
-		})(exports.ERROR || (exports.ERROR = {}));
+		})(exports$1.ERROR || (exports$1.ERROR = {}));
 		(function (TYPE) {
 		    TYPE[TYPE["BOTH"] = 0] = "BOTH";
 		    TYPE[TYPE["REQUEST"] = 1] = "REQUEST";
 		    TYPE[TYPE["RESPONSE"] = 2] = "RESPONSE";
-		})(exports.TYPE || (exports.TYPE = {}));
+		})(exports$1.TYPE || (exports$1.TYPE = {}));
 		(function (FLAGS) {
 		    FLAGS[FLAGS["CONNECTION_KEEP_ALIVE"] = 1] = "CONNECTION_KEEP_ALIVE";
 		    FLAGS[FLAGS["CONNECTION_CLOSE"] = 2] = "CONNECTION_CLOSE";
@@ -3734,12 +3734,12 @@ function requireConstants$3 () {
 		    FLAGS[FLAGS["TRAILING"] = 128] = "TRAILING";
 		    // 1 << 8 is unused
 		    FLAGS[FLAGS["TRANSFER_ENCODING"] = 512] = "TRANSFER_ENCODING";
-		})(exports.FLAGS || (exports.FLAGS = {}));
+		})(exports$1.FLAGS || (exports$1.FLAGS = {}));
 		(function (LENIENT_FLAGS) {
 		    LENIENT_FLAGS[LENIENT_FLAGS["HEADERS"] = 1] = "HEADERS";
 		    LENIENT_FLAGS[LENIENT_FLAGS["CHUNKED_LENGTH"] = 2] = "CHUNKED_LENGTH";
 		    LENIENT_FLAGS[LENIENT_FLAGS["KEEP_ALIVE"] = 4] = "KEEP_ALIVE";
-		})(exports.LENIENT_FLAGS || (exports.LENIENT_FLAGS = {}));
+		})(exports$1.LENIENT_FLAGS || (exports$1.LENIENT_FLAGS = {}));
 		var METHODS;
 		(function (METHODS) {
 		    METHODS[METHODS["DELETE"] = 0] = "DELETE";
@@ -3799,8 +3799,8 @@ function requireConstants$3 () {
 		    METHODS[METHODS["RECORD"] = 44] = "RECORD";
 		    /* RAOP */
 		    METHODS[METHODS["FLUSH"] = 45] = "FLUSH";
-		})(METHODS = exports.METHODS || (exports.METHODS = {}));
-		exports.METHODS_HTTP = [
+		})(METHODS = exports$1.METHODS || (exports$1.METHODS = {}));
+		exports$1.METHODS_HTTP = [
 		    METHODS.DELETE,
 		    METHODS.GET,
 		    METHODS.HEAD,
@@ -3838,10 +3838,10 @@ function requireConstants$3 () {
 		    // TODO(indutny): should we allow it with HTTP?
 		    METHODS.SOURCE,
 		];
-		exports.METHODS_ICE = [
+		exports$1.METHODS_ICE = [
 		    METHODS.SOURCE,
 		];
-		exports.METHODS_RTSP = [
+		exports$1.METHODS_RTSP = [
 		    METHODS.OPTIONS,
 		    METHODS.DESCRIBE,
 		    METHODS.ANNOUNCE,
@@ -3858,59 +3858,59 @@ function requireConstants$3 () {
 		    METHODS.GET,
 		    METHODS.POST,
 		];
-		exports.METHOD_MAP = utils_1.enumToMap(METHODS);
-		exports.H_METHOD_MAP = {};
-		Object.keys(exports.METHOD_MAP).forEach((key) => {
+		exports$1.METHOD_MAP = utils_1.enumToMap(METHODS);
+		exports$1.H_METHOD_MAP = {};
+		Object.keys(exports$1.METHOD_MAP).forEach((key) => {
 		    if (/^H/.test(key)) {
-		        exports.H_METHOD_MAP[key] = exports.METHOD_MAP[key];
+		        exports$1.H_METHOD_MAP[key] = exports$1.METHOD_MAP[key];
 		    }
 		});
 		(function (FINISH) {
 		    FINISH[FINISH["SAFE"] = 0] = "SAFE";
 		    FINISH[FINISH["SAFE_WITH_CB"] = 1] = "SAFE_WITH_CB";
 		    FINISH[FINISH["UNSAFE"] = 2] = "UNSAFE";
-		})(exports.FINISH || (exports.FINISH = {}));
-		exports.ALPHA = [];
+		})(exports$1.FINISH || (exports$1.FINISH = {}));
+		exports$1.ALPHA = [];
 		for (let i = 'A'.charCodeAt(0); i <= 'Z'.charCodeAt(0); i++) {
 		    // Upper case
-		    exports.ALPHA.push(String.fromCharCode(i));
+		    exports$1.ALPHA.push(String.fromCharCode(i));
 		    // Lower case
-		    exports.ALPHA.push(String.fromCharCode(i + 0x20));
+		    exports$1.ALPHA.push(String.fromCharCode(i + 0x20));
 		}
-		exports.NUM_MAP = {
+		exports$1.NUM_MAP = {
 		    0: 0, 1: 1, 2: 2, 3: 3, 4: 4,
 		    5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
 		};
-		exports.HEX_MAP = {
+		exports$1.HEX_MAP = {
 		    0: 0, 1: 1, 2: 2, 3: 3, 4: 4,
 		    5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
 		    A: 0XA, B: 0XB, C: 0XC, D: 0XD, E: 0XE, F: 0XF,
 		    a: 0xa, b: 0xb, c: 0xc, d: 0xd, e: 0xe, f: 0xf,
 		};
-		exports.NUM = [
+		exports$1.NUM = [
 		    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		];
-		exports.ALPHANUM = exports.ALPHA.concat(exports.NUM);
-		exports.MARK = ['-', '_', '.', '!', '~', '*', '\'', '(', ')'];
-		exports.USERINFO_CHARS = exports.ALPHANUM
-		    .concat(exports.MARK)
+		exports$1.ALPHANUM = exports$1.ALPHA.concat(exports$1.NUM);
+		exports$1.MARK = ['-', '_', '.', '!', '~', '*', '\'', '(', ')'];
+		exports$1.USERINFO_CHARS = exports$1.ALPHANUM
+		    .concat(exports$1.MARK)
 		    .concat(['%', ';', ':', '&', '=', '+', '$', ',']);
 		// TODO(indutny): use RFC
-		exports.STRICT_URL_CHAR = [
+		exports$1.STRICT_URL_CHAR = [
 		    '!', '"', '$', '%', '&', '\'',
 		    '(', ')', '*', '+', ',', '-', '.', '/',
 		    ':', ';', '<', '=', '>',
 		    '@', '[', '\\', ']', '^', '_',
 		    '`',
 		    '{', '|', '}', '~',
-		].concat(exports.ALPHANUM);
-		exports.URL_CHAR = exports.STRICT_URL_CHAR
+		].concat(exports$1.ALPHANUM);
+		exports$1.URL_CHAR = exports$1.STRICT_URL_CHAR
 		    .concat(['\t', '\f']);
 		// All characters with 0x80 bit set to 1
 		for (let i = 0x80; i <= 0xff; i++) {
-		    exports.URL_CHAR.push(i);
+		    exports$1.URL_CHAR.push(i);
 		}
-		exports.HEX = exports.NUM.concat(['a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F']);
+		exports$1.HEX = exports$1.NUM.concat(['a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F']);
 		/* Tokens as defined by rfc 2616. Also lowercases them.
 		 *        token       = 1*<any CHAR except CTLs or separators>
 		 *     separators     = "(" | ")" | "<" | ">" | "@"
@@ -3918,27 +3918,27 @@ function requireConstants$3 () {
 		 *                    | "/" | "[" | "]" | "?" | "="
 		 *                    | "{" | "}" | SP | HT
 		 */
-		exports.STRICT_TOKEN = [
+		exports$1.STRICT_TOKEN = [
 		    '!', '#', '$', '%', '&', '\'',
 		    '*', '+', '-', '.',
 		    '^', '_', '`',
 		    '|', '~',
-		].concat(exports.ALPHANUM);
-		exports.TOKEN = exports.STRICT_TOKEN.concat([' ']);
+		].concat(exports$1.ALPHANUM);
+		exports$1.TOKEN = exports$1.STRICT_TOKEN.concat([' ']);
 		/*
 		 * Verify that a char is a valid visible (printable) US-ASCII
 		 * character or %x80-FF
 		 */
-		exports.HEADER_CHARS = ['\t'];
+		exports$1.HEADER_CHARS = ['\t'];
 		for (let i = 32; i <= 255; i++) {
 		    if (i !== 127) {
-		        exports.HEADER_CHARS.push(i);
+		        exports$1.HEADER_CHARS.push(i);
 		    }
 		}
 		// ',' = \x44
-		exports.CONNECTION_TOKEN_CHARS = exports.HEADER_CHARS.filter((c) => c !== 44);
-		exports.MAJOR = exports.NUM_MAP;
-		exports.MINOR = exports.MAJOR;
+		exports$1.CONNECTION_TOKEN_CHARS = exports$1.HEADER_CHARS.filter((c) => c !== 44);
+		exports$1.MAJOR = exports$1.NUM_MAP;
+		exports$1.MINOR = exports$1.MAJOR;
 		var HEADER_STATE;
 		(function (HEADER_STATE) {
 		    HEADER_STATE[HEADER_STATE["GENERAL"] = 0] = "GENERAL";
@@ -3950,8 +3950,8 @@ function requireConstants$3 () {
 		    HEADER_STATE[HEADER_STATE["CONNECTION_CLOSE"] = 6] = "CONNECTION_CLOSE";
 		    HEADER_STATE[HEADER_STATE["CONNECTION_UPGRADE"] = 7] = "CONNECTION_UPGRADE";
 		    HEADER_STATE[HEADER_STATE["TRANSFER_ENCODING_CHUNKED"] = 8] = "TRANSFER_ENCODING_CHUNKED";
-		})(HEADER_STATE = exports.HEADER_STATE || (exports.HEADER_STATE = {}));
-		exports.SPECIAL_HEADERS = {
+		})(HEADER_STATE = exports$1.HEADER_STATE || (exports$1.HEADER_STATE = {}));
+		exports$1.SPECIAL_HEADERS = {
 		    'connection': HEADER_STATE.CONNECTION,
 		    'content-length': HEADER_STATE.CONTENT_LENGTH,
 		    'proxy-connection': HEADER_STATE.CONNECTION,
@@ -8846,10 +8846,10 @@ function requireClientH1 () {
 	const TIMEOUT_KEEP_ALIVE = 8 | USE_NATIVE_TIMER;
 
 	class Parser {
-	  constructor (client, socket, { exports }) {
+	  constructor (client, socket, { exports: exports$1 }) {
 	    assert(Number.isFinite(client[kMaxHeadersSize]) && client[kMaxHeadersSize] > 0);
 
-	    this.llhttp = exports;
+	    this.llhttp = exports$1;
 	    this.ptr = this.llhttp.llhttp_alloc(constants.TYPE.RESPONSE);
 	    this.client = client;
 	    this.socket = socket;
@@ -29267,8 +29267,6 @@ class Alias extends NodeBase {
      * instance of the `source` anchor before this node.
      */
     resolve(doc, ctx) {
-        if (ctx?.maxAliasCount === 0)
-            throw new ReferenceError('Alias resolution is disabled');
         let nodes;
         if (ctx?.aliasResolveCache) {
             nodes = ctx.aliasResolveCache;
@@ -29291,40 +29289,38 @@ class Alias extends NodeBase {
             if (node.anchor === this.source)
                 found = node;
         }
-        if (found && ctx) {
-            const { anchors, doc, maxAliasCount } = ctx;
-            let data = anchors.get(found);
-            if (!data) {
-                // Resolve anchors for Node.prototype.toJS()
-                toJS(found, null, ctx);
-                data = anchors.get(found);
-            }
-            /* istanbul ignore if */
-            if (data?.res === undefined) {
-                const msg = 'This should not happen: Alias anchor was not resolved?';
-                throw new ReferenceError(msg);
-            }
-            if (maxAliasCount >= 0) {
-                data.count += 1;
-                if (data.aliasCount === 0)
-                    data.aliasCount = getAliasCount(doc, found, anchors);
-                if (data.count * data.aliasCount > maxAliasCount) {
-                    const msg = 'Excessive alias count indicates a resource exhaustion attack';
-                    throw new ReferenceError(msg);
-                }
-            }
-        }
         return found;
     }
     toJSON(_arg, ctx) {
         if (!ctx)
             return { source: this.source };
-        const source = this.resolve(ctx.doc, ctx);
+        const { anchors, doc, maxAliasCount } = ctx;
+        const source = this.resolve(doc, ctx);
         if (!source) {
             const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
             throw new ReferenceError(msg);
         }
-        return ctx.anchors.get(source).res;
+        let data = anchors.get(source);
+        if (!data) {
+            // Resolve anchors for Node.prototype.toJS()
+            toJS(source, null, ctx);
+            data = anchors.get(source);
+        }
+        /* istanbul ignore if */
+        if (data?.res === undefined) {
+            const msg = 'This should not happen: Alias anchor was not resolved?';
+            throw new ReferenceError(msg);
+        }
+        if (maxAliasCount >= 0) {
+            data.count += 1;
+            if (data.aliasCount === 0)
+                data.aliasCount = getAliasCount(doc, source, anchors);
+            if (data.count * data.aliasCount > maxAliasCount) {
+                const msg = 'Excessive alias count indicates a resource exhaustion attack';
+                throw new ReferenceError(msg);
+            }
+        }
+        return data.res;
     }
     toString(ctx, _onComment, _onChompKeep) {
         const src = `*${this.source}`;
@@ -30401,18 +30397,18 @@ const isMergeKey = (ctx, key) => (merge.identify(key) ||
         merge.identify(key.value))) &&
     ctx?.doc.schema.tags.some(tag => tag.tag === merge.tag && tag.default);
 function addMergeToJSMap(ctx, map, value) {
-    const source = resolveAliasValue(ctx, value);
-    if (isSeq(source))
-        for (const it of source.items)
+    value = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
+    if (isSeq(value))
+        for (const it of value.items)
             mergeValue(ctx, map, it);
-    else if (Array.isArray(source))
-        for (const it of source)
+    else if (Array.isArray(value))
+        for (const it of value)
             mergeValue(ctx, map, it);
     else
-        mergeValue(ctx, map, source);
+        mergeValue(ctx, map, value);
 }
 function mergeValue(ctx, map, value) {
-    const source = resolveAliasValue(ctx, value);
+    const source = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
     if (!isMap(source))
         throw new Error('Merge sources must be maps or map aliases');
     const srcMap = source.toJSON(null, ctx, Map);
@@ -30434,9 +30430,6 @@ function mergeValue(ctx, map, value) {
         }
     }
     return map;
-}
-function resolveAliasValue(ctx, value) {
-    return ctx && isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
 }
 
 function addPairToJSMap(ctx, map, { key, value }) {
@@ -30989,8 +30982,7 @@ function stringifyNumber({ format, minFractionDigits, tag, value }) {
     if (!format &&
         minFractionDigits &&
         (!tag || tag === 'tag:yaml.org,2002:float') &&
-        /^-?\d/.test(n) &&
-        !n.includes('e')) {
+        /^\d/.test(n)) {
         let i = n.indexOf('.');
         if (i < 0) {
             i = n.length;
@@ -33171,47 +33163,46 @@ function plainValue(source, onError) {
     }
     if (badChar)
         onError(0, 'BAD_SCALAR_START', `Plain value cannot start with ${badChar}`);
-    return unfoldLines(source);
+    return foldLines(source);
 }
 function singleQuotedValue(source, onError) {
     if (source[source.length - 1] !== "'" || source.length === 1)
         onError(source.length, 'MISSING_CHAR', "Missing closing 'quote");
-    return unfoldLines(source.slice(1, -1)).replace(/''/g, "'");
+    return foldLines(source.slice(1, -1)).replace(/''/g, "'");
 }
-function unfoldLines(source) {
-    const line = /(.*?)\r?\n/sy;
-    let match = line.exec(source);
-    if (!match)
-        return source;
+function foldLines(source) {
     /**
-     * The negative lookbehinds in these RegExps are to
+     * The negative lookbehind here and in the `re` RegExp is to
      * prevent causing a polynomial search time in certain cases.
      *
-     * The try-catch is for Safari < 16.4 and other old browsers:
+     * The try-catch is for Safari, which doesn't support this yet:
      * https://caniuse.com/js-regexp-lookbehind
      */
-    let trimEnd, trimBoth;
+    let first, line;
     try {
-        trimEnd = new RegExp('(?<![ \t])[ \t]+$');
-        trimBoth = new RegExp('^[ \t]+|(?<![ \t])[ \t]+$', 'g');
+        first = new RegExp('(.*?)(?<![ \t])[ \t]*\r?\n', 'sy');
+        line = new RegExp('[ \t]*(.*?)(?:(?<![ \t])[ \t]*)?\r?\n', 'sy');
     }
     catch {
-        trimEnd = /[ \t]+$/;
-        trimBoth = /^[ \t]+|[ \t]+$/g;
+        first = /(.*?)[ \t]*\r?\n/sy;
+        line = /[ \t]*(.*?)[ \t]*\r?\n/sy;
     }
-    let res = match[1].replace(trimEnd, '');
+    let match = first.exec(source);
+    if (!match)
+        return source;
+    let res = match[1];
     let sep = ' ';
-    let pos = line.lastIndex;
+    let pos = first.lastIndex;
+    line.lastIndex = pos;
     while ((match = line.exec(source))) {
-        const lm = match[1].replace(trimBoth, '');
-        if (lm === '') {
+        if (match[1] === '') {
             if (sep === '\n')
                 res += sep;
             else
                 sep = '\n';
         }
         else {
-            res += sep + lm;
+            res += sep + match[1];
             sep = ' ';
         }
         pos = line.lastIndex;
@@ -33250,7 +33241,7 @@ function doubleQuotedValue(source, onError) {
                     next = source[++i + 1];
             }
             else if (next === 'x' || next === 'u' || next === 'U') {
-                const length = next === 'x' ? 2 : next === 'u' ? 4 : 8;
+                const length = { x: 2, u: 4, U: 8 }[next];
                 res += parseCharCode(source, i + 1, length, onError);
                 i += length;
             }
@@ -33320,14 +33311,12 @@ function parseCharCode(source, offset, length, onError) {
     const cc = source.substr(offset, length);
     const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
     const code = ok ? parseInt(cc, 16) : NaN;
-    try {
-        return String.fromCodePoint(code);
-    }
-    catch {
+    if (isNaN(code)) {
         const raw = source.substr(offset - 2, length + 2);
         onError(offset - 2, 'BAD_DQ_ESCAPE', `Invalid escape sequence ${raw}`);
         return raw;
     }
+    return String.fromCodePoint(code);
 }
 
 function composeScalar(ctx, token, tagToken, onError) {
@@ -33662,10 +33651,8 @@ class Composer {
             }
         }
         if (afterDoc) {
-            for (let i = 0; i < this.errors.length; ++i)
-                doc.errors.push(this.errors[i]);
-            for (let i = 0; i < this.warnings.length; ++i)
-                doc.warnings.push(this.warnings[i]);
+            Array.prototype.push.apply(doc.errors, this.errors);
+            Array.prototype.push.apply(doc.warnings, this.warnings);
         }
         else {
             doc.errors = this.errors;
@@ -34163,7 +34150,7 @@ class Lexer {
             const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
             this.indentNext = this.indentValue + 1;
             this.indentValue += n;
-            return 'block-start';
+            return yield* this.parseBlockStart();
         }
         return 'doc';
     }
@@ -34484,36 +34471,32 @@ class Lexer {
         return 0;
     }
     *pushIndicators() {
-        let n = 0;
-        loop: while (true) {
-            switch (this.charAt(0)) {
-                case '!':
-                    n += yield* this.pushTag();
-                    n += yield* this.pushSpaces(true);
-                    continue loop;
-                case '&':
-                    n += yield* this.pushUntil(isNotAnchorChar);
-                    n += yield* this.pushSpaces(true);
-                    continue loop;
-                case '-': // this is an error
-                case '?': // this is an error outside flow collections
-                case ':': {
-                    const inFlow = this.flowLevel > 0;
-                    const ch1 = this.charAt(1);
-                    if (isEmpty(ch1) || (inFlow && flowIndicatorChars.has(ch1))) {
-                        if (!inFlow)
-                            this.indentNext = this.indentValue + 1;
-                        else if (this.flowKey)
-                            this.flowKey = false;
-                        n += yield* this.pushCount(1);
-                        n += yield* this.pushSpaces(true);
-                        continue loop;
-                    }
+        switch (this.charAt(0)) {
+            case '!':
+                return ((yield* this.pushTag()) +
+                    (yield* this.pushSpaces(true)) +
+                    (yield* this.pushIndicators()));
+            case '&':
+                return ((yield* this.pushUntil(isNotAnchorChar)) +
+                    (yield* this.pushSpaces(true)) +
+                    (yield* this.pushIndicators()));
+            case '-': // this is an error
+            case '?': // this is an error outside flow collections
+            case ':': {
+                const inFlow = this.flowLevel > 0;
+                const ch1 = this.charAt(1);
+                if (isEmpty(ch1) || (inFlow && flowIndicatorChars.has(ch1))) {
+                    if (!inFlow)
+                        this.indentNext = this.indentValue + 1;
+                    else if (this.flowKey)
+                        this.flowKey = false;
+                    return ((yield* this.pushCount(1)) +
+                        (yield* this.pushSpaces(true)) +
+                        (yield* this.pushIndicators()));
                 }
             }
-            break loop;
         }
-        return n;
+        return 0;
     }
     *pushTag() {
         if (this.charAt(1) === '<') {
@@ -34675,14 +34658,6 @@ function getFirstKeyStartProps(prev) {
     }
     return prev.splice(i, prev.length);
 }
-function arrayPushArray(target, source) {
-    // May exhaust call stack with large `source` array
-    if (source.length < 1e5)
-        Array.prototype.push.apply(target, source);
-    else
-        for (let i = 0; i < source.length; ++i)
-            target.push(source[i]);
-}
 function fixFlowSeqItems(fc) {
     if (fc.start.type === 'flow-seq-start') {
         for (const it of fc.items) {
@@ -34695,12 +34670,12 @@ function fixFlowSeqItems(fc) {
                 delete it.key;
                 if (isFlowToken(it.value)) {
                     if (it.value.end)
-                        arrayPushArray(it.value.end, it.sep);
+                        Array.prototype.push.apply(it.value.end, it.sep);
                     else
                         it.value.end = it.sep;
                 }
                 else
-                    arrayPushArray(it.start, it.sep);
+                    Array.prototype.push.apply(it.start, it.sep);
                 delete it.sep;
             }
         }
@@ -35118,7 +35093,7 @@ class Parser {
                         const prev = map.items[map.items.length - 2];
                         const end = prev?.value?.end;
                         if (Array.isArray(end)) {
-                            arrayPushArray(end, it.start);
+                            Array.prototype.push.apply(end, it.start);
                             end.push(this.sourceToken);
                             map.items.pop();
                             return;
@@ -35333,7 +35308,7 @@ class Parser {
                         const prev = seq.items[seq.items.length - 2];
                         const end = prev?.value?.end;
                         if (Array.isArray(end)) {
-                            arrayPushArray(end, it.start);
+                            Array.prototype.push.apply(end, it.start);
                             end.push(this.sourceToken);
                             seq.items.pop();
                             return;
@@ -35640,18 +35615,18 @@ async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml')
     return parsePackageConfig(parse(content), filePath);
 }
 function parsePackageConfig(value, filePath) {
-    if (!isRecord$3(value))
+    if (!isRecord$1(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (typeof value.connector !== 'string' || value.connector.trim() === '') {
         throw new Error(filePath + ': "connector" is required');
     }
-    if (value.config !== undefined && !isRecord$3(value.config)) {
+    if (value.config !== undefined && !isRecord$1(value.config)) {
         throw new Error(filePath + ': "config" must be an object');
     }
     if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
         throw new Error(filePath + ': "timeout" must be a positive integer number of seconds');
     }
-    if (value.updates !== undefined && !isRecord$3(value.updates)) {
+    if (value.updates !== undefined && !isRecord$1(value.updates)) {
         throw new Error(filePath + ': "updates" must be an object');
     }
     const updates = value.updates ?? {};
@@ -35673,7 +35648,7 @@ function parsePackageConfig(value, filePath) {
 function parseMaintainerConfig(value, filePath) {
     if (value === null || value === undefined)
         return {};
-    if (!isRecord$3(value))
+    if (!isRecord$1(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (value.packages !== undefined && !Array.isArray(value.packages)) {
         throw new Error(filePath + ': "packages" must be an array');
@@ -35681,7 +35656,7 @@ function parseMaintainerConfig(value, filePath) {
     const packages = value.packages?.map((entry, index) => {
         if (typeof entry === 'string')
             return entry;
-        if (!isRecord$3(entry)) {
+        if (!isRecord$1(entry)) {
             throw new Error(filePath +
                 ': "packages[' +
                 index +
@@ -35695,7 +35670,7 @@ function parseMaintainerConfig(value, filePath) {
     });
     return { packages };
 }
-function isRecord$3(value) {
+function isRecord$1(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 function isPositiveInteger(value) {
@@ -35803,6 +35778,34 @@ function isWithinWorkspace(packagePath, workspace) {
     const relative = path.relative(workspace, packagePath);
     return (relative === '' ||
         (!relative.startsWith('..') && !path.isAbsolute(relative)));
+}
+
+function createGitConnector(context) {
+    return {
+        name: 'git',
+        async detect(_pkg, config) {
+            const repository = config.repository;
+            if (typeof repository !== 'string' ||
+                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+                throw new Error('git connector requires config.repository in GitHub owner/name form');
+            }
+            const latest = await fetchLatestGithubTag(context, repository);
+            const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.tag)}.tar.gz`;
+            const archive = await context.fetch(source);
+            if (!archive.ok) {
+                throw new Error(`Git source download failed for ${repository}@${latest.tag}: ${archive.status} ${archive.statusText}`);
+            }
+            const sha256 = createHash('sha256')
+                .update(new Uint8Array(await archive.arrayBuffer()))
+                .digest('hex');
+            return {
+                version: latest.version,
+                source,
+                sha256,
+                metadata: { repository, tag: latest.tag }
+            };
+        }
+    };
 }
 
 const INVALID_VERSION_CHARACTER = /[-:/<>=\s]/;
@@ -35934,71 +35937,6 @@ function isTrailingEmptySegment(segments, index) {
         segments[index]?.parts[0] === '');
 }
 
-function createGitConnector(context) {
-    return {
-        name: 'git',
-        async detect(_pkg, config) {
-            const repository = config.repository;
-            if (typeof repository !== 'string' ||
-                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
-                throw new Error('git connector requires config.repository in GitHub owner/name form');
-            }
-            const tags = [];
-            for (let page = 1;; page += 1) {
-                const headers = {
-                    accept: 'application/vnd.github+json',
-                    'user-agent': 'aur-maintainer',
-                    'x-github-api-version': '2026-03-10'
-                };
-                if (context.token)
-                    headers.authorization = `Bearer ${context.token}`;
-                const response = await context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, { headers });
-                if (!response.ok) {
-                    throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
-                }
-                const pageTags = (await response.json());
-                if (!Array.isArray(pageTags)) {
-                    throw new Error(`GitHub tags response for ${repository} is not an array`);
-                }
-                tags.push(...pageTags);
-                if (pageTags.length < 100)
-                    break;
-            }
-            const candidates = tags
-                .filter(isRecord$2)
-                .filter((tag) => typeof tag.name === 'string')
-                .map((tag) => {
-                const name = tag.name;
-                const version = name.trim().replace(/^v(?=\d)/i, '');
-                return { name, version };
-            })
-                .filter(({ version }) => isSupportedPackageVersion(version))
-                .toSorted((left, right) => comparePackageVersions(left.version, right.version));
-            const latest = candidates.at(-1);
-            if (!latest) {
-                throw new Error(`GitHub tags for ${repository} contain no supported versions`);
-            }
-            const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.name)}.tar.gz`;
-            const archive = await context.fetch(source);
-            if (!archive.ok) {
-                throw new Error(`Git source download failed for ${repository}@${latest.name}: ${archive.status} ${archive.statusText}`);
-            }
-            const sha256 = createHash('sha256')
-                .update(new Uint8Array(await archive.arrayBuffer()))
-                .digest('hex');
-            return {
-                version: latest.version,
-                source,
-                sha256,
-                metadata: { repository, tag: latest.name }
-            };
-        }
-    };
-}
-function isRecord$2(value) {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function createPipConnector(context) {
     return {
         name: 'pip',
@@ -36013,30 +35951,31 @@ function createPipConnector(context) {
                 throw new Error(`PyPI request failed for ${packageName}: ${response.status} ${response.statusText}`);
             }
             const metadata = (await response.json());
-            if (!isRecord$1(metadata) || !isRecord$1(metadata.info)) {
+            if (!isRecord(metadata) || !isRecord(metadata.info)) {
                 throw new Error(`PyPI metadata for ${packageName} is invalid`);
             }
             const version = metadata.info.version;
             if (typeof version !== 'string' || !isSupportedPackageVersion(version)) {
                 throw new Error(`PyPI latest version for ${packageName} is not a supported version`);
             }
-            if (!isRecord$1(metadata.releases)) {
+            if (!isRecord(metadata.releases)) {
                 throw new Error(`PyPI metadata for ${packageName} has no releases`);
             }
             const releases = metadata.releases[version];
             if (!Array.isArray(releases)) {
                 throw new Error(`PyPI metadata for ${packageName}@${version} has no release files`);
             }
-            const sourceFile = releases.find((file) => isRecord$1(file) &&
+            const sourceFile = releases.find((file) => isRecord(file) &&
                 file.packagetype === 'sdist' &&
                 typeof file.url === 'string');
-            if (!isRecord$1(sourceFile) || typeof sourceFile.url !== 'string') {
+            if (!isRecord(sourceFile) || typeof sourceFile.url !== 'string') {
                 throw new Error(`PyPI release ${packageName}@${version} has no source distribution`);
             }
-            let sha256 = isRecord$1(sourceFile.digests)
+            let sha256 = isRecord(sourceFile.digests) &&
+                typeof sourceFile.digests.sha256 === 'string'
                 ? sourceFile.digests.sha256
                 : undefined;
-            if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(sha256)) {
+            if (!sha256 || !/^[a-f0-9]{64}$/i.test(sha256)) {
                 const archive = await context.fetch(sourceFile.url);
                 if (!archive.ok) {
                     throw new Error(`PyPI source download failed for ${packageName}@${version}: ${archive.status} ${archive.statusText}`);
@@ -36053,9 +35992,6 @@ function createPipConnector(context) {
             };
         }
     };
-}
-function isRecord$1(value) {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 const execFile$3 = promisify(execFile$4);
@@ -36270,24 +36206,32 @@ class GithubTagConnector {
             repository.split('/').some((part) => !part)) {
             throw new Error('github-tag connector requires config.repository in owner/name form');
         }
-        const tags = [];
-        let page = 1;
-        while (true) {
-            const response = await fetchGithub(this.context, `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`);
-            if (!response.ok) {
-                throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
-            }
-            const pageTags = (await response.json());
-            if (!Array.isArray(pageTags)) {
-                throw new Error(`GitHub tags response for ${repository} is not an array`);
-            }
-            tags.push(...pageTags);
-            if (pageTags.length < 100)
-                break;
-            page += 1;
-        }
-        return parseLatestTag(repository, tags);
+        const { version, tag } = await fetchLatestGithubTag(this.context, repository);
+        return {
+            version,
+            metadata: { repository, tag }
+        };
     }
+}
+async function fetchLatestGithubTag(context, repository) {
+    const tags = [];
+    let page = 1;
+    while (true) {
+        const response = await fetchGithub(context, `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`);
+        if (!response.ok) {
+            throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
+        }
+        const pageTags = (await response.json());
+        if (!Array.isArray(pageTags)) {
+            throw new Error(`GitHub tags response for ${repository} is not an array`);
+        }
+        tags.push(...pageTags);
+        if (pageTags.length < 100)
+            break;
+        page += 1;
+    }
+    const latest = parseLatestTag(repository, tags);
+    return { version: latest.version, tag: latest.metadata.tag };
 }
 async function fetchGithub(context, url) {
     return context.fetch(url, githubRequestInit(context.token));
@@ -36458,8 +36402,11 @@ function applyPackageUpdates(content, updates, candidate) {
         sha256: candidate.sha256
     };
     let updated = replaceAssignment(content, 'pkgver', `pkgver=${candidate.version}`);
+    if (readPkgver(content) !== candidate.version) {
+        updated = resetPkgrel(updated);
+    }
     for (const field of ['version', 'source', 'sha256']) {
-        const template = updates[field];
+        const template = updates?.[field];
         const value = field === 'version' ? candidate.version : fields[field];
         if (template === undefined || value === undefined)
             continue;
@@ -36486,6 +36433,12 @@ function replaceAssignment(content, name, replacement) {
         throw new Error(`PKGBUILD must contain a "${name}" assignment`);
     }
     return content.replace(pattern, replacement);
+}
+function resetPkgrel(content) {
+    if (/^pkgrel=[^\n\r]+$/m.test(content)) {
+        return content.replace(/^pkgrel=[^\n\r]+$/m, 'pkgrel=1');
+    }
+    return content;
 }
 
 const execFile$1 = promisify(execFile$4);
@@ -36517,9 +36470,7 @@ async function requestGitHub(token, path, method = 'GET', body) {
 }
 function getRelativePackagePath(workspace, packagePath) {
     const relative = path.relative(workspace, packagePath);
-    if (relative === '' ||
-        relative.startsWith('..') ||
-        path.isAbsolute(relative)) {
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
         throw new Error('Package path must be inside the workspace');
     }
     return relative;
@@ -36569,36 +36520,41 @@ async function createValidationFailureIssue(workspace, options, git = hostGitRun
         throw new Error('No package changes are available for the validation failure branch');
     }
     await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
-    await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
-    const [owner, repo] = options.repository.split('/');
-    if (!owner || !repo) {
-        throw new Error('GITHUB_REPOSITORY must use owner/name form');
+    try {
+        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
+        const [owner, repo] = options.repository.split('/');
+        if (!owner || !repo) {
+            throw new Error('GITHUB_REPOSITORY must use owner/name form');
+        }
+        const branchUrl = 'https://github.com/' + options.repository + '/tree/' + branch;
+        const errorDetails = formatErrorDetails(options.error);
+        const body = [
+            '## AUR package validation failed',
+            '',
+            'Package: `' + options.pkg.name + '`',
+            'Detected update: ' + options.currentVersion + ' → ' + options.version,
+            'Branch: [' + branch + '](' + branchUrl + ')',
+            '',
+            '### Validation error',
+            '',
+            '~~~text',
+            errorDetails,
+            '~~~',
+            '',
+            'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
+        ].join('\n');
+        const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', {
+            title: 'validation failed: ' + options.pkg.name,
+            body
+        });
+        if (!isIssue(created)) {
+            throw new Error('GitHub did not return the created validation issue URL');
+        }
+        return created.html_url;
     }
-    const branchUrl = 'https://github.com/' + options.repository + '/tree/' + branch;
-    const errorDetails = formatErrorDetails(options.error);
-    const body = [
-        '## AUR package validation failed',
-        '',
-        'Package: `' + options.pkg.name + '`',
-        'Detected update: ' + options.currentVersion + ' → ' + options.version,
-        'Branch: [' + branch + '](' + branchUrl + ')',
-        '',
-        '### Validation error',
-        '',
-        '~~~text',
-        errorDetails,
-        '~~~',
-        '',
-        'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
-    ].join('\n');
-    const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', {
-        title: 'validation failed: ' + options.pkg.name,
-        body
-    });
-    if (!isIssue(created)) {
-        throw new Error('GitHub did not return the created validation issue URL');
+    finally {
+        await switchToBaseBranch(options.baseBranch, workspace, git);
     }
-    return created.html_url;
 }
 function formatErrorDetails(error) {
     if (error instanceof Error) {
@@ -36628,37 +36584,40 @@ async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1
     if (!updateCommit)
         return null;
     await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
-    await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
-    const [owner, repo] = options.repository.split('/');
-    if (!owner || !repo)
-        throw new Error('GITHUB_REPOSITORY must use owner/name form');
-    const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`);
-    const pullRequests = Array.isArray(existing) ? existing : [];
-    const current = pullRequests[0];
-    if (isPullRequest(current)) {
-        if (current.number === undefined) {
-            throw new Error('GitHub did not return the existing pull request number');
+    try {
+        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
+        const [owner, repo] = options.repository.split('/');
+        if (!owner || !repo)
+            throw new Error('GITHUB_REPOSITORY must use owner/name form');
+        const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`);
+        const pullRequests = Array.isArray(existing) ? existing : [];
+        const current = pullRequests[0];
+        if (isPullRequest(current)) {
+            if (current.number === undefined) {
+                throw new Error('GitHub did not return the existing pull request number');
+            }
+            await updatePullRequestMetadata(options.token, options.repository, current.number, pkg.name, options.currentVersion, options.version);
+            if (options.autoMerge) {
+                await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
+            }
+            return current.html_url;
         }
-        await updatePullRequestMetadata(options.token, options.repository, current.number, pkg.name, options.currentVersion, options.version);
+        const created = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls`, 'POST', {
+            title: `update: ${pkg.name}`,
+            body: getUpdatePullRequestBody(pkg.name, options.currentVersion, options.version),
+            head: branch,
+            base: options.baseBranch
+        });
+        if (!isPullRequest(created))
+            throw new Error('GitHub did not return the created pull request URL');
         if (options.autoMerge) {
-            await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
+            await waitForChecksAndMerge(options.token, options.repository, created, options.autoMergeTimeoutSeconds);
         }
+        return created.html_url;
+    }
+    finally {
         await switchToBaseBranch(options.baseBranch, workspace, git);
-        return current.html_url;
     }
-    const created = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls`, 'POST', {
-        title: `update: ${pkg.name}`,
-        body: getUpdatePullRequestBody(pkg.name, options.currentVersion, options.version),
-        head: branch,
-        base: options.baseBranch
-    });
-    if (!isPullRequest(created))
-        throw new Error('GitHub did not return the created pull request URL');
-    if (options.autoMerge) {
-        await waitForChecksAndMerge(options.token, options.repository, created, options.autoMergeTimeoutSeconds);
-    }
-    await switchToBaseBranch(options.baseBranch, workspace, git);
-    return created.html_url;
 }
 function getUpdatePullRequestBody(packageName, currentVersion, version) {
     return [
@@ -36825,7 +36784,8 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
         await runner.run('makepkg', ['--verifysource'], pkg.path);
         const generatedSrcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path);
         const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8');
-        if (generatedSrcinfo !== currentSrcinfo) {
+        if (generatedSrcinfo.replace(/\r\n/g, '\n').trim() !==
+            currentSrcinfo.replace(/\r\n/g, '\n').trim()) {
             throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`);
         }
         await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path);
@@ -36919,11 +36879,11 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
         const sshCommand = [
             'ssh',
             '-i',
-            keyPath,
+            `"${keyPath}"`,
             '-o',
             'IdentitiesOnly=yes',
             '-o',
-            'UserKnownHostsFile=' + knownHostsPath,
+            `"UserKnownHostsFile=${knownHostsPath}"`,
             '-o',
             'StrictHostKeyChecking=yes'
         ].join(' ');
@@ -36955,12 +36915,18 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
 function normalizeSshKey(key) {
     return key.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').trimEnd() + '\n';
 }
+const IGNORED_AUR_FILES = new Set([
+    'PKGBUILD',
+    '.SRCINFO',
+    'update.yml',
+    '.aur-maintainer.yml'
+]);
 async function getAurPackageFiles(packagePath) {
     const entries = await readdir$1(packagePath, { withFileTypes: true });
     const additionalFiles = entries
         .filter((entry) => entry.isFile())
         .map((entry) => entry.name)
-        .filter((name) => !['PKGBUILD', '.SRCINFO', 'update.yml'].includes(name))
+        .filter((name) => !IGNORED_AUR_FILES.has(name) && !name.startsWith('.git'))
         .toSorted();
     return ['PKGBUILD', '.SRCINFO', ...additionalFiles];
 }
@@ -36998,6 +36964,7 @@ async function run() {
                 else
                     info(`AUR package ${pkg.name} is already up to date`);
             }
+            setOutput('packages', JSON.stringify(packages.map((pkg) => ({ package: pkg.name }))));
             return;
         }
         const registryContext = {

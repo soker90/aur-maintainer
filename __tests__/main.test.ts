@@ -48,6 +48,7 @@ const { run } = await import('../src/main.js')
 
 describe('main.ts', () => {
   const originalWorkspace = process.env.GITHUB_WORKSPACE
+  const originalRepository = process.env.GITHUB_REPOSITORY
 
   const pkg: PackageDefinition = {
     name: 'example',
@@ -63,6 +64,7 @@ describe('main.ts', () => {
 
   beforeEach(() => {
     process.env.GITHUB_WORKSPACE = '/workspace'
+    process.env.GITHUB_REPOSITORY = 'test/repo'
     core.getInput.mockImplementation((name) =>
       name === 'github-token'
         ? 'test-token'
@@ -94,6 +96,7 @@ describe('main.ts', () => {
 
   afterEach(() => {
     process.env.GITHUB_WORKSPACE = originalWorkspace
+    process.env.GITHUB_REPOSITORY = originalRepository
     jest.resetAllMocks()
   })
 

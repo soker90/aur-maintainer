@@ -367,35 +367,48 @@ class GithubTagConnector implements Connector {
       )
     }
 
-    const tags = []
-    let page = 1
+    const { version, tag } = await fetchLatestGithubTag(
+      this.context,
+      repository
+    )
+    return {
+      version,
+      metadata: { repository, tag }
+    }
+  }
+}
 
-    while (true) {
-      const response = await fetchGithub(
-        this.context,
-        `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`
+export async function fetchLatestGithubTag(
+  context: ConnectorContext,
+  repository: string
+): Promise<{ version: string; tag: string }> {
+  const tags = []
+  let page = 1
+
+  while (true) {
+    const response = await fetchGithub(
+      context,
+      `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`
       )
-
-      if (!response.ok) {
-        throw new Error(
-          `GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`
-        )
-      }
-
-      const pageTags = (await response.json()) as unknown
-      if (!Array.isArray(pageTags)) {
-        throw new Error(
-          `GitHub tags response for ${repository} is not an array`
-        )
-      }
-
-      tags.push(...pageTags)
-      if (pageTags.length < 100) break
-      page += 1
     }
 
-    return parseLatestTag(repository, tags)
+    const pageTags = (await response.json()) as unknown
+    if (!Array.isArray(pageTags)) {
+      throw new Error(`GitHub tags response for ${repository} is not an array`)
+    }
+
+    tags.push(...pageTags)
+    if (pageTags.length < 100) break
+    page += 1
   }
+
+  const latest = parseLatestTag(repository, tags)
+  return { version: latest.version, tag: latest.metadata!.tag }
 }
 
 async function fetchGithub(
@@ -480,6 +493,6 @@ async function isFile(filePath: string): Promise<boolean> {
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

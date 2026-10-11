@@ -31,7 +31,10 @@ export async function validatePackage(
       pkg.path
     )
     const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8')
-    if (generatedSrcinfo !== currentSrcinfo) {
+    if (
+      generatedSrcinfo.replace(/\r\n/g, '\n').trim() !==
+      currentSrcinfo.replace(/\r\n/g, '\n').trim()
+    ) {
       throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`)
     }
 

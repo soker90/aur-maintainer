@@ -59,6 +59,10 @@ export async function run(): Promise<void> {
         if (published) core.info(`Published ${pkg.name} to the AUR`)
         else core.info(`AUR package ${pkg.name} is already up to date`)
       }
+      core.setOutput(
+        'packages',
+        JSON.stringify(packages.map((pkg) => ({ package: pkg.name })))
+      )
       return
     }
 

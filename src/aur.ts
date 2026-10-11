@@ -53,11 +53,11 @@ export async function publishAurPackage(
     const sshCommand = [
       'ssh',
       '-i',
-      keyPath,
+      `"${keyPath}"`,
       '-o',
       'IdentitiesOnly=yes',
       '-o',
-      'UserKnownHostsFile=' + knownHostsPath,
+      `"UserKnownHostsFile=${knownHostsPath}"`,
       '-o',
       'StrictHostKeyChecking=yes'
     ].join(' ')
@@ -119,6 +119,13 @@ export function normalizeSshKey(key: string): string {
   return key.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').trimEnd() + '\n'
 }
 
+const IGNORED_AUR_FILES = new Set([
+  'PKGBUILD',
+  '.SRCINFO',
+  'update.yml',
+  '.aur-maintainer.yml'
+])
+
 export async function getAurPackageFiles(
   packagePath: string
 ): Promise<string[]> {
@@ -126,7 +133,7 @@ export async function getAurPackageFiles(
   const additionalFiles = entries
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
-    .filter((name) => !['PKGBUILD', '.SRCINFO', 'update.yml'].includes(name))
+    .filter((name) => !IGNORED_AUR_FILES.has(name) && !name.startsWith('.git'))
     .toSorted()
 
   return ['PKGBUILD', '.SRCINFO', ...additionalFiles]

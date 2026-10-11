@@ -411,4 +411,98 @@ describe('update pull request creation', () => {
     )
     expect(String(fetchMock.mock.calls[3]?.[1]?.body)).toContain('SQUASH')
   })
+
+  it('supports a package at the repository root', async () => {
+    const rootPkg = {
+      name: 'root-pkg',
+      path: '/workspace',
+      pkgbuildPath: '/workspace/PKGBUILD',
+      srcinfoPath: '/workspace/.SRCINFO',
+      updateConfigPath: '/workspace/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
+      return ''
+    })
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ html_url: 'https://github.com/test/pr/1' }),
+          { status: 201 }
+        )
+      )
+
+    await expect(
+      createUpdatePullRequest(
+        '/workspace',
+        {
+          token: 'token',
+          repository: 'test/repo',
+          baseBranch: 'main',
+          updateBranch: 'update',
+          packages: [rootPkg],
+          currentVersion: '1.0.0',
+          version: '1.1.0',
+          autoMerge: false,
+          autoMergeTimeoutSeconds: 600
+        },
+        { run }
+      )
+    ).resolves.toBe('https://github.com/test/pr/1')
+
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['add', '--', 'PKGBUILD', '.SRCINFO'],
+      '/workspace'
+    )
+  })
+
+  it('restores the base branch after creating a validation failure issue', async () => {
+    const pkg = {
+      name: 'demo',
+      path: '/workspace/packages/demo',
+      pkgbuildPath: '/workspace/packages/demo/PKGBUILD',
+      srcinfoPath: '/workspace/packages/demo/.SRCINFO',
+      updateConfigPath: '/workspace/packages/demo/update.yml',
+      config: { connector: 'github-release', config: {} }
+    } satisfies PackageDefinition
+    const run = jest.fn().mockImplementation(async (_command, args) => {
+      if (args[0] === 'diff') return 'packages/demo/PKGBUILD\n'
+      if (args[0] === 'rev-parse') return 'update-commit-sha'
+      return ''
+    })
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ html_url: 'https://github.com/test/repo/issues/1' }),
+          { status: 201 }
+        )
+      )
+
+    await createValidationFailureIssue(
+      '/workspace',
+      {
+        token: 'token',
+        repository: 'test/repo',
+        baseBranch: 'main',
+        updateBranch: 'update',
+        pkg,
+        currentVersion: '1.0.0',
+        version: '1.1.0',
+        error: new Error('makepkg failed')
+      },
+      { run }
+    )
+
+    expect(run).toHaveBeenLastCalledWith(
+      'git',
+      ['switch', '-C', 'main', 'refs/remotes/origin/main'],
+      '/workspace'
+    )
+  })
 })

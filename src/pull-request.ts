@@ -51,11 +51,7 @@ function getRelativePackagePath(
   packagePath: string
 ): string {
   const relative = path.relative(workspace, packagePath)
-  if (
-    relative === '' ||
-    relative.startsWith('..') ||
-    path.isAbsolute(relative)
-  ) {
+  if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw new Error('Package path must be inside the workspace')
   }
   return relative
@@ -183,49 +179,53 @@ export async function createValidationFailureIssue(
     workspace,
     git
   )
-  await git.run(
-    'git',
-    ['push', '--force', '--set-upstream', 'origin', branch],
-    workspace
-  )
+  try {
+    await git.run(
+      'git',
+      ['push', '--force', '--set-upstream', 'origin', branch],
+      workspace
+    )
 
-  const [owner, repo] = options.repository.split('/')
-  if (!owner || !repo) {
-    throw new Error('GITHUB_REPOSITORY must use owner/name form')
-  }
-
-  const branchUrl =
-    'https://github.com/' + options.repository + '/tree/' + branch
-  const errorDetails = formatErrorDetails(options.error)
-  const body = [
-    '## AUR package validation failed',
-    '',
-    'Package: `' + options.pkg.name + '`',
-    'Detected update: ' + options.currentVersion + ' → ' + options.version,
-    'Branch: [' + branch + '](' + branchUrl + ')',
-    '',
-    '### Validation error',
-    '',
-    '~~~text',
-    errorDetails,
-    '~~~',
-    '',
-    'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
-  ].join('\n')
-
-  const created = await requestGitHub(
-    options.token,
-    '/repos/' + owner + '/' + repo + '/issues',
-    'POST',
-    {
-      title: 'validation failed: ' + options.pkg.name,
-      body
+    const [owner, repo] = options.repository.split('/')
+    if (!owner || !repo) {
+      throw new Error('GITHUB_REPOSITORY must use owner/name form')
     }
-  )
-  if (!isIssue(created)) {
-    throw new Error('GitHub did not return the created validation issue URL')
+
+    const branchUrl =
+      'https://github.com/' + options.repository + '/tree/' + branch
+    const errorDetails = formatErrorDetails(options.error)
+    const body = [
+      '## AUR package validation failed',
+      '',
+      'Package: `' + options.pkg.name + '`',
+      'Detected update: ' + options.currentVersion + ' → ' + options.version,
+      'Branch: [' + branch + '](' + branchUrl + ')',
+      '',
+      '### Validation error',
+      '',
+      '~~~text',
+      errorDetails,
+      '~~~',
+      '',
+      'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
+    ].join('\n')
+
+    const created = await requestGitHub(
+      options.token,
+      '/repos/' + owner + '/' + repo + '/issues',
+      'POST',
+      {
+        title: 'validation failed: ' + options.pkg.name,
+        body
+      }
+    )
+    if (!isIssue(created)) {
+      throw new Error('GitHub did not return the created validation issue URL')
+    }
+    return created.html_url
+  } finally {
+    await switchToBaseBranch(options.baseBranch, workspace, git)
   }
-  return created.html_url
 }
 
 function formatErrorDetails(error: unknown): string {
@@ -272,75 +272,79 @@ export async function createUpdatePullRequest(
     workspace,
     git
   )
-  await git.run(
-    'git',
-    ['push', '--force', '--set-upstream', 'origin', branch],
-    workspace
-  )
-
-  const [owner, repo] = options.repository.split('/')
-  if (!owner || !repo)
-    throw new Error('GITHUB_REPOSITORY must use owner/name form')
-
-  const existing = await requestGitHub(
-    options.token,
-    `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(
-      owner + ':' + branch
-    )}&base=${encodeURIComponent(options.baseBranch)}`
-  )
-  const pullRequests = Array.isArray(existing) ? existing : []
-  const current = pullRequests[0]
-  if (isPullRequest(current)) {
-    if (current.number === undefined) {
-      throw new Error('GitHub did not return the existing pull request number')
-    }
-    await updatePullRequestMetadata(
-      options.token,
-      options.repository,
-      current.number,
-      pkg.name,
-      options.currentVersion,
-      options.version
+  try {
+    await git.run(
+      'git',
+      ['push', '--force', '--set-upstream', 'origin', branch],
+      workspace
     )
+
+    const [owner, repo] = options.repository.split('/')
+    if (!owner || !repo)
+      throw new Error('GITHUB_REPOSITORY must use owner/name form')
+
+    const existing = await requestGitHub(
+      options.token,
+      `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(
+        owner + ':' + branch
+      )}&base=${encodeURIComponent(options.baseBranch)}`
+    )
+    const pullRequests = Array.isArray(existing) ? existing : []
+    const current = pullRequests[0]
+    if (isPullRequest(current)) {
+      if (current.number === undefined) {
+        throw new Error(
+          'GitHub did not return the existing pull request number'
+        )
+      }
+      await updatePullRequestMetadata(
+        options.token,
+        options.repository,
+        current.number,
+        pkg.name,
+        options.currentVersion,
+        options.version
+      )
+      if (options.autoMerge) {
+        await waitForChecksAndMerge(
+          options.token,
+          options.repository,
+          current,
+          options.autoMergeTimeoutSeconds
+        )
+      }
+      return current.html_url
+    }
+
+    const created = await requestGitHub(
+      options.token,
+      `/repos/${owner}/${repo}/pulls`,
+      'POST',
+      {
+        title: `update: ${pkg.name}`,
+        body: getUpdatePullRequestBody(
+          pkg.name,
+          options.currentVersion,
+          options.version
+        ),
+        head: branch,
+        base: options.baseBranch
+      }
+    )
+    if (!isPullRequest(created))
+      throw new Error('GitHub did not return the created pull request URL')
     if (options.autoMerge) {
       await waitForChecksAndMerge(
         options.token,
         options.repository,
-        current,
+        created,
         options.autoMergeTimeoutSeconds
       )
     }
+    return created.html_url
+  } finally {
     await switchToBaseBranch(options.baseBranch, workspace, git)
-    return current.html_url
   }
-
-  const created = await requestGitHub(
-    options.token,
-    `/repos/${owner}/${repo}/pulls`,
-    'POST',
-    {
-      title: `update: ${pkg.name}`,
-      body: getUpdatePullRequestBody(
-        pkg.name,
-        options.currentVersion,
-        options.version
-      ),
-      head: branch,
-      base: options.baseBranch
-    }
-  )
-  if (!isPullRequest(created))
-    throw new Error('GitHub did not return the created pull request URL')
-  if (options.autoMerge) {
-    await waitForChecksAndMerge(
-      options.token,
-      options.repository,
-      created,
-      options.autoMergeTimeoutSeconds
-    )
-  }
-  await switchToBaseBranch(options.baseBranch, workspace, git)
-  return created.html_url
 }
 
 function getUpdatePullRequestBody(

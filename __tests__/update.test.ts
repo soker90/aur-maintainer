@@ -305,4 +305,24 @@ describe('package updates', () => {
       'pkgver=1.0.0'
     )
   })
+
+  it('resets pkgrel to 1 when pkgver changes', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    await writeFile(pkgbuildPath, 'pkgname=demo\npkgver=1.0.0\npkgrel=3\n')
+    const pkg = {
+      name: 'demo',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath: path.join(directory, '.SRCINFO'),
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { connector: 'github-release', config: {}, updates: {} }
+    } satisfies PackageDefinition
+
+    const result = await updatePackage(pkg, { version: '1.1.0' })
+    expect(result.changed).toBe(true)
+    await expect(readFile(pkgbuildPath, 'utf8')).resolves.toBe(
+      'pkgname=demo\npkgver=1.1.0\npkgrel=1\n'
+    )
+  })
 })

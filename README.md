@@ -191,10 +191,10 @@ Configure `config.package` with the PyPI project name.
 
 ### git
 
-Reads GitHub repository tags, selects the highest Arch-compatible version,
-then downloads the matching GitHub source archive and calculates SHA-256.
-Configure `config.repository` as `owner/name`. This connector targets
-GitHub-hosted repositories; it is not a generic arbitrary Git-host connector.
+Reads GitHub repository tags, selects the highest Arch-compatible version, then
+downloads the matching GitHub source archive and calculates SHA-256. Configure
+`config.repository` as `owner/name`. This connector targets GitHub-hosted
+repositories; it is not a generic arbitrary Git-host connector.
 
 For `npm`, `pip`, and `git`, map returned source and hash values when needed:
 
@@ -262,7 +262,11 @@ and sha256 fields are updated only when their templates are configured.
 
 Templates support ${version}, ${source}, and ${sha256}.
 
-The action uses targeted replacements rather than rewriting the whole PKGBUILD. Shell references such as `${pkgname}`, `${pkgver}`, `$pkgver`, and custom variables remain literal unless a configured template explicitly updates their assignment. When a source template is configured, references not reserved for connector placeholders (`${version}`, `${source}`, `${sha256}`) are preserved.
+The action uses targeted replacements rather than rewriting the whole PKGBUILD.
+Shell references such as `${pkgname}`, `${pkgver}`, `$pkgver`, and custom
+variables remain literal unless a configured template explicitly updates their
+assignment. When a source template is configured, references not reserved for
+connector placeholders (`${version}`, `${source}`, `${sha256}`) are preserved.
 
 ## Validation
 
@@ -331,7 +335,8 @@ For publish-only synchronization:
 aur-publish-only: true
 ```
 
-This skips upstream detection, validates the current package state, and then publishes it. It takes precedence over aur-publish.
+This skips upstream detection, validates the current package state, and then
+publishes it. It takes precedence over aur-publish.
 
 ## Security
 
