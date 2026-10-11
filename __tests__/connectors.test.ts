@@ -216,9 +216,7 @@ describe('git connector', () => {
     const connector = createConnectorRegistry({
       fetch: fetchMock,
       token: 'test-token'
-    }).get('git')!(
-      {}
-    )
+    }).get('git')!({})
 
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
