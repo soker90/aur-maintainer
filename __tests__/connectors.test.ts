@@ -183,7 +183,9 @@ describe('pip connector', () => {
         })
       )
       .mockResolvedValueOnce(new Response(archive))
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!({})
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!(
+      {}
+    )
 
     await expect(
       connector.detect(pkg, { package: 'demo' })
@@ -193,7 +195,9 @@ describe('pip connector', () => {
   })
 
   it('rejects invalid project names', async () => {
-    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('pip')!({})
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('pip')!(
+      {}
+    )
     await expect(connector.detect(pkg, { package: '../demo' })).rejects.toThrow(
       'PyPI project name'
     )
@@ -237,7 +241,9 @@ describe('git connector', () => {
   })
 
   it('rejects invalid repository configuration', async () => {
-    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('git')!({})
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('git')!(
+      {}
+    )
     await expect(
       connector.detect(pkg, { repository: 'not-a-repository' })
     ).rejects.toThrow('GitHub owner/name form')
