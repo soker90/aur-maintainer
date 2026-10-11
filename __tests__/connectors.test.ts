@@ -146,7 +146,9 @@ describe('pip connector', () => {
         }
       })
     )
-    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!({})
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!(
+      {}
+    )
 
     await expect(
       connector.detect(pkg, { package: 'demo-project' })
@@ -192,9 +194,9 @@ describe('pip connector', () => {
 
   it('rejects invalid project names', async () => {
     const connector = createConnectorRegistry({ fetch: jest.fn() }).get('pip')!({})
-    await expect(
-      connector.detect(pkg, { package: '../demo' })
-    ).rejects.toThrow('PyPI project name')
+    await expect(connector.detect(pkg, { package: '../demo' })).rejects.toThrow(
+      'PyPI project name'
+    )
   })
 })
 
@@ -210,7 +212,9 @@ describe('git connector', () => {
     const connector = createConnectorRegistry({
       fetch: fetchMock,
       token: 'test-token'
-    }).get('git')!({})
+    }).get('git')!(
+      {}
+    )
 
     await expect(
       connector.detect(pkg, { repository: 'owner/project' })
