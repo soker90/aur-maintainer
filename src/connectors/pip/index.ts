@@ -1,11 +1,8 @@
 import { createHash } from 'node:crypto'
-import {
-  isRecord,
-  type Connector,
-  type ConnectorContext
-} from '../connectors.js'
-import { isSupportedPackageVersion } from '../version.js'
-import type { PackageDefinition, UpdateCandidate } from '../types.js'
+import type { Connector, ConnectorContext } from '../types.js'
+import { isRecord } from '../../utils.js'
+import { isSupportedPackageVersion } from '../../version.js'
+import type { PackageDefinition, UpdateCandidate } from '../../types.js'
 
 export function createPipConnector(context: ConnectorContext): Connector {
   return {

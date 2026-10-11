@@ -34,8 +34,8 @@ import 'child_process';
 import 'timers';
 import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, mkdtemp, cp, rm as rm$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
 import { execFile as execFile$4 } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import os$1 from 'node:os';
 
 // We use any as a valid input type
@@ -35596,6 +35596,39 @@ function parse(src, reviver, options) {
     return doc.toJS(Object.assign({ reviver: _reviver }, options));
 }
 
+const execFile$3 = promisify(execFile$4);
+const hostCommandRunner = {
+    async run(command, args, cwd) {
+        const result = await execFile$3(command, args, { cwd });
+        return result.stdout;
+    }
+};
+const hostGitRunner = {
+    async run(command, args, cwd, env) {
+        const result = await execFile$3(command, args, {
+            cwd,
+            env: env ?? { ...process.env, LC_ALL: 'C' }
+        });
+        return result.stdout;
+    }
+};
+function isRecord(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function isMissingFile(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'ENOENT');
+}
+function isCommandNotFound(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        (error.code === 'ENOENT' ||
+            error.code === 127));
+}
+
 const DEFAULT_PACKAGE_CONNECTOR_TIMEOUT = 30;
 async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml') {
     const filePath = path.resolve(workspace, configPath);
@@ -35604,7 +35637,7 @@ async function loadMaintainerConfig(workspace, configPath = '.aur-maintainer.yml
         return parseMaintainerConfig(parse(content), filePath);
     }
     catch (error) {
-        if (isMissingFile$1(error))
+        if (isMissingFile(error))
             return {};
         throw error;
     }
@@ -35615,18 +35648,18 @@ async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml')
     return parsePackageConfig(parse(content), filePath);
 }
 function parsePackageConfig(value, filePath) {
-    if (!isRecord$1(value))
+    if (!isRecord(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (typeof value.connector !== 'string' || value.connector.trim() === '') {
         throw new Error(filePath + ': "connector" is required');
     }
-    if (value.config !== undefined && !isRecord$1(value.config)) {
+    if (value.config !== undefined && !isRecord(value.config)) {
         throw new Error(filePath + ': "config" must be an object');
     }
     if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
         throw new Error(filePath + ': "timeout" must be a positive integer number of seconds');
     }
-    if (value.updates !== undefined && !isRecord$1(value.updates)) {
+    if (value.updates !== undefined && !isRecord(value.updates)) {
         throw new Error(filePath + ': "updates" must be an object');
     }
     const updates = value.updates ?? {};
@@ -35648,7 +35681,7 @@ function parsePackageConfig(value, filePath) {
 function parseMaintainerConfig(value, filePath) {
     if (value === null || value === undefined)
         return {};
-    if (!isRecord$1(value))
+    if (!isRecord(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (value.packages !== undefined && !Array.isArray(value.packages)) {
         throw new Error(filePath + ': "packages" must be an array');
@@ -35656,7 +35689,7 @@ function parseMaintainerConfig(value, filePath) {
     const packages = value.packages?.map((entry, index) => {
         if (typeof entry === 'string')
             return entry;
-        if (!isRecord$1(entry)) {
+        if (!isRecord(entry)) {
             throw new Error(filePath +
                 ': "packages[' +
                 index +
@@ -35670,17 +35703,8 @@ function parseMaintainerConfig(value, filePath) {
     });
     return { packages };
 }
-function isRecord$1(value) {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 function isPositiveInteger(value) {
     return typeof value === 'number' && Number.isInteger(value) && value > 0;
-}
-function isMissingFile$1(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'ENOENT');
 }
 
 async function discoverPackages(workspace, config) {
@@ -35712,7 +35736,7 @@ async function discoverPackage(workspace, entry) {
         throw new Error('Package path is outside the workspace: ' + packagePath);
     }
     const pkgbuildPath = path.join(packagePath, 'PKGBUILD');
-    if (!(await isFile$1(pkgbuildPath))) {
+    if (!(await isFile$2(pkgbuildPath))) {
         throw new Error('Package directory has no PKGBUILD: ' + packagePath);
     }
     const updateConfigPath = 'connector' in entry
@@ -35739,8 +35763,8 @@ async function findLegacyUpdateConfigPath(packagePath) {
     const rootConfigPath = path.join(packagePath, 'update.yml');
     const connectorDirectory = path.join(packagePath, 'connector');
     const connectorConfigPath = path.join(connectorDirectory, 'update.yml');
-    if (await isFile$1(connectorConfigPath)) {
-        if (await isFile$1(rootConfigPath)) {
+    if (await isFile$2(connectorConfigPath)) {
+        if (await isFile$2(rootConfigPath)) {
             throw new Error('Package "' +
                 path.basename(packagePath) +
                 '" must not define both update.yml and connector/update.yml');
@@ -35756,7 +35780,7 @@ async function findLegacyUpdateConfigPath(packagePath) {
 }
 async function isPackageDirectory(directory) {
     return ((await isDirectory$1(directory)) &&
-        (await isFile$1(path.join(directory, 'PKGBUILD'))));
+        (await isFile$2(path.join(directory, 'PKGBUILD'))));
 }
 async function isDirectory$1(filePath) {
     try {
@@ -35766,7 +35790,7 @@ async function isDirectory$1(filePath) {
         return false;
     }
 }
-async function isFile$1(filePath) {
+async function isFile$2(filePath) {
     try {
         return (await stat$1(filePath)).isFile();
     }
@@ -35780,33 +35804,7 @@ function isWithinWorkspace(packagePath, workspace) {
         (!relative.startsWith('..') && !path.isAbsolute(relative)));
 }
 
-function createGitConnector(context) {
-    return {
-        name: 'git',
-        async detect(_pkg, config) {
-            const repository = config.repository;
-            if (typeof repository !== 'string' ||
-                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
-                throw new Error('git connector requires config.repository in GitHub owner/name form');
-            }
-            const latest = await fetchLatestGithubTag(context, repository);
-            const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.tag)}.tar.gz`;
-            const archive = await context.fetch(source);
-            if (!archive.ok) {
-                throw new Error(`Git source download failed for ${repository}@${latest.tag}: ${archive.status} ${archive.statusText}`);
-            }
-            const sha256 = createHash('sha256')
-                .update(new Uint8Array(await archive.arrayBuffer()))
-                .digest('hex');
-            return {
-                version: latest.version,
-                source,
-                sha256,
-                metadata: { repository, tag: latest.tag }
-            };
-        }
-    };
-}
+const PACKAGE_LOCAL_CONNECTOR = 'custom';
 
 const INVALID_VERSION_CHARACTER = /[-:/<>=\s]/;
 function isSupportedPackageVersion(version) {
@@ -35937,6 +35935,162 @@ function isTrailingEmptySegment(segments, index) {
         segments[index]?.parts[0] === '');
 }
 
+async function fetchGithub(context, url) {
+    return context.fetch(url, githubRequestInit(context.token));
+}
+function githubRequestInit(token) {
+    const headers = {
+        accept: 'application/vnd.github+json',
+        'user-agent': 'aur-maintainer',
+        'x-github-api-version': '2026-03-10'
+    };
+    if (token)
+        headers.authorization = `Bearer ${token}`;
+    return { headers };
+}
+async function fetchLatestGithubTag(context, repository) {
+    const tags = [];
+    let page = 1;
+    while (true) {
+        const response = await fetchGithub(context, `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`);
+        if (!response.ok) {
+            throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
+        }
+        const pageTags = (await response.json());
+        if (!Array.isArray(pageTags)) {
+            throw new Error(`GitHub tags response for ${repository} is not an array`);
+        }
+        tags.push(...pageTags);
+        if (pageTags.length < 100)
+            break;
+        page += 1;
+    }
+    return parseLatestTag(repository, tags);
+}
+function parseLatestTag(repository, value) {
+    if (!Array.isArray(value)) {
+        throw new Error(`GitHub tags response for ${repository} is not an array`);
+    }
+    const candidates = value
+        .filter(isRecord)
+        .filter((tag) => typeof tag.name === 'string')
+        .map((tag) => {
+        const name = tag.name;
+        const version = name.trim().replace(/^v(?=\d)/i, '');
+        return { name, version };
+    })
+        .filter(({ version }) => isSupportedPackageVersion(version))
+        .toSorted((left, right) => comparePackageVersions(left.version, right.version));
+    const latest = candidates.at(-1);
+    if (!latest) {
+        throw new Error(`GitHub tags for ${repository} contain no supported versions`);
+    }
+    return {
+        version: latest.version,
+        tag: latest.name
+    };
+}
+
+function createGithubReleaseConnector(context) {
+    return {
+        name: 'github-release',
+        async detect(_pkg, config) {
+            const repository = config.repository;
+            if (typeof repository !== 'string' ||
+                repository.split('/').length !== 2 ||
+                repository.split('/').some((part) => !part)) {
+                throw new Error('github-release connector requires config.repository in owner/name form');
+            }
+            const response = await fetchGithub(context, `https://api.github.com/repos/${repository}/releases/latest`);
+            if (!response.ok) {
+                throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
+            }
+            return parseRelease(repository, (await response.json()));
+        }
+    };
+}
+function parseRelease(repository, value) {
+    if (!isRecord(value) || typeof value.tag_name !== 'string') {
+        throw new Error(`GitHub release response for ${repository} has no tag_name`);
+    }
+    const tag = value.tag_name;
+    const version = tag.trim().replace(/^v(?=\d)/i, '');
+    if (!isSupportedPackageVersion(version)) {
+        throw new Error(`GitHub release tag "${tag}" for ${repository} is not a supported version`);
+    }
+    return { version, metadata: { repository, tag } };
+}
+
+function createGithubTagConnector(context) {
+    return {
+        name: 'github-tag',
+        async detect(_pkg, config) {
+            const repository = config.repository;
+            if (typeof repository !== 'string' ||
+                repository.split('/').length !== 2 ||
+                repository.split('/').some((part) => !part)) {
+                throw new Error('github-tag connector requires config.repository in owner/name form');
+            }
+            const { version, tag } = await fetchLatestGithubTag(context, repository);
+            return {
+                version,
+                metadata: { repository, tag }
+            };
+        }
+    };
+}
+
+function createNpmConnector(context) {
+    return {
+        name: 'npm',
+        async detect(_pkg, config) {
+            const packageName = config.package;
+            if (typeof packageName !== 'string' ||
+                !packageName.trim() ||
+                packageName.trim() !== packageName) {
+                throw new Error('npm connector requires config.package to be a package name');
+            }
+            const encodedName = packageName.startsWith('@')
+                ? packageName.replace('/', '%2f')
+                : encodeURIComponent(packageName);
+            const response = await context.fetch(`https://registry.npmjs.org/${encodedName}`, { headers: { accept: 'application/vnd.npm.install-v1+json' } });
+            if (!response.ok) {
+                throw new Error(`npm registry request failed for ${packageName}: ${response.status} ${response.statusText}`);
+            }
+            const metadata = (await response.json());
+            if (!isRecord(metadata) || !isRecord(metadata['dist-tags'])) {
+                throw new Error(`npm registry response for ${packageName} has no dist-tags`);
+            }
+            const version = metadata['dist-tags'].latest;
+            if (typeof version !== 'string' || !isSupportedPackageVersion(version)) {
+                throw new Error(`npm latest dist-tag for ${packageName} is not a supported version`);
+            }
+            if (!isRecord(metadata.versions) ||
+                !isRecord(metadata.versions[version])) {
+                throw new Error(`npm registry response for ${packageName} has no metadata for ${version}`);
+            }
+            const versionMetadata = metadata.versions[version];
+            if (!isRecord(versionMetadata.dist) ||
+                typeof versionMetadata.dist.tarball !== 'string') {
+                throw new Error(`npm registry response for ${packageName}@${version} has no tarball URL`);
+            }
+            const tarballUrl = versionMetadata.dist.tarball;
+            const tarballResponse = await context.fetch(tarballUrl);
+            if (!tarballResponse.ok) {
+                throw new Error(`npm tarball request failed for ${packageName}@${version}: ${tarballResponse.status} ${tarballResponse.statusText}`);
+            }
+            const tarball = new Uint8Array(await tarballResponse.arrayBuffer());
+            const sha256 = createHash('sha256').update(tarball).digest('hex');
+            return {
+                version,
+                source: tarballUrl,
+                sha256,
+                metadata: { package: packageName, distTag: 'latest' }
+            };
+        }
+    };
+}
+
 function createPipConnector(context) {
     return {
         name: 'pip',
@@ -35994,56 +36148,49 @@ function createPipConnector(context) {
     };
 }
 
-const execFile$3 = promisify(execFile$4);
-const PACKAGE_LOCAL_CONNECTOR = 'custom';
-function createConnectorRegistry(context) {
-    return new Map([
-        ['github-release', () => new GithubReleaseConnector(context)],
-        ['github-tag', () => new GithubTagConnector(context)],
-        ['npm', () => new NpmConnector(context)],
-        ['pip', () => createPipConnector(context)],
-        ['git', () => createGitConnector(context)]
-    ]);
-}
-async function loadRepositoryConnectors(workspace, context) {
-    const registry = createConnectorRegistry(context);
-    const directory = path.resolve(workspace, 'connectors');
-    if (!(await isDirectory(directory)))
-        return registry;
-    const entries = await readdir$1(directory, { withFileTypes: true });
-    for (const entry of entries.toSorted((left, right) => left.name.localeCompare(right.name))) {
-        if (!entry.isDirectory())
-            continue;
-        const name = entry.name;
-        if (registry.has(name)) {
-            throw new Error(`Repository connector "${name}" conflicts with a built-in connector`);
+function createGitConnector(context) {
+    return {
+        name: 'git',
+        async detect(_pkg, config) {
+            const repository = config.repository;
+            if (typeof repository !== 'string' ||
+                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+                throw new Error('git connector requires config.repository in GitHub owner/name form');
+            }
+            const latest = await fetchLatestGithubTag(context, repository);
+            const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.tag)}.tar.gz`;
+            const archive = await context.fetch(source);
+            if (!archive.ok) {
+                throw new Error(`Git source download failed for ${repository}@${latest.tag}: ${archive.status} ${archive.statusText}`);
+            }
+            const sha256 = createHash('sha256')
+                .update(new Uint8Array(await archive.arrayBuffer()))
+                .digest('hex');
+            return {
+                version: latest.version,
+                source,
+                sha256,
+                metadata: { repository, tag: latest.tag }
+            };
         }
-        const modulePath = path.join(directory, name, 'index.js');
-        if (!(await isFile(modulePath))) {
-            throw new Error(`Repository connector "${name}" must provide connectors/${name}/index.js`);
-        }
-        const factory = await loadConnectorFactory(modulePath, name, context);
-        registry.set(name, factory);
-    }
-    return registry;
+    };
 }
-function loadPackageConnector(pkg) {
-    if (pkg.config.connector !== 'custom') {
-        throw new Error(`Package connector "${pkg.config.connector}" is not a package-local custom connector`);
-    }
+
+const execFile$2 = promisify(execFile$4);
+function createCustomConnector(pkg) {
     const scriptPath = path.join(pkg.path, 'connector', 'detect.sh');
-    return () => ({
+    return {
         name: 'custom',
         detect: async () => detectWithScript(pkg, scriptPath)
-    });
+    };
 }
 async function detectWithScript(pkg, scriptPath) {
-    if (!(await isFile(scriptPath))) {
+    if (!(await isFile$1(scriptPath))) {
         throw new Error(`Package "${pkg.name}" custom connector must provide connector/detect.sh`);
     }
     let result;
     try {
-        result = await execFile$3('bash', [scriptPath], {
+        result = await execFile$2('bash', [scriptPath], {
             cwd: pkg.path,
             timeout: (pkg.config.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT) * 1000,
             killSignal: 'SIGTERM',
@@ -36102,6 +36249,52 @@ function parseCustomConnectorOutput(packageName, output) {
     const result = { version, source, sha256 };
     return result;
 }
+async function isFile$1(filePath) {
+    try {
+        return (await stat$1(filePath)).isFile();
+    }
+    catch {
+        return false;
+    }
+}
+
+function createConnectorRegistry(context) {
+    return new Map([
+        ['github-release', () => createGithubReleaseConnector(context)],
+        ['github-tag', () => createGithubTagConnector(context)],
+        ['npm', () => createNpmConnector(context)],
+        ['pip', () => createPipConnector(context)],
+        ['git', () => createGitConnector(context)]
+    ]);
+}
+async function loadRepositoryConnectors(workspace, context) {
+    const registry = createConnectorRegistry(context);
+    const directory = path.resolve(workspace, 'connectors');
+    if (!(await isDirectory(directory)))
+        return registry;
+    const entries = await readdir$1(directory, { withFileTypes: true });
+    for (const entry of entries.toSorted((left, right) => left.name.localeCompare(right.name))) {
+        if (!entry.isDirectory())
+            continue;
+        const name = entry.name;
+        if (registry.has(name)) {
+            throw new Error(`Repository connector "${name}" conflicts with a built-in connector`);
+        }
+        const modulePath = path.join(directory, name, 'index.js');
+        if (!(await isFile(modulePath))) {
+            throw new Error(`Repository connector "${name}" must provide connectors/${name}/index.js`);
+        }
+        const factory = await loadConnectorFactory(modulePath, name, context);
+        registry.set(name, factory);
+    }
+    return registry;
+}
+function loadPackageConnector(pkg) {
+    if (pkg.config.connector !== PACKAGE_LOCAL_CONNECTOR) {
+        throw new Error(`Package connector "${pkg.config.connector}" is not a package-local custom connector`);
+    }
+    return () => createCustomConnector(pkg);
+}
 async function loadConnectorFactory(modulePath, name, context) {
     const module = (await import(pathToFileURL(modulePath).href));
     if (typeof module.default !== 'function') {
@@ -36122,164 +36315,6 @@ function isConnector(value) {
         'detect' in value &&
         typeof value.detect === 'function');
 }
-class NpmConnector {
-    context;
-    name = 'npm';
-    constructor(context) {
-        this.context = context;
-    }
-    async detect(_pkg, config) {
-        const packageName = config.package;
-        if (typeof packageName !== 'string' ||
-            !packageName.trim() ||
-            packageName.trim() !== packageName) {
-            throw new Error('npm connector requires config.package to be a package name');
-        }
-        const encodedName = packageName.startsWith('@')
-            ? packageName.replace('/', '%2f')
-            : encodeURIComponent(packageName);
-        const response = await this.context.fetch(`https://registry.npmjs.org/${encodedName}`, { headers: { accept: 'application/vnd.npm.install-v1+json' } });
-        if (!response.ok) {
-            throw new Error(`npm registry request failed for ${packageName}: ${response.status} ${response.statusText}`);
-        }
-        const metadata = (await response.json());
-        if (!isRecord(metadata) || !isRecord(metadata['dist-tags'])) {
-            throw new Error(`npm registry response for ${packageName} has no dist-tags`);
-        }
-        const version = metadata['dist-tags'].latest;
-        if (typeof version !== 'string' || !isSupportedPackageVersion(version)) {
-            throw new Error(`npm latest dist-tag for ${packageName} is not a supported version`);
-        }
-        if (!isRecord(metadata.versions) || !isRecord(metadata.versions[version])) {
-            throw new Error(`npm registry response for ${packageName} has no metadata for ${version}`);
-        }
-        const versionMetadata = metadata.versions[version];
-        if (!isRecord(versionMetadata.dist) ||
-            typeof versionMetadata.dist.tarball !== 'string') {
-            throw new Error(`npm registry response for ${packageName}@${version} has no tarball URL`);
-        }
-        const tarballUrl = versionMetadata.dist.tarball;
-        const tarballResponse = await this.context.fetch(tarballUrl);
-        if (!tarballResponse.ok) {
-            throw new Error(`npm tarball request failed for ${packageName}@${version}: ${tarballResponse.status} ${tarballResponse.statusText}`);
-        }
-        const tarball = new Uint8Array(await tarballResponse.arrayBuffer());
-        const sha256 = createHash('sha256').update(tarball).digest('hex');
-        return {
-            version,
-            source: tarballUrl,
-            sha256,
-            metadata: { package: packageName, distTag: 'latest' }
-        };
-    }
-}
-class GithubReleaseConnector {
-    context;
-    name = 'github-release';
-    constructor(context) {
-        this.context = context;
-    }
-    async detect(_pkg, config) {
-        const repository = config.repository;
-        if (typeof repository !== 'string' ||
-            repository.split('/').length !== 2 ||
-            repository.split('/').some((part) => !part)) {
-            throw new Error('github-release connector requires config.repository in owner/name form');
-        }
-        const response = await fetchGithub(this.context, `https://api.github.com/repos/${repository}/releases/latest`);
-        if (!response.ok) {
-            throw new Error(`GitHub Releases request failed for ${repository}: ${response.status} ${response.statusText}`);
-        }
-        return parseRelease(repository, (await response.json()));
-    }
-}
-class GithubTagConnector {
-    context;
-    name = 'github-tag';
-    constructor(context) {
-        this.context = context;
-    }
-    async detect(_pkg, config) {
-        const repository = config.repository;
-        if (typeof repository !== 'string' ||
-            repository.split('/').length !== 2 ||
-            repository.split('/').some((part) => !part)) {
-            throw new Error('github-tag connector requires config.repository in owner/name form');
-        }
-        const { version, tag } = await fetchLatestGithubTag(this.context, repository);
-        return {
-            version,
-            metadata: { repository, tag }
-        };
-    }
-}
-async function fetchLatestGithubTag(context, repository) {
-    const tags = [];
-    let page = 1;
-    while (true) {
-        const response = await fetchGithub(context, `https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`);
-        if (!response.ok) {
-            throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
-        }
-        const pageTags = (await response.json());
-        if (!Array.isArray(pageTags)) {
-            throw new Error(`GitHub tags response for ${repository} is not an array`);
-        }
-        tags.push(...pageTags);
-        if (pageTags.length < 100)
-            break;
-        page += 1;
-    }
-    const latest = parseLatestTag(repository, tags);
-    return { version: latest.version, tag: latest.metadata.tag };
-}
-async function fetchGithub(context, url) {
-    return context.fetch(url, githubRequestInit(context.token));
-}
-function githubRequestInit(token) {
-    const headers = {
-        accept: 'application/vnd.github+json',
-        'user-agent': 'aur-maintainer',
-        'x-github-api-version': '2026-03-10'
-    };
-    if (token)
-        headers.authorization = `Bearer ${token}`;
-    return { headers };
-}
-function parseRelease(repository, value) {
-    if (!isRecord(value) || typeof value.tag_name !== 'string') {
-        throw new Error(`GitHub release response for ${repository} has no tag_name`);
-    }
-    const tag = value.tag_name;
-    const version = tag.trim().replace(/^v(?=\d)/i, '');
-    if (!isSupportedPackageVersion(version)) {
-        throw new Error(`GitHub release tag "${tag}" for ${repository} is not a supported version`);
-    }
-    return { version, metadata: { repository, tag } };
-}
-function parseLatestTag(repository, value) {
-    if (!Array.isArray(value)) {
-        throw new Error(`GitHub tags response for ${repository} is not an array`);
-    }
-    const candidates = value
-        .filter(isRecord)
-        .filter((tag) => typeof tag.name === 'string')
-        .map((tag) => {
-        const name = tag.name;
-        const version = name.trim().replace(/^v(?=\d)/i, '');
-        return { name, version };
-    })
-        .filter(({ version }) => isSupportedPackageVersion(version))
-        .toSorted((left, right) => comparePackageVersions(left.version, right.version));
-    const latest = candidates.at(-1);
-    if (!latest) {
-        throw new Error(`GitHub tags for ${repository} contain no supported versions`);
-    }
-    return {
-        version: latest.version,
-        metadata: { repository, tag: latest.name }
-    };
-}
 async function isDirectory(filePath) {
     try {
         return (await stat$1(filePath)).isDirectory();
@@ -36296,25 +36331,16 @@ async function isFile(filePath) {
         return false;
     }
 }
-function isRecord(value) {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
-const execFile$2 = promisify(execFile$4);
-const hostCommandRunner$1 = {
-    async run(command, args, cwd) {
-        const result = await execFile$2(command, args, { cwd });
-        return result.stdout;
-    }
-};
-async function updatePackageMetadata(pkg, runner = hostCommandRunner$1) {
+const execFile$1 = promisify(execFile$4);
+async function updatePackageMetadata(pkg, runner = hostCommandRunner) {
     try {
         await runner.run('updpkgsums', ['--nocolor', pkg.pkgbuildPath]);
         const srcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path);
         await writeFile$1(pkg.srcinfoPath, srcinfo);
     }
     catch (error) {
-        if (!isCommandNotFound$1(error))
+        if (!isCommandNotFound(error))
             throw error;
         await updatePackageMetadataWithDocker(pkg);
     }
@@ -36322,7 +36348,7 @@ async function updatePackageMetadata(pkg, runner = hostCommandRunner$1) {
 async function updatePackageMetadataWithDocker(pkg) {
     const uid = String(process.getuid?.() ?? 1000);
     const gid = String(process.getgid?.() ?? 1000);
-    await execFile$2('docker', [
+    await execFile$1('docker', [
         'run',
         '--rm',
         '--env',
@@ -36338,12 +36364,6 @@ async function updatePackageMetadataWithDocker(pkg) {
         '-c',
         'pacman -Sy --noconfirm pacman-contrib && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && su - builder -c \'cd /pkg && updpkgsums --nocolor PKGBUILD && makepkg --printsrcinfo > .SRCINFO\''
     ], { cwd: pkg.path });
-}
-function isCommandNotFound$1(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error.code === 'ENOENT' || error.code === 127));
 }
 
 async function updatePackage(pkg, candidate) {
@@ -36441,17 +36461,6 @@ function resetPkgrel(content) {
     return content;
 }
 
-const execFile$1 = promisify(execFile$4);
-const AUTO_MERGE_POLL_INTERVAL_MS = 10_000;
-const hostGitRunner$1 = {
-    async run(command, args, cwd) {
-        const result = await execFile$1(command, args, {
-            cwd,
-            env: { ...process.env, LC_ALL: 'C' }
-        });
-        return result.stdout;
-    }
-};
 async function requestGitHub(token, path, method = 'GET', body) {
     const response = await fetch('https://api.github.com' + path, {
         method,
@@ -36468,177 +36477,8 @@ async function requestGitHub(token, path, method = 'GET', body) {
     }
     return response.json();
 }
-function getRelativePackagePath(workspace, packagePath) {
-    const relative = path.relative(workspace, packagePath);
-    if (relative.startsWith('..') || path.isAbsolute(relative)) {
-        throw new Error('Package path must be inside the workspace');
-    }
-    return relative;
-}
-function validateBranchName(branch) {
-    if (branch.length === 0 ||
-        branch.startsWith('-') ||
-        branch.includes('..') ||
-        branch.includes(' ')) {
-        throw new Error('Invalid update branch name');
-    }
-}
-async function commitPackageChanges(workspace, packagePaths, message, git) {
-    await git.run('git', ['add', '--', ...packagePaths], workspace);
-    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
-    if (!changed.trim())
-        return null;
-    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
-    await git.run('git', [
-        'config',
-        'user.email',
-        '41898282+github-actions[bot]@users.noreply.github.com'
-    ], workspace);
-    await git.run('git', ['commit', '-m', message], workspace);
-    return (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim();
-}
-async function switchToUpdateBranch(baseBranch, branch, commit, workspace, git) {
-    await switchToBaseBranch(baseBranch, workspace, git);
-    await git.run('git', ['switch', '-C', branch], workspace);
-    await git.run('git', ['cherry-pick', commit], workspace);
-}
-async function switchToBaseBranch(baseBranch, workspace, git) {
-    const remoteRef = `refs/remotes/origin/${baseBranch}`;
-    await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
-    await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace);
-}
-async function createValidationFailureIssue(workspace, options, git = hostGitRunner$1) {
-    const relative = getRelativePackagePath(workspace, options.pkg.path);
-    const packagePaths = [
-        path.join(relative, 'PKGBUILD'),
-        path.join(relative, '.SRCINFO')
-    ];
-    const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name);
-    validateBranchName(branch);
-    const updateCommit = await commitPackageChanges(workspace, packagePaths, 'validation failed: ' + options.pkg.name, git);
-    if (!updateCommit) {
-        throw new Error('No package changes are available for the validation failure branch');
-    }
-    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
-    try {
-        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
-        const [owner, repo] = options.repository.split('/');
-        if (!owner || !repo) {
-            throw new Error('GITHUB_REPOSITORY must use owner/name form');
-        }
-        const branchUrl = 'https://github.com/' + options.repository + '/tree/' + branch;
-        const errorDetails = formatErrorDetails(options.error);
-        const body = [
-            '## AUR package validation failed',
-            '',
-            'Package: `' + options.pkg.name + '`',
-            'Detected update: ' + options.currentVersion + ' → ' + options.version,
-            'Branch: [' + branch + '](' + branchUrl + ')',
-            '',
-            '### Validation error',
-            '',
-            '~~~text',
-            errorDetails,
-            '~~~',
-            '',
-            'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
-        ].join('\n');
-        const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', {
-            title: 'validation failed: ' + options.pkg.name,
-            body
-        });
-        if (!isIssue(created)) {
-            throw new Error('GitHub did not return the created validation issue URL');
-        }
-        return created.html_url;
-    }
-    finally {
-        await switchToBaseBranch(options.baseBranch, workspace, git);
-    }
-}
-function formatErrorDetails(error) {
-    if (error instanceof Error) {
-        const details = [error.message];
-        const candidate = error;
-        if (candidate.stderr?.trim())
-            details.push(candidate.stderr.trim());
-        if (candidate.stdout?.trim())
-            details.push(candidate.stdout.trim());
-        return details.join('\n').slice(0, 12_000);
-    }
-    return String(error).slice(0, 12_000);
-}
-async function createUpdatePullRequest(workspace, options, git = hostGitRunner$1) {
-    if (options.packages.length !== 1) {
-        throw new Error('Exactly one package is required per update pull request');
-    }
-    const pkg = options.packages[0];
-    const relative = getRelativePackagePath(workspace, pkg.path);
-    const packagePaths = [
-        path.join(relative, 'PKGBUILD'),
-        path.join(relative, '.SRCINFO')
-    ];
-    const branch = getPackageUpdateBranch(options.updateBranch, pkg.name);
-    validateBranchName(branch);
-    const updateCommit = await commitPackageChanges(workspace, packagePaths, `update: ${pkg.name}`, git);
-    if (!updateCommit)
-        return null;
-    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
-    try {
-        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
-        const [owner, repo] = options.repository.split('/');
-        if (!owner || !repo)
-            throw new Error('GITHUB_REPOSITORY must use owner/name form');
-        const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`);
-        const pullRequests = Array.isArray(existing) ? existing : [];
-        const current = pullRequests[0];
-        if (isPullRequest(current)) {
-            if (current.number === undefined) {
-                throw new Error('GitHub did not return the existing pull request number');
-            }
-            await updatePullRequestMetadata(options.token, options.repository, current.number, pkg.name, options.currentVersion, options.version);
-            if (options.autoMerge) {
-                await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
-            }
-            return current.html_url;
-        }
-        const created = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls`, 'POST', {
-            title: `update: ${pkg.name}`,
-            body: getUpdatePullRequestBody(pkg.name, options.currentVersion, options.version),
-            head: branch,
-            base: options.baseBranch
-        });
-        if (!isPullRequest(created))
-            throw new Error('GitHub did not return the created pull request URL');
-        if (options.autoMerge) {
-            await waitForChecksAndMerge(options.token, options.repository, created, options.autoMergeTimeoutSeconds);
-        }
-        return created.html_url;
-    }
-    finally {
-        await switchToBaseBranch(options.baseBranch, workspace, git);
-    }
-}
-function getUpdatePullRequestBody(packageName, currentVersion, version) {
-    return [
-        `Automated update for ${packageName} generated by aur-maintainer.`,
-        '',
-        `Updated package: ${currentVersion} → ${version}`
-    ].join('\n');
-}
-async function updatePullRequestMetadata(token, repository, pullRequestNumber, packageName, currentVersion, version) {
-    const [owner, repo] = repository.split('/');
-    if (!owner || !repo) {
-        throw new Error('GITHUB_REPOSITORY must use owner/name form');
-    }
-    await requestGitHub(token, `/repos/${owner}/${repo}/pulls/${pullRequestNumber}`, 'PATCH', {
-        title: `update: ${packageName}`,
-        body: getUpdatePullRequestBody(packageName, currentVersion, version)
-    });
-}
-function getPackageUpdateBranch(prefix, packageName) {
-    return prefix.replace(/\/$/, '') + '/' + packageName;
-}
+
+const AUTO_MERGE_POLL_INTERVAL_MS = 10_000;
 async function waitForChecksAndMerge(token, repository, pullRequest, timeoutSeconds) {
     if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 1) {
         throw new Error('auto-merge-timeout must be a positive integer');
@@ -36714,12 +36554,6 @@ async function squashMergePullRequest(token, pullRequest) {
         throw new Error(`GitHub squash merge failed: ${message ?? response.statusText}`);
     }
 }
-function isIssue(value) {
-    return (typeof value === 'object' &&
-        value !== null &&
-        'html_url' in value &&
-        typeof value.html_url === 'string');
-}
 function isMergeablePullRequest(value) {
     return (typeof value === 'object' &&
         value !== null &&
@@ -36771,13 +36605,185 @@ function isPullRequest(value) {
     return true;
 }
 
-const execFile = promisify(execFile$4);
-const hostCommandRunner = {
-    async run(command, args, cwd) {
-        const result = await execFile(command, args, { cwd });
-        return result.stdout;
+function getRelativePackagePath(workspace, packagePath) {
+    const relative = path.relative(workspace, packagePath);
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+        throw new Error('Package path must be inside the workspace');
     }
-};
+    return relative;
+}
+function validateBranchName(branch) {
+    if (branch.length === 0 ||
+        branch.startsWith('-') ||
+        branch.includes('..') ||
+        branch.includes(' ')) {
+        throw new Error('Invalid update branch name');
+    }
+}
+async function commitPackageChanges(workspace, packagePaths, message, git) {
+    await git.run('git', ['add', '--', ...packagePaths], workspace);
+    const changed = await git.run('git', ['diff', '--cached', '--name-only'], workspace);
+    if (!changed.trim())
+        return null;
+    await git.run('git', ['config', 'user.name', 'github-actions[bot]'], workspace);
+    await git.run('git', [
+        'config',
+        'user.email',
+        '41898282+github-actions[bot]@users.noreply.github.com'
+    ], workspace);
+    await git.run('git', ['commit', '-m', message], workspace);
+    return (await git.run('git', ['rev-parse', 'HEAD'], workspace)).trim();
+}
+async function switchToUpdateBranch(baseBranch, branch, commit, workspace, git) {
+    await switchToBaseBranch(baseBranch, workspace, git);
+    await git.run('git', ['switch', '-C', branch], workspace);
+    await git.run('git', ['cherry-pick', commit], workspace);
+}
+async function switchToBaseBranch(baseBranch, workspace, git) {
+    const remoteRef = `refs/remotes/origin/${baseBranch}`;
+    await git.run('git', ['fetch', '--no-tags', 'origin', `+refs/heads/${baseBranch}:${remoteRef}`], workspace);
+    await git.run('git', ['switch', '-C', baseBranch, remoteRef], workspace);
+}
+async function createValidationFailureIssue(workspace, options, git = hostGitRunner) {
+    const relative = getRelativePackagePath(workspace, options.pkg.path);
+    const packagePaths = [
+        path.join(relative, 'PKGBUILD'),
+        path.join(relative, '.SRCINFO')
+    ];
+    const branch = getPackageUpdateBranch(options.updateBranch, options.pkg.name);
+    validateBranchName(branch);
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, 'validation failed: ' + options.pkg.name, git);
+    if (!updateCommit) {
+        throw new Error('No package changes are available for the validation failure branch');
+    }
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
+    try {
+        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
+        const [owner, repo] = options.repository.split('/');
+        if (!owner || !repo) {
+            throw new Error('GITHUB_REPOSITORY must use owner/name form');
+        }
+        const branchUrl = 'https://github.com/' + options.repository + '/tree/' + branch;
+        const errorDetails = formatErrorDetails(options.error);
+        const body = [
+            '## AUR package validation failed',
+            '',
+            'Package: `' + options.pkg.name + '`',
+            'Detected update: ' + options.currentVersion + ' → ' + options.version,
+            'Branch: [' + branch + '](' + branchUrl + ')',
+            '',
+            '### Validation error',
+            '',
+            '~~~text',
+            errorDetails,
+            '~~~',
+            '',
+            'The generated package changes were preserved on the branch above for investigation. No pull request was created.'
+        ].join('\n');
+        const created = await requestGitHub(options.token, '/repos/' + owner + '/' + repo + '/issues', 'POST', {
+            title: 'validation failed: ' + options.pkg.name,
+            body
+        });
+        if (!isIssue(created)) {
+            throw new Error('GitHub did not return the created validation issue URL');
+        }
+        return created.html_url;
+    }
+    finally {
+        await switchToBaseBranch(options.baseBranch, workspace, git);
+    }
+}
+function formatErrorDetails(error) {
+    if (error instanceof Error) {
+        const details = [error.message];
+        const candidate = error;
+        if (candidate.stderr?.trim())
+            details.push(candidate.stderr.trim());
+        if (candidate.stdout?.trim())
+            details.push(candidate.stdout.trim());
+        return details.join('\n').slice(0, 12_000);
+    }
+    return String(error).slice(0, 12_000);
+}
+async function createUpdatePullRequest(workspace, options, git = hostGitRunner) {
+    if (options.packages.length !== 1) {
+        throw new Error('Exactly one package is required per update pull request');
+    }
+    const pkg = options.packages[0];
+    const relative = getRelativePackagePath(workspace, pkg.path);
+    const packagePaths = [
+        path.join(relative, 'PKGBUILD'),
+        path.join(relative, '.SRCINFO')
+    ];
+    const branch = getPackageUpdateBranch(options.updateBranch, pkg.name);
+    validateBranchName(branch);
+    const updateCommit = await commitPackageChanges(workspace, packagePaths, `update: ${pkg.name}`, git);
+    if (!updateCommit)
+        return null;
+    await switchToUpdateBranch(options.baseBranch, branch, updateCommit, workspace, git);
+    try {
+        await git.run('git', ['push', '--force', '--set-upstream', 'origin', branch], workspace);
+        const [owner, repo] = options.repository.split('/');
+        if (!owner || !repo)
+            throw new Error('GITHUB_REPOSITORY must use owner/name form');
+        const existing = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls?state=open&head=${encodeURIComponent(owner + ':' + branch)}&base=${encodeURIComponent(options.baseBranch)}`);
+        const pullRequests = Array.isArray(existing) ? existing : [];
+        const current = pullRequests[0];
+        if (isPullRequest(current)) {
+            if (current.number === undefined) {
+                throw new Error('GitHub did not return the existing pull request number');
+            }
+            await updatePullRequestMetadata(options.token, options.repository, current.number, pkg.name, options.currentVersion, options.version);
+            if (options.autoMerge) {
+                await waitForChecksAndMerge(options.token, options.repository, current, options.autoMergeTimeoutSeconds);
+            }
+            return current.html_url;
+        }
+        const created = await requestGitHub(options.token, `/repos/${owner}/${repo}/pulls`, 'POST', {
+            title: `update: ${pkg.name}`,
+            body: getUpdatePullRequestBody(pkg.name, options.currentVersion, options.version),
+            head: branch,
+            base: options.baseBranch
+        });
+        if (!isPullRequest(created))
+            throw new Error('GitHub did not return the created pull request URL');
+        if (options.autoMerge) {
+            await waitForChecksAndMerge(options.token, options.repository, created, options.autoMergeTimeoutSeconds);
+        }
+        return created.html_url;
+    }
+    finally {
+        await switchToBaseBranch(options.baseBranch, workspace, git);
+    }
+}
+function getUpdatePullRequestBody(packageName, currentVersion, version) {
+    return [
+        `Automated update for ${packageName} generated by aur-maintainer.`,
+        '',
+        `Updated package: ${currentVersion} → ${version}`
+    ].join('\n');
+}
+async function updatePullRequestMetadata(token, repository, pullRequestNumber, packageName, currentVersion, version) {
+    const [owner, repo] = repository.split('/');
+    if (!owner || !repo) {
+        throw new Error('GITHUB_REPOSITORY must use owner/name form');
+    }
+    await requestGitHub(token, `/repos/${owner}/${repo}/pulls/${pullRequestNumber}`, 'PATCH', {
+        title: `update: ${packageName}`,
+        body: getUpdatePullRequestBody(packageName, currentVersion, version)
+    });
+}
+function getPackageUpdateBranch(prefix, packageName) {
+    return prefix.replace(/\/$/, '') + '/' + packageName;
+}
+function isIssue(value) {
+    return (typeof value === 'object' &&
+        value !== null &&
+        'html_url' in value &&
+        typeof value.html_url === 'string');
+}
+
+const execFile = promisify(execFile$4);
 async function validatePackage(pkg, runner = hostCommandRunner) {
     try {
         await runner.run('namcap', [pkg.pkgbuildPath]);
@@ -36846,22 +36852,7 @@ function resolveArtifactPath(packagePath, artifact) {
         ? artifact
         : path.resolve(packagePath, artifact);
 }
-function isCommandNotFound(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        (error.code === 'ENOENT' || error.code === 127));
-}
 
-const hostGitRunner = {
-    async run(command, args, cwd, env) {
-        const { execFile } = await import('node:child_process');
-        const { promisify } = await import('node:util');
-        const run = promisify(execFile);
-        const result = await run(command, args, { cwd, env });
-        return result.stdout;
-    }
-};
 async function publishAurPackage(pkg, options, git = hostGitRunner) {
     if (!options.sshKey.trim()) {
         throw new Error('AUR SSH key is required when AUR publishing is enabled');
@@ -37125,12 +37116,6 @@ async function rollbackSnapshots(snapshots) {
             await writeFile$1(snapshot.pkg.srcinfoPath, snapshot.srcinfo);
         }
     }
-}
-function isMissingFile(error) {
-    return (typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'ENOENT');
 }
 
 /**

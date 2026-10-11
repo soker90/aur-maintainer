@@ -8,24 +8,9 @@ export interface AurPublishOptions {
   knownHosts: string
 }
 
-export interface GitRunner {
-  run(
-    command: string,
-    args: string[],
-    cwd?: string,
-    env?: NodeJS.ProcessEnv
-  ): Promise<string>
-}
+import { hostGitRunner, type GitRunner } from './utils.js'
 
-const hostGitRunner: GitRunner = {
-  async run(command, args, cwd, env) {
-    const { execFile } = await import('node:child_process')
-    const { promisify } = await import('node:util')
-    const run = promisify(execFile)
-    const result = await run(command, args, { cwd, env })
-    return result.stdout
-  }
-}
+export type { GitRunner }
 
 export async function publishAurPackage(
   pkg: PackageDefinition,

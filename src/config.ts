@@ -6,6 +6,7 @@ import type {
   PackageConfig,
   PackageConfigEntry
 } from './types.js'
+import { isMissingFile, isRecord } from './utils.js'
 
 export const DEFAULT_PACKAGE_CONNECTOR_TIMEOUT = 30
 
@@ -112,19 +113,6 @@ function parseMaintainerConfig(
   return { packages }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
-}
-
-function isMissingFile(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'ENOENT'
-  )
 }

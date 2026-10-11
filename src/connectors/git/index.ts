@@ -1,10 +1,7 @@
 import { createHash } from 'node:crypto'
-import {
-  fetchLatestGithubTag,
-  type Connector,
-  type ConnectorContext
-} from '../connectors.js'
-import type { PackageDefinition, UpdateCandidate } from '../types.js'
+import type { Connector, ConnectorContext } from '../types.js'
+import { fetchLatestGithubTag } from '../github-utils.js'
+import type { PackageDefinition, UpdateCandidate } from '../../types.js'
 
 export function createGitConnector(context: ConnectorContext): Connector {
   return {

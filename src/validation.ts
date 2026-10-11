@@ -3,19 +3,15 @@ import { access, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
+import {
+  hostCommandRunner,
+  isCommandNotFound,
+  type CommandRunner
+} from './utils.js'
+
+export type { CommandRunner }
 
 const execFile = promisify(execFileCallback)
-
-export interface CommandRunner {
-  run(command: string, args: string[], cwd?: string): Promise<string>
-}
-
-const hostCommandRunner: CommandRunner = {
-  async run(command, args, cwd) {
-    const result = await execFile(command, args, { cwd })
-    return result.stdout
-  }
-}
 
 export async function validatePackage(
   pkg: PackageDefinition,
@@ -117,13 +113,4 @@ function resolveArtifactPath(packagePath: string, artifact: string): string {
   return path.isAbsolute(artifact)
     ? artifact
     : path.resolve(packagePath, artifact)
-}
-
-function isCommandNotFound(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error.code === 'ENOENT' || error.code === 127)
-  )
 }

@@ -16,6 +16,7 @@ import {
 import { validatePackage } from './validation.js'
 import { publishAurPackage } from './aur.js'
 import type { PackageDefinition } from './types.js'
+import { isMissingFile } from './utils.js'
 
 interface PackageSnapshot {
   pkg: PackageDefinition
@@ -245,13 +246,4 @@ async function rollbackSnapshots(snapshots: PackageSnapshot[]): Promise<void> {
       await writeFile(snapshot.pkg.srcinfoPath, snapshot.srcinfo)
     }
   }
-}
-
-function isMissingFile(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === 'ENOENT'
-  )
 }
