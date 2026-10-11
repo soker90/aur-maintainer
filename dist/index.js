@@ -35951,7 +35951,7 @@ function createGitConnector(context) {
                     'x-github-api-version': '2026-03-10'
                 };
                 if (context.token)
-                    headers.authorization = `***;
+                    headers.authorization = `Bearer ${context.token}`;
                 const response = await context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, { headers });
                 if (!response.ok) {
                     throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
