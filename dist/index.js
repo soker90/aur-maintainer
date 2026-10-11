@@ -35640,18 +35640,18 @@ async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml')
     return parsePackageConfig(parse(content), filePath);
 }
 function parsePackageConfig(value, filePath) {
-    if (!isRecord$1(value))
+    if (!isRecord$3(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (typeof value.connector !== 'string' || value.connector.trim() === '') {
         throw new Error(filePath + ': "connector" is required');
     }
-    if (value.config !== undefined && !isRecord$1(value.config)) {
+    if (value.config !== undefined && !isRecord$3(value.config)) {
         throw new Error(filePath + ': "config" must be an object');
     }
     if (value.timeout !== undefined && !isPositiveInteger(value.timeout)) {
         throw new Error(filePath + ': "timeout" must be a positive integer number of seconds');
     }
-    if (value.updates !== undefined && !isRecord$1(value.updates)) {
+    if (value.updates !== undefined && !isRecord$3(value.updates)) {
         throw new Error(filePath + ': "updates" must be an object');
     }
     const updates = value.updates ?? {};
@@ -35673,7 +35673,7 @@ function parsePackageConfig(value, filePath) {
 function parseMaintainerConfig(value, filePath) {
     if (value === null || value === undefined)
         return {};
-    if (!isRecord$1(value))
+    if (!isRecord$3(value))
         throw new Error(filePath + ' must contain a YAML object');
     if (value.packages !== undefined && !Array.isArray(value.packages)) {
         throw new Error(filePath + ': "packages" must be an array');
@@ -35681,7 +35681,7 @@ function parseMaintainerConfig(value, filePath) {
     const packages = value.packages?.map((entry, index) => {
         if (typeof entry === 'string')
             return entry;
-        if (!isRecord$1(entry)) {
+        if (!isRecord$3(entry)) {
             throw new Error(filePath +
                 ': "packages[' +
                 index +
@@ -35695,7 +35695,7 @@ function parseMaintainerConfig(value, filePath) {
     });
     return { packages };
 }
-function isRecord$1(value) {
+function isRecord$3(value) {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 function isPositiveInteger(value) {
@@ -35934,13 +35934,139 @@ function isTrailingEmptySegment(segments, index) {
         segments[index]?.parts[0] === '');
 }
 
+function createGitConnector(context) {
+    return {
+        name: 'git',
+        async detect(_pkg, config) {
+            const repository = config.repository;
+            if (typeof repository !== 'string' ||
+                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
+                throw new Error('git connector requires config.repository in GitHub owner/name form');
+            }
+            const tags = [];
+            for (let page = 1;; page += 1) {
+                const headers = {
+                    accept: 'application/vnd.github+json',
+                    'user-agent': 'aur-maintainer',
+                    'x-github-api-version': '2026-03-10'
+                };
+                if (context.token)
+                    headers.authorization = `***;
+                const response = await context.fetch(`https://api.github.com/repos/${repository}/tags?per_page=100&page=${page}`, { headers });
+                if (!response.ok) {
+                    throw new Error(`GitHub tags request failed for ${repository}: ${response.status} ${response.statusText}`);
+                }
+                const pageTags = (await response.json());
+                if (!Array.isArray(pageTags)) {
+                    throw new Error(`GitHub tags response for ${repository} is not an array`);
+                }
+                tags.push(...pageTags);
+                if (pageTags.length < 100)
+                    break;
+            }
+            const candidates = tags
+                .filter(isRecord$2)
+                .filter((tag) => typeof tag.name === 'string')
+                .map((tag) => {
+                const name = tag.name;
+                const version = name.trim().replace(/^v(?=\d)/i, '');
+                return { name, version };
+            })
+                .filter(({ version }) => isSupportedPackageVersion(version))
+                .toSorted((left, right) => comparePackageVersions(left.version, right.version));
+            const latest = candidates.at(-1);
+            if (!latest) {
+                throw new Error(`GitHub tags for ${repository} contain no supported versions`);
+            }
+            const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.name)}.tar.gz`;
+            const archive = await context.fetch(source);
+            if (!archive.ok) {
+                throw new Error(`Git source download failed for ${repository}@${latest.name}: ${archive.status} ${archive.statusText}`);
+            }
+            const sha256 = createHash('sha256')
+                .update(new Uint8Array(await archive.arrayBuffer()))
+                .digest('hex');
+            return {
+                version: latest.version,
+                source,
+                sha256,
+                metadata: { repository, tag: latest.name }
+            };
+        }
+    };
+}
+function isRecord$2(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function createPipConnector(context) {
+    return {
+        name: 'pip',
+        async detect(_pkg, config) {
+            const packageName = config.package;
+            if (typeof packageName !== 'string' ||
+                !/^[A-Za-z0-9._-]+$/.test(packageName)) {
+                throw new Error('pip connector requires config.package to be a PyPI project name');
+            }
+            const response = await context.fetch(`https://pypi.org/pypi/${encodeURIComponent(packageName)}/json`, { headers: { accept: 'application/json' } });
+            if (!response.ok) {
+                throw new Error(`PyPI request failed for ${packageName}: ${response.status} ${response.statusText}`);
+            }
+            const metadata = (await response.json());
+            if (!isRecord$1(metadata) || !isRecord$1(metadata.info)) {
+                throw new Error(`PyPI metadata for ${packageName} is invalid`);
+            }
+            const version = metadata.info.version;
+            if (typeof version !== 'string' || !isSupportedPackageVersion(version)) {
+                throw new Error(`PyPI latest version for ${packageName} is not a supported version`);
+            }
+            if (!isRecord$1(metadata.releases)) {
+                throw new Error(`PyPI metadata for ${packageName} has no releases`);
+            }
+            const releases = metadata.releases[version];
+            if (!Array.isArray(releases)) {
+                throw new Error(`PyPI metadata for ${packageName}@${version} has no release files`);
+            }
+            const sourceFile = releases.find((file) => isRecord$1(file) &&
+                file.packagetype === 'sdist' &&
+                typeof file.url === 'string');
+            if (!isRecord$1(sourceFile) || typeof sourceFile.url !== 'string') {
+                throw new Error(`PyPI release ${packageName}@${version} has no source distribution`);
+            }
+            let sha256 = isRecord$1(sourceFile.digests)
+                ? sourceFile.digests.sha256
+                : undefined;
+            if (typeof sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(sha256)) {
+                const archive = await context.fetch(sourceFile.url);
+                if (!archive.ok) {
+                    throw new Error(`PyPI source download failed for ${packageName}@${version}: ${archive.status} ${archive.statusText}`);
+                }
+                sha256 = createHash('sha256')
+                    .update(new Uint8Array(await archive.arrayBuffer()))
+                    .digest('hex');
+            }
+            return {
+                version,
+                source: sourceFile.url,
+                sha256,
+                metadata: { package: packageName, registry: 'pypi' }
+            };
+        }
+    };
+}
+function isRecord$1(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 const execFile$3 = promisify(execFile$4);
 const PACKAGE_LOCAL_CONNECTOR = 'custom';
 function createConnectorRegistry(context) {
     return new Map([
         ['github-release', () => new GithubReleaseConnector(context)],
         ['github-tag', () => new GithubTagConnector(context)],
-        ['npm', () => new NpmConnector(context)]
+        ['npm', () => new NpmConnector(context)],
+        ['pip', () => createPipConnector(context)],
+        ['git', () => createGitConnector(context)]
     ]);
 }
 async function loadRepositoryConnectors(workspace, context) {
