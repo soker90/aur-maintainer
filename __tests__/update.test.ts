@@ -112,7 +112,7 @@ describe('package updates', () => {
         'pkgver=1.1.0',
         'pkgrel=1',
         'source=("${pkgname}-${pkgver}.tar.gz::https://example.test/demo-1.1.0.tar.gz")',
-        'sha256sums=("'+ 'a'.repeat(64) +'")',
+        'sha256sums=("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")',
         ''
       ].join('\n')
     )
