@@ -14,7 +14,7 @@ AUR.
 ## Features
 
 - Central or package-local configuration and automatic package discovery.
-- Built-in github-release and github-tag connectors.
+- Built-in `github-release`, `github-tag`, `npm`, `pip`, and `git` connectors.
 - Repository-local JavaScript connectors.
 - Package-local shell connectors with configurable timeouts.
 - Automatic pkgver updates plus optional source/SHA-256 templates.
@@ -178,6 +178,32 @@ config:
 updates: {}
 ```
 
+### npm
+
+Reads the `latest` dist-tag from the npm registry, downloads its tarball, and
+calculates SHA-256. Configure `config.package` with the npm package name.
+
+### pip
+
+Reads the current release from PyPI, selects its source distribution (sdist),
+and uses PyPI's SHA-256 digest or downloads the archive to calculate one.
+Configure `config.package` with the PyPI project name.
+
+### git
+
+Reads GitHub repository tags, selects the highest Arch-compatible version,
+then downloads the matching GitHub source archive and calculates SHA-256.
+Configure `config.repository` as `owner/name`. This connector targets
+GitHub-hosted repositories; it is not a generic arbitrary Git-host connector.
+
+For `npm`, `pip`, and `git`, map returned source and hash values when needed:
+
+```yaml
+updates:
+  source: 'source=("${source}")'
+  sha256: 'sha256sums=("${sha256}")'
+```
+
 ## Custom connectors
 
 ### Repository JavaScript connector
@@ -236,7 +262,7 @@ and sha256 fields are updated only when their templates are configured.
 
 Templates support ${version}, ${source}, and ${sha256}.
 
-The action uses targeted replacements rather than rewriting the whole PKGBUILD.
+The action uses targeted replacements rather than rewriting the whole PKGBUILD. Shell references such as `${pkgname}`, `${pkgver}`, `$pkgver`, and custom variables remain literal unless a configured template explicitly updates their assignment. When a source template is configured, references not reserved for connector placeholders (`${version}`, `${source}`, `${sha256}`) are preserved.
 
 ## Validation
 

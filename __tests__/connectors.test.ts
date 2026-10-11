@@ -124,6 +124,130 @@ describe('npm connector', () => {
   })
 })
 
+describe('pip connector', () => {
+  it('detects the latest PyPI sdist and uses its published SHA-256', async () => {
+    const sha256 = 'a'.repeat(64)
+    const fetchMock = jest.fn(async () =>
+      response({
+        info: { version: '2.4.0' },
+        releases: {
+          '2.4.0': [
+            {
+              packagetype: 'bdist_wheel',
+              url: 'https://files.pythonhosted.org/demo.whl',
+              digests: { sha256: 'b'.repeat(64) }
+            },
+            {
+              packagetype: 'sdist',
+              url: 'https://files.pythonhosted.org/demo.tar.gz',
+              digests: { sha256 }
+            }
+          ]
+        }
+      })
+    )
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!(
+      {}
+    )
+
+    await expect(
+      connector.detect(pkg, { package: 'demo-project' })
+    ).resolves.toEqual({
+      version: '2.4.0',
+      source: 'https://files.pythonhosted.org/demo.tar.gz',
+      sha256,
+      metadata: { package: 'demo-project', registry: 'pypi' }
+    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://pypi.org/pypi/demo-project/json',
+      { headers: { accept: 'application/json' } }
+    )
+  })
+
+  it('downloads the sdist when PyPI does not provide a valid SHA-256', async () => {
+    const archive = new TextEncoder().encode('pip archive')
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response({
+          info: { version: '1.0.0' },
+          releases: {
+            '1.0.0': [
+              {
+                packagetype: 'sdist',
+                url: 'https://example.test/demo.tar.gz',
+                digests: {}
+              }
+            ]
+          }
+        })
+      )
+      .mockResolvedValueOnce(new Response(archive))
+    const connector = createConnectorRegistry({ fetch: fetchMock }).get('pip')!(
+      {}
+    )
+
+    await expect(
+      connector.detect(pkg, { package: 'demo' })
+    ).resolves.toMatchObject({
+      sha256: createHash('sha256').update(archive).digest('hex')
+    })
+  })
+
+  it('rejects invalid project names', async () => {
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('pip')!(
+      {}
+    )
+    await expect(connector.detect(pkg, { package: '../demo' })).rejects.toThrow(
+      'PyPI project name'
+    )
+  })
+})
+
+describe('git connector', () => {
+  it('selects the highest supported tag and hashes its GitHub archive', async () => {
+    const archive = new TextEncoder().encode('git archive')
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(
+        response([{ name: 'v1.9.0' }, { name: '2.1.0' }, { name: 'release' }])
+      )
+      .mockResolvedValueOnce(new Response(archive))
+    const connector = createConnectorRegistry({
+      fetch: fetchMock,
+      token: 'test-token'
+    }).get('git')!({})
+
+    await expect(
+      connector.detect(pkg, { repository: 'owner/project' })
+    ).resolves.toEqual({
+      version: '2.1.0',
+      source: 'https://github.com/owner/project/archive/refs/tags/2.1.0.tar.gz',
+      sha256: createHash('sha256').update(archive).digest('hex'),
+      metadata: { repository: 'owner/project', tag: '2.1.0' }
+    })
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'https://api.github.com/repos/owner/project/tags?per_page=100&page=1',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          authorization: 'Bearer test-token',
+          'x-github-api-version': '2026-03-10'
+        })
+      })
+    )
+  })
+
+  it('rejects invalid repository configuration', async () => {
+    const connector = createConnectorRegistry({ fetch: jest.fn() }).get('git')!(
+      {}
+    )
+    await expect(
+      connector.detect(pkg, { repository: 'not-a-repository' })
+    ).rejects.toThrow('GitHub owner/name form')
+  })
+})
+
 describe('github-release connector', () => {
   it('does not retry GitHub API requests without the token after a 403', async () => {
     const fetchMock = jest
