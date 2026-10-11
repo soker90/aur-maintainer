@@ -5,6 +5,8 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { DEFAULT_PACKAGE_CONNECTOR_TIMEOUT } from './config.js'
+import { createGitConnector } from './connectors/git.js'
+import { createPipConnector } from './connectors/pip.js'
 import type { PackageDefinition, UpdateCandidate } from './types.js'
 import { comparePackageVersions, isSupportedPackageVersion } from './version.js'
 
@@ -39,7 +41,9 @@ export function createConnectorRegistry(
   return new Map<string, ConnectorFactory>([
     ['github-release', () => new GithubReleaseConnector(context)],
     ['github-tag', () => new GithubTagConnector(context)],
-    ['npm', () => new NpmConnector(context)]
+    ['npm', () => new NpmConnector(context)],
+    ['pip', () => createPipConnector(context)],
+    ['git', () => createGitConnector(context)]
   ])
 }
 
