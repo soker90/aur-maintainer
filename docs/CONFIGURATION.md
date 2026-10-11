@@ -25,7 +25,9 @@ Each package object supports:
 | `updates`   | no       | Optional `version`, `source`, and/or `sha256` PKGBUILD assignment templates |
 | `timeout`   | no       | Package-local custom connector timeout; defaults to `30` seconds            |
 
-The connector version always updates `pkgver`. The optional `updates.version`
+The connector version always updates `pkgver`. Shell references such as `${pkgname}`, `${pkgver}`, `$pkgver`, and custom variables are preserved unless their assignment is explicitly mapped in `updates`. In templates, only `${version}`, `${source}`, and `${sha256}` are replaced by connector values; other shell references remain literal.
+
+ The optional `updates.version`
 template can also update version-derived assignments such as
 `_npmver=${version}`; it runs even when the connector returns only a version.
 The `source` and `sha256` templates run only when the connector returns those
@@ -80,6 +82,35 @@ The `config.package` value may be an unscoped or scoped npm package name.
 Downloading the tarball to calculate SHA-256 adds one request per detection. If
 a package's upstream source is GitHub Releases or GitHub Tags, prefer the
 corresponding GitHub connector instead.
+
+### `pip`
+
+Reads the current release from PyPI, selects its source distribution, and uses
+its published SHA-256 or downloads the archive to calculate one.
+
+```yaml
+connector: pip
+config:
+  package: packaging
+updates:
+  source: 'source=("${source}")'
+  sha256: 'sha256sums=("${sha256}")'
+```
+
+### `git`
+
+Selects the highest supported version tag from a GitHub repository, downloads
+its source archive, and calculates SHA-256. This connector is for GitHub-hosted
+repositories, not arbitrary Git servers.
+
+```yaml
+connector: git
+config:
+  repository: owner/project
+updates:
+  source: 'source=("${source}")'
+  sha256: 'sha256sums=("${sha256}")'
+```
 
 ## Repository-local connectors
 
