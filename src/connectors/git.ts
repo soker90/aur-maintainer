@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
 import type { Connector, ConnectorContext } from '../connectors.js'
-import { comparePackageVersions, isSupportedPackageVersion } from '../version.js'
+import {
+  comparePackageVersions,
+  isSupportedPackageVersion
+} from '../version.js'
 import type { PackageDefinition, UpdateCandidate } from '../types.js'
 
 export function createGitConnector(context: ConnectorContext): Connector {
@@ -66,7 +69,9 @@ export function createGitConnector(context: ConnectorContext): Connector {
         )
       }
 
-      const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(latest.name)}.tar.gz`
+      const source = `https://github.com/${repository}/archive/refs/tags/${encodeURIComponent(
+        latest.name
+      )}.tar.gz`
       const archive = await context.fetch(source)
       if (!archive.ok) {
         throw new Error(
