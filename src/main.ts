@@ -36,6 +36,7 @@ export async function run(): Promise<void> {
     const autoMerge = core.getBooleanInput('auto-merge')
     const aurPublish = core.getBooleanInput('aur-publish')
     const aurPublishOnly = core.getBooleanInput('aur-publish-only')
+    const aurPublishBranch = core.getInput('aur-publish-branch')
     const aurSshKey = core.getInput('aur-ssh-key')
     const aurKnownHosts = core.getInput('aur-known-hosts')
     const pullRequests: string[] = []
@@ -51,18 +52,33 @@ export async function run(): Promise<void> {
           'aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled'
         )
       }
-      for (const pkg of packages) {
-        await validatePackage(pkg)
-        const published = await publishAurPackage(pkg, {
-          sshKey: aurSshKey,
-          knownHosts: aurKnownHosts
-        })
-        if (published) core.info(`Published ${pkg.name} to the AUR`)
-        else core.info(`AUR package ${pkg.name} is already up to date`)
+
+      const updateBranch = core.getInput('update-branch') || 'update'
+      const branchPrefix = `${updateBranch}/`
+      if (!aurPublishBranch.startsWith(branchPrefix)) {
+        throw new Error(`aur-publish-branch must start with "${branchPrefix}"`)
       }
+
+      const packageName = aurPublishBranch.slice(branchPrefix.length)
+      const packageToPublish = packages.find((pkg) => pkg.name === packageName)
+      if (!packageName || packageName.includes('/') || !packageToPublish) {
+        throw new Error(
+          `No configured package matches merged update branch "${aurPublishBranch}"`
+        )
+      }
+
+      await validatePackage(packageToPublish)
+      const published = await publishAurPackage(packageToPublish, {
+        sshKey: aurSshKey,
+        knownHosts: aurKnownHosts
+      })
+      if (published) core.info(`Published ${packageToPublish.name} to the AUR`)
+      else
+        core.info(`AUR package ${packageToPublish.name} is already up to date`)
+
       core.setOutput(
         'packages',
-        JSON.stringify(packages.map((pkg) => ({ package: pkg.name })))
+        JSON.stringify([{ package: packageToPublish.name }])
       )
       return
     }

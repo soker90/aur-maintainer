@@ -44,10 +44,15 @@ inputs:
     default: 'false'
   aur-publish-only:
     description: >-
-      Publish the current package state to the AUR without checking upstream
-      updates
+      Publish a single package selected by its merged update branch without
+      checking upstream updates
     required: false
     default: 'false'
+  aur-publish-branch:
+    description: >-
+      Merged package update branch to publish, using the configured
+      update-branch prefix (for example, update/example)
+    required: false
   aur-ssh-key:
     description: >-
       Private SSH key authorized for the AUR account

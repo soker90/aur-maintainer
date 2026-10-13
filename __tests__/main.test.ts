@@ -138,7 +138,15 @@ describe('main.ts', () => {
     expect(core.setFailed).not.toHaveBeenCalled()
   })
 
-  it('publishes without checking upstream updates in publish-only mode', async () => {
+  it('publishes only the package named by the merged update branch', async () => {
+    const otherPackage = {
+      ...pkg,
+      name: 'other',
+      path: '/workspace/packages/other',
+      pkgbuildPath: '/workspace/packages/other/PKGBUILD',
+      srcinfoPath: '/workspace/packages/other/.SRCINFO'
+    }
+    discoverPackages.mockResolvedValue([pkg, otherPackage])
     core.getBooleanInput.mockImplementation(
       (name) => name === 'aur-publish-only'
     )
@@ -146,18 +154,47 @@ describe('main.ts', () => {
       if (name === 'github-token') return 'test-token'
       if (name === 'aur-ssh-key') return 'PRIVATE KEY'
       if (name === 'aur-known-hosts') return 'KNOWN HOST'
+      if (name === 'aur-publish-branch') return 'update/example'
+      if (name === 'update-branch') return 'update'
       return '.aur-maintainer.yml'
     })
 
     await run()
 
+    expect(publishAurPackage).toHaveBeenCalledTimes(1)
     expect(publishAurPackage).toHaveBeenCalledWith(pkg, {
       sshKey: 'PRIVATE KEY',
       knownHosts: 'KNOWN HOST'
     })
+    expect(validatePackage).toHaveBeenCalledTimes(1)
     expect(validatePackage).toHaveBeenCalledWith(pkg)
     expect(loadRepositoryConnectors).not.toHaveBeenCalled()
     expect(updatePackage).not.toHaveBeenCalled()
+    expect(core.setOutput).toHaveBeenCalledWith(
+      'packages',
+      JSON.stringify([{ package: 'example' }])
+    )
+  })
+
+  it('fails closed when the merged update branch does not identify a configured package', async () => {
+    core.getBooleanInput.mockImplementation(
+      (name) => name === 'aur-publish-only'
+    )
+    core.getInput.mockImplementation((name) => {
+      if (name === 'aur-ssh-key') return 'PRIVATE KEY'
+      if (name === 'aur-known-hosts') return 'KNOWN HOST'
+      if (name === 'aur-publish-branch') return 'update/not-configured'
+      if (name === 'update-branch') return 'update'
+      return '.aur-maintainer.yml'
+    })
+
+    await run()
+
+    expect(publishAurPackage).not.toHaveBeenCalled()
+    expect(validatePackage).not.toHaveBeenCalled()
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'No configured package matches merged update branch "update/not-configured"'
+    )
   })
 
   it('does not fail when the optional repository configuration is absent', async () => {

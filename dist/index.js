@@ -36958,6 +36958,7 @@ async function run() {
         const autoMerge = getBooleanInput('auto-merge');
         const aurPublish = getBooleanInput('aur-publish');
         const aurPublishOnly = getBooleanInput('aur-publish-only');
+        const aurPublishBranch = getInput('aur-publish-branch');
         const aurSshKey = getInput('aur-ssh-key');
         const aurKnownHosts = getInput('aur-known-hosts');
         const pullRequests = [];
@@ -36969,18 +36970,26 @@ async function run() {
             if (!aurSshKey || !aurKnownHosts) {
                 throw new Error('aur-ssh-key and aur-known-hosts are required when AUR publishing is enabled');
             }
-            for (const pkg of packages) {
-                await validatePackage(pkg);
-                const published = await publishAurPackage(pkg, {
-                    sshKey: aurSshKey,
-                    knownHosts: aurKnownHosts
-                });
-                if (published)
-                    info(`Published ${pkg.name} to the AUR`);
-                else
-                    info(`AUR package ${pkg.name} is already up to date`);
+            const updateBranch = getInput('update-branch') || 'update';
+            const branchPrefix = `${updateBranch}/`;
+            if (!aurPublishBranch.startsWith(branchPrefix)) {
+                throw new Error(`aur-publish-branch must start with "${branchPrefix}"`);
             }
-            setOutput('packages', JSON.stringify(packages.map((pkg) => ({ package: pkg.name }))));
+            const packageName = aurPublishBranch.slice(branchPrefix.length);
+            const packageToPublish = packages.find((pkg) => pkg.name === packageName);
+            if (!packageName || packageName.includes('/') || !packageToPublish) {
+                throw new Error(`No configured package matches merged update branch "${aurPublishBranch}"`);
+            }
+            await validatePackage(packageToPublish);
+            const published = await publishAurPackage(packageToPublish, {
+                sshKey: aurSshKey,
+                knownHosts: aurKnownHosts
+            });
+            if (published)
+                info(`Published ${packageToPublish.name} to the AUR`);
+            else
+                info(`AUR package ${packageToPublish.name} is already up to date`);
+            setOutput('packages', JSON.stringify([{ package: packageToPublish.name }]));
             return;
         }
         const registryContext = {
