@@ -56,9 +56,7 @@ export async function run(): Promise<void> {
       const updateBranch = core.getInput('update-branch') || 'update'
       const branchPrefix = `${updateBranch}/`
       if (!aurPublishBranch.startsWith(branchPrefix)) {
-        throw new Error(
-          `aur-publish-branch must start with "${branchPrefix}"`
-        )
+        throw new Error(`aur-publish-branch must start with "${branchPrefix}"`)
       }
 
       const packageName = aurPublishBranch.slice(branchPrefix.length)
@@ -76,9 +74,7 @@ export async function run(): Promise<void> {
       })
       if (published) core.info(`Published ${packageToPublish.name} to the AUR`)
       else
-        core.info(
-          `AUR package ${packageToPublish.name} is already up to date`
-        )
+        core.info(`AUR package ${packageToPublish.name} is already up to date`)
 
       core.setOutput(
         'packages',
