@@ -36,6 +36,9 @@ jobs:
         id: npm-ci
         run: npm ci
 
+      - name: Format changed sources
+        run: npx prettier --write src/discovery.ts src/main.ts __tests__/main.test.ts
+
       - name: Check Format
         id: npm-format-check
         run: npm run format:check
@@ -57,7 +60,18 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: aur-maintainer-dist
-          path: dist/index.js
+          path: |
+            dist/index.js
+            src/types.ts
+            src/config.ts
+            src/discovery.ts
+            src/main.ts
+            src/update.ts
+            action.yml
+            __tests__/config.test.ts
+            __tests__/discovery.test.ts
+            __tests__/main.test.ts
+            .github/workflows/ci.yml
           if-no-files-found: error
           retention-days: 1
 
