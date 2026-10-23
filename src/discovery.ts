@@ -64,26 +64,23 @@ async function discoverPackage(
     ? path.join(workspace, '.aur-maintainer.yml')
     : await findLegacyUpdateConfigPath(packagePath)
   const inlineEntry = entry as PackageConfigEntry
-  const config: PackageConfig =
-    hasInlineConfig
-      ? {
-          ...(inlineEntry.connector
-            ? { connector: inlineEntry.connector }
-            : {}),
-          config: inlineEntry.config ?? {},
-          updates: inlineEntry.updates ?? {},
-          timeout: inlineEntry.timeout ?? 30
+  const config: PackageConfig = hasInlineConfig
+    ? {
+        ...(inlineEntry.connector ? { connector: inlineEntry.connector } : {}),
+        config: inlineEntry.config ?? {},
+        updates: inlineEntry.updates ?? {},
+        timeout: inlineEntry.timeout ?? 30
+      }
+    : (await isFile(updateConfigPath))
+      ? await loadPackageConfig(
+          packagePath,
+          path.relative(packagePath, updateConfigPath)
+        )
+      : {
+          config: {},
+          updates: {},
+          timeout: 30
         }
-      : (await isFile(updateConfigPath))
-        ? await loadPackageConfig(
-            packagePath,
-            path.relative(packagePath, updateConfigPath)
-          )
-        : {
-            config: {},
-            updates: {},
-            timeout: 30
-          }
 
   return {
     name: path.basename(packagePath),

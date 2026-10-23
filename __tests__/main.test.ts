@@ -131,11 +131,15 @@ describe('main.ts', () => {
       version: '2.0.0',
       previousPkgbuild: 'pkgname=example\npkgver=1.0.0\npkgrel=1\n'
     })
-    createUpdatePullRequest.mockResolvedValue('https://github.com/test/repo/pull/1')
+    createUpdatePullRequest.mockResolvedValue(
+      'https://github.com/test/repo/pull/1'
+    )
 
     await run()
 
-    expect(updatePackage).toHaveBeenCalledWith(manualPackage, { version: '2.0.0' })
+    expect(updatePackage).toHaveBeenCalledWith(manualPackage, {
+      version: '2.0.0'
+    })
     expect(loadRepositoryConnectors).not.toHaveBeenCalled()
     expect(updatePackageMetadata).toHaveBeenCalledWith(manualPackage)
     expect(validatePackage).toHaveBeenCalledWith(manualPackage)
@@ -169,7 +173,11 @@ describe('main.ts', () => {
   it('requires a GitHub token when auto-merge is enabled', async () => {
     core.getBooleanInput.mockImplementation((name) => name === 'auto-merge')
     core.getInput.mockImplementation((name) =>
-      name === 'github-token' ? '' : name === 'config' ? '.aur-maintainer.yml' : ''
+      name === 'github-token'
+        ? ''
+        : name === 'config'
+          ? '.aur-maintainer.yml'
+          : ''
     )
 
     await run()
@@ -271,7 +279,11 @@ describe('main.ts', () => {
 
   it('warns when an update is found without a GitHub token', async () => {
     core.getInput.mockImplementation((name) =>
-      name === 'github-token' ? '' : name === 'config' ? '.aur-maintainer.yml' : ''
+      name === 'github-token'
+        ? ''
+        : name === 'config'
+          ? '.aur-maintainer.yml'
+          : ''
     )
     updatePackage.mockResolvedValue({
       changed: true,

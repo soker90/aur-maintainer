@@ -35675,8 +35675,9 @@ async function loadPackageConfig(packagePath, relativeConfigPath = 'update.yml')
 function parsePackageConfig(value, filePath) {
     if (!isRecord(value))
         throw new Error(filePath + ' must contain a YAML object');
-    if (typeof value.connector !== 'string' || value.connector.trim() === '') {
-        throw new Error(filePath + ': "connector" is required');
+    if (value.connector !== undefined &&
+        (typeof value.connector !== 'string' || value.connector.trim() === '')) {
+        throw new Error(filePath + ': "connector" must be a non-empty string');
     }
     if (value.config !== undefined && !isRecord(value.config)) {
         throw new Error(filePath + ': "config" must be an object');
@@ -35697,7 +35698,9 @@ function parsePackageConfig(value, filePath) {
         }
     }
     return {
-        connector: value.connector,
+        ...(typeof value.connector === 'string'
+            ? { connector: value.connector }
+            : {}),
         config: value.config ?? {},
         updates: updates,
         timeout: value.timeout ?? DEFAULT_PACKAGE_CONNECTOR_TIMEOUT
@@ -35764,17 +35767,28 @@ async function discoverPackage(workspace, entry) {
     if (!(await isFile$2(pkgbuildPath))) {
         throw new Error('Package directory has no PKGBUILD: ' + packagePath);
     }
-    const updateConfigPath = 'connector' in entry
+    const hasInlineConfig = 'connector' in entry ||
+        'config' in entry ||
+        'updates' in entry ||
+        'timeout' in entry;
+    const updateConfigPath = hasInlineConfig
         ? path.join(workspace, '.aur-maintainer.yml')
         : await findLegacyUpdateConfigPath(packagePath);
-    const config = 'connector' in entry
+    const inlineEntry = entry;
+    const config = hasInlineConfig
         ? {
-            connector: entry.connector,
-            config: entry.config,
-            updates: entry.updates,
-            timeout: entry.timeout
+            ...(inlineEntry.connector ? { connector: inlineEntry.connector } : {}),
+            config: inlineEntry.config ?? {},
+            updates: inlineEntry.updates ?? {},
+            timeout: inlineEntry.timeout ?? 30
         }
-        : await loadPackageConfig(packagePath, path.relative(packagePath, updateConfigPath));
+        : (await isFile$2(updateConfigPath))
+            ? await loadPackageConfig(packagePath, path.relative(packagePath, updateConfigPath))
+            : {
+                config: {},
+                updates: {},
+                timeout: 30
+            };
     return {
         name: path.basename(packagePath),
         path: packagePath,
@@ -36392,6 +36406,7 @@ async function updatePackageMetadataWithDocker(pkg) {
 }
 
 async function updatePackage(pkg, candidate) {
+    assertSupportedPackageVersion(candidate.version);
     const content = await readFile(pkg.pkgbuildPath, 'utf8');
     const currentVersion = readPkgver(content);
     const updated = applyPackageUpdates(content, pkg.config.updates, candidate);
@@ -36992,6 +37007,61 @@ async function run() {
             setOutput('packages', JSON.stringify([{ package: packageToPublish.name }]));
             return;
         }
+        const repository = process.env.GITHUB_REPOSITORY;
+        const manualPackageName = getInput('manual-package').trim();
+        const manualVersion = getInput('manual-version').trim();
+        if (manualPackageName || manualVersion) {
+            if (!manualPackageName || !manualVersion) {
+                throw new Error('manual-package and manual-version must both be provided');
+            }
+            if (!token) {
+                throw new Error('github-token is required for manual package updates');
+            }
+            if (!repository)
+                throw new Error('GITHUB_REPOSITORY is required');
+            const pkg = packages.find((candidate) => candidate.name === manualPackageName);
+            if (!pkg) {
+                throw new Error(`No managed package matches manual-package "${manualPackageName}"`);
+            }
+            const snapshot = {
+                pkg,
+                pkgbuild: await readFile(pkg.pkgbuildPath, 'utf8'),
+                srcinfo: undefined
+            };
+            snapshots.push(snapshot);
+            await completePackageSnapshot(snapshot);
+            const update = await updatePackage(pkg, { version: manualVersion });
+            await updatePackageMetadata(pkg);
+            await validatePackage(pkg);
+            const pullRequest = await createUpdatePullRequest(workspace, {
+                token,
+                repository,
+                baseBranch: getInput('base-branch') || 'main',
+                updateBranch: getInput('update-branch') || 'update',
+                packages: [pkg],
+                currentVersion: update.currentVersion,
+                version: update.version,
+                autoMerge,
+                autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+            });
+            if (pullRequest) {
+                pullRequests.push(pullRequest);
+                setOutput('pull-requests', JSON.stringify(pullRequests));
+                setOutput('pull-request', pullRequest);
+            }
+            setOutput('packages', JSON.stringify([
+                {
+                    package: pkg.name,
+                    candidate: { version: manualVersion },
+                    update
+                }
+            ]));
+            info(update.changed
+                ? `Prepared manual update for ${pkg.name}: ${update.currentVersion} to ${update.version}`
+                : `Validated ${pkg.name} at ${update.version} and refreshed package metadata`);
+            snapshots.pop();
+            return;
+        }
         const registryContext = {
             fetch: (input, init) => fetch(input, init),
             token: token || undefined
@@ -37002,11 +37072,14 @@ async function run() {
             return;
         }
         const candidates = [];
-        const repository = process.env.GITHUB_REPOSITORY;
         for (const pkg of packages) {
             let update;
             let snapshot;
             try {
+                if (!pkg.config.connector) {
+                    info(`Skipping ${pkg.name}: no version connector is configured; use manual-package and manual-version for maintenance.`);
+                    continue;
+                }
                 const factory = pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
                     ? loadPackageConnector(pkg)
                     : registry.get(pkg.config.connector);

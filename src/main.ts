@@ -98,7 +98,9 @@ export async function run(): Promise<void> {
       }
       if (!repository) throw new Error('GITHUB_REPOSITORY is required')
 
-      const pkg = packages.find((candidate) => candidate.name === manualPackageName)
+      const pkg = packages.find(
+        (candidate) => candidate.name === manualPackageName
+      )
       if (!pkg) {
         throw new Error(
           `No managed package matches manual-package "${manualPackageName}"`
