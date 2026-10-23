@@ -56,13 +56,17 @@ jobs:
         run: npm run package
 
       - name: Commit generated bundle (temporary)
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/manual-package-maintenance-final'
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/manual-package-maintenance-')
         run: |
           if ! git diff --quiet -- dist/; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add dist/index.js src/discovery.ts src/main.ts __tests__/main.test.ts
             git commit -m "build: sync generated action bundle"
+            generated_commit="$(git rev-parse HEAD)"
+            git fetch origin "${GITHUB_HEAD_REF}"
+            git checkout --detach FETCH_HEAD
+            git cherry-pick "$generated_commit"
             git push origin "HEAD:${GITHUB_HEAD_REF}"
           fi
 
