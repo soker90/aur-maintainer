@@ -39,8 +39,11 @@ export function parsePackageConfig(
 ): PackageConfig {
   if (!isRecord(value))
     throw new Error(filePath + ' must contain a YAML object')
-  if (typeof value.connector !== 'string' || value.connector.trim() === '') {
-    throw new Error(filePath + ': "connector" is required')
+  if (
+    value.connector !== undefined &&
+    (typeof value.connector !== 'string' || value.connector.trim() === '')
+  ) {
+    throw new Error(filePath + ': "connector" must be a non-empty string')
   }
   if (value.config !== undefined && !isRecord(value.config)) {
     throw new Error(filePath + ': "config" must be an object')
@@ -67,7 +70,9 @@ export function parsePackageConfig(
   }
 
   return {
-    connector: value.connector,
+    ...(typeof value.connector === 'string'
+      ? { connector: value.connector }
+      : {}),
     config: (value.config as Record<string, unknown> | undefined) ?? {},
     updates: updates as PackageConfig['updates'],
     timeout:

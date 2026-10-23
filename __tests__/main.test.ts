@@ -100,6 +100,70 @@ describe('main.ts', () => {
     jest.resetAllMocks()
   })
 
+  it('updates a manually selected package without loading connectors or publishing to AUR', async () => {
+    const directory = await mkdtemp(path.join(os.tmpdir(), 'aur-manual-'))
+    const pkgbuildPath = path.join(directory, 'PKGBUILD')
+    const srcinfoPath = path.join(directory, '.SRCINFO')
+    await writeFile(pkgbuildPath, 'pkgname=example\npkgver=1.0.0\npkgrel=1\n')
+    await writeFile(srcinfoPath, 'pkgname = example\npkgver = 1.0.0\n')
+    const manualPackage: PackageDefinition = {
+      ...pkg,
+      name: 'example',
+      path: directory,
+      pkgbuildPath,
+      srcinfoPath,
+      updateConfigPath: path.join(directory, 'update.yml'),
+      config: { config: {}, updates: {} }
+    }
+    discoverPackages.mockResolvedValue([manualPackage])
+    core.getInput.mockImplementation((name) => {
+      if (name === 'github-token') return 'test-token'
+      if (name === 'manual-package') return 'example'
+      if (name === 'manual-version') return '2.0.0'
+      if (name === 'auto-merge-timeout') return '600'
+      return '.aur-maintainer.yml'
+    })
+    updatePackage.mockResolvedValue({
+      changed: true,
+      currentVersion: '1.0.0',
+      version: '2.0.0',
+      previousPkgbuild: 'pkgname=example\npkgver=1.0.0\npkgrel=1\n'
+    })
+    createUpdatePullRequest.mockResolvedValue('https://github.com/test/repo/pull/1')
+
+    await run()
+
+    expect(updatePackage).toHaveBeenCalledWith(manualPackage, { version: '2.0.0' })
+    expect(loadRepositoryConnectors).not.toHaveBeenCalled()
+    expect(updatePackageMetadata).toHaveBeenCalledWith(manualPackage)
+    expect(validatePackage).toHaveBeenCalledWith(manualPackage)
+    expect(createUpdatePullRequest).toHaveBeenCalledWith(
+      '/workspace',
+      expect.objectContaining({
+        packages: [manualPackage],
+        currentVersion: '1.0.0',
+        version: '2.0.0'
+      })
+    )
+    expect(publishAurPackage).not.toHaveBeenCalled()
+    expect(core.setFailed).not.toHaveBeenCalled()
+  })
+
+  it('requires both manual inputs together', async () => {
+    core.getInput.mockImplementation((name) => {
+      if (name === 'github-token') return 'test-token'
+      if (name === 'manual-package') return 'example'
+      return '.aur-maintainer.yml'
+    })
+
+    await run()
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      'manual-package and manual-version must both be provided'
+    )
+    expect(loadRepositoryConnectors).not.toHaveBeenCalled()
+  })
+
   it('requires a GitHub token when auto-merge is enabled', async () => {
     core.getBooleanInput.mockImplementation((name) => name === 'auto-merge')
     core.getInput.mockImplementation((name) =>

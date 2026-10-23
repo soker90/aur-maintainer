@@ -57,6 +57,23 @@ describe('discoverPackages', () => {
     ])
   })
 
+  it('discovers manual-only packages without connector configuration', async () => {
+    const root = await workspace()
+    const directory = path.join(root, 'packages/manual-bin')
+    await mkdir(directory, { recursive: true })
+    await writeFile(
+      path.join(directory, 'PKGBUILD'),
+      'pkgname=manual-bin\npkgver=1.0.0\npkgrel=1\n'
+    )
+
+    await expect(discoverPackages(root, {})).resolves.toEqual([
+      expect.objectContaining({
+        name: 'manual-bin',
+        config: { config: {}, updates: {}, timeout: 30 }
+      })
+    ])
+  })
+
   it('uses connector/update.yml for package-local connectors', async () => {
     const root = await workspace()
     await packageDirectory(root, 'packages/custom-bin', 'custom', true)

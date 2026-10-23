@@ -52,6 +52,15 @@ jobs:
         id: npm-package
         run: npm run package
 
+      - name: Export generated bundle for maintenance
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: aur-maintainer-dist
+          path: dist/index.js
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Verify dist/
         id: verify-dist
         run: |

@@ -83,6 +83,75 @@ export async function run(): Promise<void> {
       return
     }
 
+    const repository = process.env.GITHUB_REPOSITORY
+    const manualPackageName = core.getInput('manual-package').trim()
+    const manualVersion = core.getInput('manual-version').trim()
+
+    if (manualPackageName || manualVersion) {
+      if (!manualPackageName || !manualVersion) {
+        throw new Error(
+          'manual-package and manual-version must both be provided'
+        )
+      }
+      if (!token) {
+        throw new Error('github-token is required for manual package updates')
+      }
+      if (!repository) throw new Error('GITHUB_REPOSITORY is required')
+
+      const pkg = packages.find((candidate) => candidate.name === manualPackageName)
+      if (!pkg) {
+        throw new Error(
+          `No managed package matches manual-package "${manualPackageName}"`
+        )
+      }
+
+      const snapshot: PackageSnapshot = {
+        pkg,
+        pkgbuild: await readFile(pkg.pkgbuildPath, 'utf8'),
+        srcinfo: undefined
+      }
+      snapshots.push(snapshot)
+      await completePackageSnapshot(snapshot)
+
+      const update = await updatePackage(pkg, { version: manualVersion })
+      await updatePackageMetadata(pkg)
+      await validatePackage(pkg)
+
+      const pullRequest = await createUpdatePullRequest(workspace, {
+        token,
+        repository,
+        baseBranch: core.getInput('base-branch') || 'main',
+        updateBranch: core.getInput('update-branch') || 'update',
+        packages: [pkg],
+        currentVersion: update.currentVersion,
+        version: update.version,
+        autoMerge,
+        autoMergeTimeoutSeconds: getPositiveIntegerInput('auto-merge-timeout')
+      })
+      if (pullRequest) {
+        pullRequests.push(pullRequest)
+        core.setOutput('pull-requests', JSON.stringify(pullRequests))
+        core.setOutput('pull-request', pullRequest)
+      }
+      core.setOutput(
+        'packages',
+        JSON.stringify([
+          {
+            package: pkg.name,
+            candidate: { version: manualVersion },
+            update
+          }
+        ])
+      )
+      core.info(
+        update.changed
+          ? `Prepared manual update for ${pkg.name}: ${update.currentVersion} to ${update.version}`
+          : `Validated ${pkg.name} at ${update.version} and refreshed package metadata`
+      )
+      snapshots.pop()
+      return
+    }
+
     const registryContext = {
       fetch: (input: string | URL, init?: RequestInit) => fetch(input, init),
       token: token || undefined
@@ -95,12 +164,18 @@ export async function run(): Promise<void> {
     }
 
     const candidates = []
-    const repository = process.env.GITHUB_REPOSITORY
     for (const pkg of packages) {
       let update: Awaited<ReturnType<typeof updatePackage>> | undefined
       let snapshot: PackageSnapshot | undefined
 
       try {
+        if (!pkg.config.connector) {
+          core.info(
+            `Skipping ${pkg.name}: no version connector is configured; use manual-package and manual-version for maintenance.`
+          )
+          continue
+        }
+
         const factory =
           pkg.config.connector === PACKAGE_LOCAL_CONNECTOR
             ? loadPackageConnector(pkg)

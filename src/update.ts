@@ -17,6 +17,7 @@ export async function updatePackage(
   pkg: PackageDefinition,
   candidate: UpdateCandidate
 ): Promise<PackageUpdateResult> {
+  assertSupportedPackageVersion(candidate.version)
   const content = await readFile(pkg.pkgbuildPath, 'utf8')
   const currentVersion = readPkgver(content)
   const updated = applyPackageUpdates(content, pkg.config.updates, candidate)

@@ -7,7 +7,7 @@ export interface PackageConfigEntry extends PackageConfig {
 }
 
 export interface PackageConfig {
-  connector: string
+  connector?: string
   config: Record<string, unknown>
   updates: PackageUpdateConfig
   timeout?: number
