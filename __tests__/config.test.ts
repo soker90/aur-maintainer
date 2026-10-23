@@ -27,12 +27,14 @@ describe('config', () => {
     await expect(loadMaintainerConfig(workspace)).resolves.toEqual({})
   })
 
-  it('requires a connector in package configuration', async () => {
+  it('allows package configuration without a connector for manual maintenance', async () => {
     const packagePath = await tempDirectory('aur-package')
     await writeFile(path.join(packagePath, 'update.yml'), 'config: {}\n')
-    await expect(loadPackageConfig(packagePath)).rejects.toThrow(
-      '"connector" is required'
-    )
+    await expect(loadPackageConfig(packagePath)).resolves.toEqual({
+      config: {},
+      updates: {},
+      timeout: 30
+    })
   })
 
   it('loads package connector configuration', async () => {

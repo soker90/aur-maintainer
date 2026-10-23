@@ -17,6 +17,14 @@ inputs:
       GitHub token used for GitHub API requests and to create the update pull
       request
     required: false
+  manual-package:
+    description: >-
+      Exact managed package name to update manually without running a connector
+    required: false
+  manual-version:
+    description: >-
+      Target pkgver for the selected manual package maintenance run
+    required: false
   update-branch:
     description: >-
       Prefix used for generated package-specific update pull request branches
