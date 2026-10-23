@@ -70,7 +70,9 @@ describe('main.ts', () => {
         ? 'test-token'
         : name === 'auto-merge-timeout'
           ? '600'
-          : '.aur-maintainer.yml'
+          : name === 'config'
+            ? '.aur-maintainer.yml'
+            : ''
     )
     core.getBooleanInput.mockReturnValue(false)
     discoverPackages.mockResolvedValue([pkg])
@@ -121,7 +123,7 @@ describe('main.ts', () => {
       if (name === 'manual-package') return 'example'
       if (name === 'manual-version') return '2.0.0'
       if (name === 'auto-merge-timeout') return '600'
-      return '.aur-maintainer.yml'
+      return name === 'config' ? '.aur-maintainer.yml' : ''
     })
     updatePackage.mockResolvedValue({
       changed: true,
@@ -153,7 +155,7 @@ describe('main.ts', () => {
     core.getInput.mockImplementation((name) => {
       if (name === 'github-token') return 'test-token'
       if (name === 'manual-package') return 'example'
-      return '.aur-maintainer.yml'
+      return name === 'config' ? '.aur-maintainer.yml' : ''
     })
 
     await run()
@@ -184,7 +186,7 @@ describe('main.ts', () => {
       if (name === 'github-token') return ''
       if (name === 'aur-ssh-key') return 'PRIVATE KEY'
       if (name === 'aur-known-hosts') return 'KNOWN HOST'
-      return '.aur-maintainer.yml'
+      return name === 'config' ? '.aur-maintainer.yml' : ''
     })
     updatePackage.mockResolvedValue({
       changed: true,
@@ -220,7 +222,7 @@ describe('main.ts', () => {
       if (name === 'aur-known-hosts') return 'KNOWN HOST'
       if (name === 'aur-publish-branch') return 'update/example'
       if (name === 'update-branch') return 'update'
-      return '.aur-maintainer.yml'
+      return name === 'config' ? '.aur-maintainer.yml' : ''
     })
 
     await run()
@@ -249,7 +251,7 @@ describe('main.ts', () => {
       if (name === 'aur-known-hosts') return 'KNOWN HOST'
       if (name === 'aur-publish-branch') return 'update/not-configured'
       if (name === 'update-branch') return 'update'
-      return '.aur-maintainer.yml'
+      return name === 'config' ? '.aur-maintainer.yml' : ''
     })
 
     await run()
