@@ -56,7 +56,7 @@ jobs:
         run: npm run package
 
       - name: Commit generated bundle (temporary)
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/manual-package-maintenance-ci'
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/manual-package-maintenance-final'
         run: |
           if ! git diff --quiet -- dist/; then
             git config user.name "github-actions[bot]"

@@ -169,7 +169,7 @@ describe('main.ts', () => {
   it('requires a GitHub token when auto-merge is enabled', async () => {
     core.getBooleanInput.mockImplementation((name) => name === 'auto-merge')
     core.getInput.mockImplementation((name) =>
-      name === 'github-token' ? '' : '.aur-maintainer.yml'
+      name === 'github-token' ? '' : name === 'config' ? '.aur-maintainer.yml' : ''
     )
 
     await run()
@@ -271,7 +271,7 @@ describe('main.ts', () => {
 
   it('warns when an update is found without a GitHub token', async () => {
     core.getInput.mockImplementation((name) =>
-      name === 'github-token' ? '' : '.aur-maintainer.yml'
+      name === 'github-token' ? '' : name === 'config' ? '.aur-maintainer.yml' : ''
     )
     updatePackage.mockResolvedValue({
       changed: true,
