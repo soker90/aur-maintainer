@@ -66,6 +66,30 @@ auto-merge: true
 auto-merge-timeout: 1800
 ```
 
+## Manual package maintenance
+
+For a package that has no upstream version connector, pass both manual inputs.
+The action skips connector detection, updates the selected package to the
+requested version, regenerates checksums and .SRCINFO, validates it, and opens
+a package-specific pull request. A GitHub token is required. This path never
+publishes directly to AUR; the normal post-merge publish workflow remains
+responsible for that.
+
+```yaml
+- uses: soker90/aur-maintainer@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    manual-package: vega-cli-bin
+    manual-version: 1.2.3
+```
+
+Packages without automated detection can be listed with only their path:
+
+```yaml
+packages:
+  - path: vega-cli-bin
+```
+
 ## Permissions
 
 The caller workflow controls GITHUB_TOKEN permissions. Grant only what is
@@ -90,6 +114,9 @@ updates can still run, but no GitHub branch/PR is created.
 
 - config: configuration path. Default: .aur-maintainer.yml.
 - github-token: GitHub API and repository automation token.
+- manual-package: exact managed package name for a manual maintenance run.
+- manual-version: target pkgver for that manual run. Both manual inputs must be
+  supplied together.
 - update-branch: prefix for generated update branches. Default: update.
 - base-branch: PR base branch. Default: main.
 - auto-merge: wait for checks and squash-merge. Default: false.

@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
@@ -36,9 +36,6 @@ jobs:
         id: npm-ci
         run: npm ci
 
-      - name: Format changed sources
-        run: npx prettier --write src/discovery.ts src/main.ts __tests__/main.test.ts
-
       - name: Check Format
         id: npm-format-check
         run: npm run format:check
@@ -54,41 +51,6 @@ jobs:
       - name: Build dist/
         id: npm-package
         run: npm run package
-
-      - name: Commit generated bundle (temporary)
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'feat/manual-package-maintenance-')
-        run: |
-          if ! git diff --quiet -- dist/; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add dist/index.js src/discovery.ts src/main.ts __tests__/main.test.ts
-            git commit -m "build: sync generated action bundle"
-            generated_commit="$(git rev-parse HEAD)"
-            git fetch origin "${GITHUB_HEAD_REF}"
-            git checkout --detach FETCH_HEAD
-            git cherry-pick "$generated_commit"
-            git push origin "HEAD:${GITHUB_HEAD_REF}"
-          fi
-
-      - name: Export generated bundle for maintenance
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: aur-maintainer-dist
-          path: |
-            dist/index.js
-            src/types.ts
-            src/config.ts
-            src/discovery.ts
-            src/main.ts
-            src/update.ts
-            action.yml
-            __tests__/config.test.ts
-            __tests__/discovery.test.ts
-            __tests__/main.test.ts
-            .github/workflows/ci.yml
-          if-no-files-found: error
-          retention-days: 1
 
       - name: Verify dist/
         id: verify-dist

@@ -53,6 +53,8 @@ jobs:
 | ------------------ | ------------------- | ----------------------------------------------------------------- |
 | config             | .aur-maintainer.yml | Configuración global.                                             |
 | github-token       | —                   | Token para API, ramas, PR, issues y merge.                        |
+| manual-package     | —                   | Nombre exacto del paquete que se actualizará manualmente.         |
+| manual-version     | —                   | Versión pkgver de destino; debe acompañar a manual-package.       |
 | update-branch      | update              | Prefijo de ramas de actualización.                                |
 | base-branch        | main                | Rama base de las PR.                                              |
 | auto-merge         | false               | Esperar checks y hacer squash-merge.                              |
@@ -64,6 +66,29 @@ jobs:
 
 github-token es obligatorio si auto-merge está activado. Los inputs SSH son
 obligatorios para publicar.
+
+## Mantenimiento manual de un paquete
+
+Para actualizar un paquete sin conector automático, pasa los dos inputs
+manuales. La Action omite la detección de versiones, actualiza el paquete a la
+versión indicada, regenera checksums y .SRCINFO, valida y abre una PR individual.
+Necesita `github-token`. Esta ruta no publica directamente en AUR: la
+publicación sigue correspondiendo al workflow que se ejecuta tras el merge.
+
+```yaml
+- uses: soker90/aur-maintainer@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    manual-package: vega-cli-bin
+    manual-version: 1.2.3
+```
+
+Un paquete sin detección automática puede configurarse solo con su ruta:
+
+```yaml
+packages:
+  - path: vega-cli-bin
+```
 
 ## Outputs
 
