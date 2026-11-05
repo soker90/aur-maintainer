@@ -224,7 +224,7 @@ async function findOversizedHistoryBlobs(
     'bash',
     [
       '-c',
-      "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'"
+      "git rev-list --objects master | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'"
     ],
     repositoryPath,
     env
