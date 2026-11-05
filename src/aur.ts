@@ -1,11 +1,28 @@
-import { cp, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rm,
+  stat,
+  writeFile
+} from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import type { PackageDefinition } from './types.js'
 
+export const MAX_AUR_BLOB_SIZE = 500_000
+
 export interface AurPublishOptions {
   sshKey: string
   knownHosts: string
+  rewriteHistory?: boolean
+}
+
+interface OversizedBlob {
+  sha: string
+  size: number
+  path: string
 }
 
 import { hostGitRunner, type GitRunner } from './utils.js'
@@ -44,10 +61,12 @@ export async function publishAurPackage(
       '-o',
       `"UserKnownHostsFile=${knownHostsPath}"`,
       '-o',
-      'StrictHostKeyChecking=yes'
+      'StrictHostKeyChecking=yes',
+      '-o',
+      'SendEnv=AUR_OVERWRITE'
     ].join(' ')
 
-    const env = {
+    const env: NodeJS.ProcessEnv = {
       ...process.env,
       GIT_SSH_COMMAND: sshCommand
     }
@@ -56,6 +75,78 @@ export async function publishAurPackage(
     await git.run('git', ['clone', remote, repositoryPath], undefined, env)
 
     const files = await getAurPackageFiles(pkg.path)
+    await validatePackageFileSizes(pkg.path, files)
+
+    const oversizedBlobs = await findOversizedHistoryBlobs(
+      repositoryPath,
+      git,
+      env
+    )
+    let rewrittenHistory = false
+
+    if (oversizedBlobs.length > 0) {
+      if (!options.rewriteHistory) {
+        const details = oversizedBlobs
+          .map((blob) => `${blob.path} (${blob.size} bytes)`)
+          .toSorted()
+          .join(', ')
+        throw new Error(
+          `AUR history for ${pkg.name} contains blobs exceeding the ${MAX_AUR_BLOB_SIZE}-byte limit: ${details}. Enable aur-rewrite-history to back up and sanitize the history before publishing.`
+        )
+      }
+
+      const backupDirectory = path.join(
+        process.env.RUNNER_TEMP ?? os.tmpdir(),
+        'aur-maintainer-aur-backups'
+      )
+      const backupPath = path.join(backupDirectory, `${pkg.name}.bundle`)
+      await mkdir(backupDirectory, { recursive: true })
+      await git.run(
+        'git',
+        ['bundle', 'create', backupPath, '--all'],
+        repositoryPath,
+        env
+      )
+
+      console.info(
+        `Backed up original AUR history for ${pkg.name} to ${backupPath}`
+      )
+      console.info(
+        `Removing oversized historical blobs from ${pkg.name}: ${oversizedBlobs
+          .map((blob) => `${blob.path} (${blob.size} bytes)`)
+          .join(', ')}`
+      )
+
+      await git.run(
+        'git',
+        [
+          'filter-branch',
+          '--force',
+          '--tree-filter',
+          `find . -type f -size +${MAX_AUR_BLOB_SIZE}c -delete`,
+          '--',
+          'master'
+        ],
+        repositoryPath,
+        { ...env, FILTER_BRANCH_SQUELCH_WARNING: '1' }
+      )
+
+      const remainingBlobs = await findOversizedHistoryBlobs(
+        repositoryPath,
+        git,
+        env
+      )
+      if (remainingBlobs.length > 0) {
+        throw new Error(
+          `AUR history sanitization did not remove all oversized blobs for ${pkg.name}: ${remainingBlobs
+            .map((blob) => `${blob.path} (${blob.size} bytes)`)
+            .join(', ')}`
+        )
+      }
+
+      rewrittenHistory = true
+    }
+
     await git.run(
       'git',
       ['rm', '-r', '--ignore-unmatch', '--', '.'],
@@ -93,11 +184,67 @@ export async function publishAurPackage(
       repositoryPath,
       env
     )
-    await git.run('git', ['push', 'origin', 'master'], repositoryPath, env)
+
+    const pushEnv = rewrittenHistory ? { ...env, AUR_OVERWRITE: '1' } : env
+    const pushArgs = rewrittenHistory
+      ? ['push', '--force', 'origin', 'master']
+      : ['push', 'origin', 'master']
+    await git.run('git', pushArgs, repositoryPath, pushEnv)
     return true
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+}
+
+async function validatePackageFileSizes(
+  packagePath: string,
+  files: string[]
+): Promise<void> {
+  const oversizedFiles: string[] = []
+  for (const file of files) {
+    const fileSize = (await stat(path.join(packagePath, file))).size
+    if (fileSize > MAX_AUR_BLOB_SIZE) {
+      oversizedFiles.push(`${file} (${fileSize} bytes)`)
+    }
+  }
+
+  if (oversizedFiles.length > 0) {
+    throw new Error(
+      `AUR package files exceed the ${MAX_AUR_BLOB_SIZE}-byte blob limit: ${oversizedFiles.join(', ')}. Replace large local files with upstream source URLs before publishing.`
+    )
+  }
+}
+
+async function findOversizedHistoryBlobs(
+  repositoryPath: string,
+  git: GitRunner,
+  env: NodeJS.ProcessEnv
+): Promise<OversizedBlob[]> {
+  const output = await git.run(
+    'bash',
+    [
+      '-c',
+      "git rev-list --objects --all | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'"
+    ],
+    repositoryPath,
+    env
+  )
+
+  return output
+    .split('\n')
+    .flatMap((line) => {
+      const match = /^blob ([0-9a-f]{40,64}) (\d+) (.+)$/.exec(line)
+      if (!match) return []
+      const size = Number(match[2])
+      if (size <= MAX_AUR_BLOB_SIZE) return []
+      return [{ sha: match[1], size, path: match[3] }]
+    })
+    .filter(
+      (blob, index, blobs) =>
+        blobs.findIndex(
+          (candidate) => candidate.sha === blob.sha && candidate.path === blob.path
+        ) === index
+    )
 }
 
 export function normalizeSshKey(key: string): string {
