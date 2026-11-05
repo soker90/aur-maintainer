@@ -48,25 +48,41 @@ describe('package validation', () => {
       2,
       'makepkg',
       ['--verifysource'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       3,
       'makepkg',
       ['--printsrcinfo'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       4,
       'makepkg',
       ['-sf', '--noconfirm'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       5,
       'makepkg',
       ['--packagelist'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
     expect(run).toHaveBeenNthCalledWith(
