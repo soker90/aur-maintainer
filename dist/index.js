@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, mkdtemp, cp, rm as rm$1, unlink as unlink$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, mkdtemp, mkdir as mkdir$1, cp, rm as rm$1, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$4 } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -36893,6 +36893,7 @@ function resolveArtifactPath(packagePath, artifact) {
         : path.resolve(packagePath, artifact);
 }
 
+const MAX_AUR_BLOB_SIZE = 500_000;
 async function publishAurPackage(pkg, options, git = hostGitRunner) {
     if (!options.sshKey.trim()) {
         throw new Error('AUR SSH key is required when AUR publishing is enabled');
@@ -36900,6 +36901,8 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
     if (!options.knownHosts.trim()) {
         throw new Error('AUR known hosts are required when AUR publishing is enabled');
     }
+    const files = await getAurPackageFiles(pkg.path);
+    await validatePackageFileSizes(pkg.path, files);
     const tempDir = await mkdtemp(path.join(os$1.tmpdir(), 'aur-maintainer-'));
     const keyPath = path.join(tempDir, 'aur-key');
     const knownHostsPath = path.join(tempDir, 'known_hosts');
@@ -36916,7 +36919,9 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
             '-o',
             `"UserKnownHostsFile=${knownHostsPath}"`,
             '-o',
-            'StrictHostKeyChecking=yes'
+            'StrictHostKeyChecking=yes',
+            '-o',
+            'SendEnv=AUR_OVERWRITE'
         ].join(' ');
         const env = {
             ...process.env,
@@ -36924,24 +36929,94 @@ async function publishAurPackage(pkg, options, git = hostGitRunner) {
         };
         const remote = 'ssh://aur@aur.archlinux.org/' + pkg.name + '.git';
         await git.run('git', ['clone', remote, repositoryPath], undefined, env);
-        const files = await getAurPackageFiles(pkg.path);
+        const oversizedBlobs = await findOversizedHistoryBlobs(repositoryPath, git, env);
+        let rewrittenHistory = false;
+        if (oversizedBlobs.length > 0) {
+            if (!options.rewriteHistory) {
+                const details = oversizedBlobs
+                    .map((blob) => `${blob.path} (${blob.size} bytes)`)
+                    .toSorted()
+                    .join(', ');
+                throw new Error(`AUR history for ${pkg.name} contains blobs exceeding the ${MAX_AUR_BLOB_SIZE}-byte limit: ${details}. Enable aur-rewrite-history to back up and sanitize the history before publishing.`);
+            }
+            const backupDirectory = path.join(process.env.RUNNER_TEMP ?? os$1.tmpdir(), 'aur-maintainer-aur-backups');
+            const backupPath = path.join(backupDirectory, `${pkg.name}.bundle`);
+            await mkdir$1(backupDirectory, { recursive: true });
+            await git.run('git', ['bundle', 'create', backupPath, '--all'], repositoryPath, env);
+            console.info(`Backed up original AUR history for ${pkg.name} to ${backupPath}`);
+            console.info(`Removing oversized historical blobs from ${pkg.name}: ${oversizedBlobs
+                .map((blob) => `${blob.path} (${blob.size} bytes)`)
+                .join(', ')}`);
+            await git.run('git', [
+                'filter-branch',
+                '--force',
+                '--tree-filter',
+                `find . -type f -size +${MAX_AUR_BLOB_SIZE}c -delete`,
+                '--',
+                'master'
+            ], repositoryPath, { ...env, FILTER_BRANCH_SQUELCH_WARNING: '1' });
+            const remainingBlobs = await findOversizedHistoryBlobs(repositoryPath, git, env);
+            if (remainingBlobs.length > 0) {
+                throw new Error(`AUR history sanitization did not remove all oversized blobs for ${pkg.name}: ${remainingBlobs
+                    .map((blob) => `${blob.path} (${blob.size} bytes)`)
+                    .join(', ')}`);
+            }
+            rewrittenHistory = true;
+        }
         await git.run('git', ['rm', '-r', '--ignore-unmatch', '--', '.'], repositoryPath, env);
         for (const file of files) {
             await cp(path.join(pkg.path, file), path.join(repositoryPath, file));
         }
         const changed = await git.run('git', ['status', '--short'], repositoryPath, env);
-        if (!changed.trim())
+        const hasPackageChanges = Boolean(changed.trim());
+        if (!hasPackageChanges && !rewrittenHistory)
             return false;
-        await git.run('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
-        await git.run('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
-        await git.run('git', ['add', '-A'], repositoryPath, env);
-        await git.run('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
-        await git.run('git', ['push', 'origin', 'master'], repositoryPath, env);
+        if (hasPackageChanges) {
+            await git.run('git', ['config', 'user.name', 'aur-maintainer'], repositoryPath, env);
+            await git.run('git', ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'], repositoryPath, env);
+            await git.run('git', ['add', '-A'], repositoryPath, env);
+            await git.run('git', ['commit', '-m', 'chore: update ' + pkg.name], repositoryPath, env);
+        }
+        const pushEnv = rewrittenHistory ? { ...env, AUR_OVERWRITE: '1' } : env;
+        const pushArgs = rewrittenHistory
+            ? ['push', '--force', 'origin', 'master']
+            : ['push', 'origin', 'master'];
+        await git.run('git', pushArgs, repositoryPath, pushEnv);
         return true;
     }
     finally {
         await rm$1(tempDir, { recursive: true, force: true });
     }
+}
+async function validatePackageFileSizes(packagePath, files) {
+    const oversizedFiles = [];
+    for (const file of files) {
+        const fileSize = (await stat$1(path.join(packagePath, file))).size;
+        if (fileSize > MAX_AUR_BLOB_SIZE) {
+            oversizedFiles.push(`${file} (${fileSize} bytes)`);
+        }
+    }
+    if (oversizedFiles.length > 0) {
+        throw new Error(`AUR package files exceed the ${MAX_AUR_BLOB_SIZE}-byte blob limit: ${oversizedFiles.join(', ')}. Replace large local files with upstream source URLs before publishing.`);
+    }
+}
+async function findOversizedHistoryBlobs(repositoryPath, git, env) {
+    const output = await git.run('bash', [
+        '-c',
+        "if git show-ref --verify --quiet refs/heads/master; then git rev-list --objects master | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'; fi"
+    ], repositoryPath, env);
+    return output
+        .split('\n')
+        .flatMap((line) => {
+        const match = /^blob ([0-9a-f]{40,64}) (\d+) (.+)$/.exec(line);
+        if (!match)
+            return [];
+        const size = Number(match[2]);
+        if (size <= MAX_AUR_BLOB_SIZE)
+            return [];
+        return [{ sha: match[1], size, path: match[3] }];
+    })
+        .filter((blob, index, blobs) => blobs.findIndex((candidate) => candidate.sha === blob.sha && candidate.path === blob.path) === index);
 }
 function normalizeSshKey(key) {
     return key.replace(/\r\n/g, '\n').replace(/\\n/g, '\n').trimEnd() + '\n';
@@ -36976,6 +37051,7 @@ async function run() {
         const aurPublishBranch = getInput('aur-publish-branch');
         const aurSshKey = getInput('aur-ssh-key');
         const aurKnownHosts = getInput('aur-known-hosts');
+        const aurRewriteHistory = getBooleanInput('aur-rewrite-history');
         const pullRequests = [];
         setOutput('pull-requests', JSON.stringify(pullRequests));
         if (autoMerge && !token) {
@@ -36998,7 +37074,8 @@ async function run() {
             await validatePackage(packageToPublish);
             const published = await publishAurPackage(packageToPublish, {
                 sshKey: aurSshKey,
-                knownHosts: aurKnownHosts
+                knownHosts: aurKnownHosts,
+                ...(aurRewriteHistory ? { rewriteHistory: true } : {})
             });
             if (published)
                 info(`Published ${packageToPublish.name} to the AUR`);
@@ -37131,7 +37208,8 @@ async function run() {
                     }
                     const published = await publishAurPackage(pkg, {
                         sshKey: aurSshKey,
-                        knownHosts: aurKnownHosts
+                        knownHosts: aurKnownHosts,
+                        ...(aurRewriteHistory ? { rewriteHistory: true } : {})
                     });
                     if (published)
                         info(`Published ${pkg.name} to the AUR`);
