@@ -48,26 +48,53 @@ describe('package validation', () => {
       2,
       'makepkg',
       ['--verifysource'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       3,
       'makepkg',
       ['--printsrcinfo'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       4,
       'makepkg',
       ['-sf', '--noconfirm'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
     expect(run).toHaveBeenNthCalledWith(
       5,
       'makepkg',
       ['--packagelist'],
-      pkg.path
+      pkg.path,
+      expect.objectContaining({
+        SRCDEST: expect.any(String),
+        PKGDEST: expect.any(String)
+      })
     )
+    const makepkgEnvironment = run.mock.calls[1][3] as NodeJS.ProcessEnv
+    expect(
+      path
+        .relative(directory, makepkgEnvironment.SRCDEST ?? '')
+        .startsWith('..')
+    ).toBe(true)
+    expect(
+      path
+        .relative(directory, makepkgEnvironment.PKGDEST ?? '')
+        .startsWith('..')
+    ).toBe(true)
     expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
     expect(run).toHaveBeenNthCalledWith(
       7,

@@ -1,5 +1,6 @@
 import { execFile as execFileCallback } from 'node:child_process'
-import { access, readFile } from 'node:fs/promises'
+import { access, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import type { PackageDefinition } from './types.js'
@@ -17,14 +18,36 @@ export async function validatePackage(
   pkg: PackageDefinition,
   runner: CommandRunner = hostCommandRunner
 ): Promise<void> {
+  const validationDirectory = await mkdtemp(
+    path.join(os.tmpdir(), 'aur-maintainer-validation-')
+  )
+  const sourceDirectory = path.join(validationDirectory, 'sources')
+  const packageDirectory = path.join(validationDirectory, 'packages')
+  const makepkgEnvironment: NodeJS.ProcessEnv = {
+    ...process.env,
+    SRCDEST: sourceDirectory,
+    PKGDEST: packageDirectory
+  }
+
+  await Promise.all([
+    mkdir(sourceDirectory, { recursive: true }),
+    mkdir(packageDirectory, { recursive: true })
+  ])
+
   try {
     await runner.run('namcap', [pkg.pkgbuildPath])
-    await runner.run('makepkg', ['--verifysource'], pkg.path)
+    await runner.run(
+      'makepkg',
+      ['--verifysource'],
+      pkg.path,
+      makepkgEnvironment
+    )
 
     const generatedSrcinfo = await runner.run(
       'makepkg',
       ['--printsrcinfo'],
-      pkg.path
+      pkg.path,
+      makepkgEnvironment
     )
     const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8')
     if (
@@ -34,9 +57,19 @@ export async function validatePackage(
       throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`)
     }
 
-    await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path)
+    await runner.run(
+      'makepkg',
+      ['-sf', '--noconfirm'],
+      pkg.path,
+      makepkgEnvironment
+    )
 
-    const packageList = await runner.run('makepkg', ['--packagelist'], pkg.path)
+    const packageList = await runner.run(
+      'makepkg',
+      ['--packagelist'],
+      pkg.path,
+      makepkgEnvironment
+    )
     const expectedArtifacts = packageList
       .split('\n')
       .map((entry) => entry.trim())
@@ -46,7 +79,7 @@ export async function validatePackage(
     }
 
     const artifacts = expectedArtifacts.map((artifact) =>
-      resolveArtifactPath(pkg.path, artifact)
+      resolveArtifactPath(packageDirectory, artifact)
     )
     const missingArtifacts: string[] = []
 
@@ -78,6 +111,8 @@ export async function validatePackage(
   } catch (error) {
     if (!isCommandNotFound(error)) throw error
     await validatePackageWithDocker(pkg)
+  } finally {
+    await rm(validationDirectory, { recursive: true, force: true })
   }
 }
 
@@ -103,7 +138,7 @@ async function validatePackageWithDocker(
       'archlinux:latest',
       'bash',
       '-c',
-      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
+      'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-srcdest /tmp/aur-maintainer-pkgdest && chown -R builder:builder /tmp/aur-maintainer-srcdest /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder env SRCDEST=/tmp/aur-maintainer-srcdest PKGDEST=/tmp/aur-maintainer-pkgdest makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env SRCDEST=/tmp/aur-maintainer-srcdest PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ],
     { cwd: pkg.path }
   )
