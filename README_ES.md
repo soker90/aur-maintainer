@@ -200,7 +200,10 @@ La secuencia es:
 8. namcap sobre artefactos.
 9. pacman -U --noconfirm.
 
-Si las herramientas no están disponibles, se usa Docker con Arch Linux.
+Si las herramientas no están disponibles, se usa Docker con Arch Linux. Las
+descargas y los paquetes compilados se guardan en directorios temporales
+`SRCDEST` y `PKGDEST` fuera del directorio del paquete para evitar que se
+confundan con archivos que deban publicarse en AUR.
 
 Si falla la validación, los cambios se conservan y se crea un issue cuando hay
 autenticación de GitHub.
