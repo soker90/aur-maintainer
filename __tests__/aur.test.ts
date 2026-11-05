@@ -142,7 +142,7 @@ describe('AUR publishing', () => {
       .fn()
       .mockImplementation(async (_command: string, args: string[]) => {
         if (args[0] === 'clone') await mkdir(args[2], { recursive: true })
-        if (args[0] === 'bash') {
+        if (_command === 'bash') {
           return 'blob 0123456789012345678901234567890123456789 600001 old.patch\n'
         }
         return ''
@@ -169,7 +169,7 @@ describe('AUR publishing', () => {
       .fn()
       .mockImplementation(async (_command: string, args: string[]) => {
         if (args[0] === 'clone') await mkdir(args[2], { recursive: true })
-        if (args[0] === 'bash') {
+        if (_command === 'bash') {
           historyScans += 1
           return historyScans === 1
             ? 'blob 0123456789012345678901234567890123456789 600001 old.patch\n'
@@ -235,7 +235,7 @@ describe('AUR publishing', () => {
       .fn()
       .mockImplementation(async (_command: string, args: string[]) => {
         if (args[0] === 'clone') await mkdir(args[2], { recursive: true })
-        if (args[0] === 'bash') {
+        if (_command === 'bash') {
           historyScans += 1
           return historyScans === 1
             ? 'blob 0123456789012345678901234567890123456789 600001 old.patch\n'
