@@ -39,6 +39,7 @@ export async function run(): Promise<void> {
     const aurPublishBranch = core.getInput('aur-publish-branch')
     const aurSshKey = core.getInput('aur-ssh-key')
     const aurKnownHosts = core.getInput('aur-known-hosts')
+    const aurRewriteHistory = core.getBooleanInput('aur-rewrite-history')
     const pullRequests: string[] = []
     core.setOutput('pull-requests', JSON.stringify(pullRequests))
 
@@ -70,7 +71,8 @@ export async function run(): Promise<void> {
       await validatePackage(packageToPublish)
       const published = await publishAurPackage(packageToPublish, {
         sshKey: aurSshKey,
-        knownHosts: aurKnownHosts
+        knownHosts: aurKnownHosts,
+        ...(aurRewriteHistory ? { rewriteHistory: true } : {})
       })
       if (published) core.info(`Published ${packageToPublish.name} to the AUR`)
       else
@@ -245,7 +247,8 @@ export async function run(): Promise<void> {
           }
           const published = await publishAurPackage(pkg, {
             sshKey: aurSshKey,
-            knownHosts: aurKnownHosts
+            knownHosts: aurKnownHosts,
+            ...(aurRewriteHistory ? { rewriteHistory: true } : {})
           })
           if (published) core.info(`Published ${pkg.name} to the AUR`)
           else core.info(`AUR package ${pkg.name} is already up to date`)

@@ -61,6 +61,12 @@ inputs:
       Merged package update branch to publish, using the configured
       update-branch prefix (for example, update/example)
     required: false
+  aur-rewrite-history:
+    description: >-
+      Back up and remove oversized blobs from existing AUR history before
+      publishing, using AUR's explicit history-overwrite mechanism
+    required: false
+    default: 'false'
   aur-ssh-key:
     description: >-
       Private SSH key authorized for the AUR account

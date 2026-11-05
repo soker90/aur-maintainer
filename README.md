@@ -70,8 +70,8 @@ auto-merge-timeout: 1800
 
 For a package that has no upstream version connector, pass both manual inputs.
 The action skips connector detection, updates the selected package to the
-requested version, regenerates checksums and .SRCINFO, validates it, and opens
-a package-specific pull request. A GitHub token is required. This path never
+requested version, regenerates checksums and .SRCINFO, validates it, and opens a
+package-specific pull request. A GitHub token is required. This path never
 publishes directly to AUR; the normal post-merge publish workflow remains
 responsible for that.
 
@@ -124,6 +124,12 @@ updates can still run, but no GitHub branch/PR is created.
 - aur-publish: publish an updated package after validation.
 - aur-publish-only: publish the current package state without upstream
   detection.
+- aur-rewrite-history: when enabled, back up the AUR Git history and remove
+  historical blobs larger than 500,000 bytes before publishing. This rewrites
+  historical commits and uses AUR's explicit `AUR_OVERWRITE=1` mechanism; only
+  enable it to repair an AUR history rejected for oversized legacy blobs. The
+  bundle is written to `$RUNNER_TEMP/aur-maintainer-aur-backups/` for upload as
+  a workflow artifact.
 - aur-ssh-key: private SSH key authorized for the AUR account.
 - aur-known-hosts: trusted host-key data for aur.archlinux.org.
 
