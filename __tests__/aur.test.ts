@@ -63,7 +63,7 @@ describe('AUR publishing', () => {
     ])
   })
 
-  it('rejects oversized files in the current package before cloning AUR', async () => {
+  it('rejects oversized files in the current package before contacting AUR', async () => {
     const directory = await createPackageDirectory()
     await writeFile(
       path.join(directory, 'local.patch'),
@@ -79,8 +79,7 @@ describe('AUR publishing', () => {
       )
     ).rejects.toThrow(/local\.patch.*500000-byte blob limit/)
 
-    expect(run).toHaveBeenCalledTimes(1)
-    expect(run.mock.calls[0][1]?.[0]).toBe('clone')
+    expect(run).not.toHaveBeenCalled()
   })
 
   it('publishes a changed package without rewriting clean AUR history', async () => {
