@@ -43,6 +43,9 @@ export async function publishAurPackage(
     )
   }
 
+  const files = await getAurPackageFiles(pkg.path)
+  await validatePackageFileSizes(pkg.path, files)
+
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'aur-maintainer-'))
   const keyPath = path.join(tempDir, 'aur-key')
   const knownHostsPath = path.join(tempDir, 'known_hosts')
@@ -73,9 +76,6 @@ export async function publishAurPackage(
 
     const remote = 'ssh://aur@aur.archlinux.org/' + pkg.name + '.git'
     await git.run('git', ['clone', remote, repositoryPath], undefined, env)
-
-    const files = await getAurPackageFiles(pkg.path)
-    await validatePackageFileSizes(pkg.path, files)
 
     const oversizedBlobs = await findOversizedHistoryBlobs(
       repositoryPath,
@@ -224,7 +224,7 @@ async function findOversizedHistoryBlobs(
     'bash',
     [
       '-c',
-      "git rev-list --objects master | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'"
+      "if git show-ref --verify --quiet refs/heads/master; then git rev-list --objects master | git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)'; fi"
     ],
     repositoryPath,
     env
