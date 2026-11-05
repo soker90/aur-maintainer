@@ -163,27 +163,30 @@ export async function publishAurPackage(
       repositoryPath,
       env
     )
-    if (!changed.trim()) return false
+    const hasPackageChanges = Boolean(changed.trim())
+    if (!hasPackageChanges && !rewrittenHistory) return false
 
-    await git.run(
-      'git',
-      ['config', 'user.name', 'aur-maintainer'],
-      repositoryPath,
-      env
-    )
-    await git.run(
-      'git',
-      ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'],
-      repositoryPath,
-      env
-    )
-    await git.run('git', ['add', '-A'], repositoryPath, env)
-    await git.run(
-      'git',
-      ['commit', '-m', 'chore: update ' + pkg.name],
-      repositoryPath,
-      env
-    )
+    if (hasPackageChanges) {
+      await git.run(
+        'git',
+        ['config', 'user.name', 'aur-maintainer'],
+        repositoryPath,
+        env
+      )
+      await git.run(
+        'git',
+        ['config', 'user.email', 'aur-maintainer@users.noreply.github.com'],
+        repositoryPath,
+        env
+      )
+      await git.run('git', ['add', '-A'], repositoryPath, env)
+      await git.run(
+        'git',
+        ['commit', '-m', 'chore: update ' + pkg.name],
+        repositoryPath,
+        env
+      )
+    }
 
     const pushEnv = rewrittenHistory ? { ...env, AUR_OVERWRITE: '1' } : env
     const pushArgs = rewrittenHistory
