@@ -32,7 +32,7 @@ import require$$1$5 from 'node:dns';
 import require$$5$3 from 'string_decoder';
 import 'child_process';
 import 'timers';
-import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, access as access$1, mkdtemp, mkdir as mkdir$1, cp, rm as rm$1, unlink as unlink$1 } from 'node:fs/promises';
+import { readFile, readdir as readdir$1, stat as stat$1, writeFile as writeFile$1, mkdtemp, mkdir as mkdir$1, access as access$1, rm as rm$1, cp, unlink as unlink$1 } from 'node:fs/promises';
 import path from 'node:path';
 import { execFile as execFile$4 } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -35623,8 +35623,8 @@ function parse(src, reviver, options) {
 
 const execFile$3 = promisify(execFile$4);
 const hostCommandRunner = {
-    async run(command, args, cwd) {
-        const result = await execFile$3(command, args, { cwd });
+    async run(command, args, cwd, env) {
+        const result = await execFile$3(command, args, { cwd, env });
         return result.stdout;
     }
 };
@@ -36825,17 +36825,29 @@ function isIssue(value) {
 
 const execFile = promisify(execFile$4);
 async function validatePackage(pkg, runner = hostCommandRunner) {
+    const validationDirectory = await mkdtemp(path.join(os$1.tmpdir(), 'aur-maintainer-validation-'));
+    const sourceDirectory = path.join(validationDirectory, 'sources');
+    const packageDirectory = path.join(validationDirectory, 'packages');
+    const makepkgEnvironment = {
+        ...process.env,
+        SRCDEST: sourceDirectory,
+        PKGDEST: packageDirectory
+    };
+    await Promise.all([
+        mkdir$1(sourceDirectory, { recursive: true }),
+        mkdir$1(packageDirectory, { recursive: true })
+    ]);
     try {
         await runner.run('namcap', [pkg.pkgbuildPath]);
-        await runner.run('makepkg', ['--verifysource'], pkg.path);
-        const generatedSrcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path);
+        await runner.run('makepkg', ['--verifysource'], pkg.path, makepkgEnvironment);
+        const generatedSrcinfo = await runner.run('makepkg', ['--printsrcinfo'], pkg.path, makepkgEnvironment);
         const currentSrcinfo = await readFile(pkg.srcinfoPath, 'utf8');
         if (generatedSrcinfo.replace(/\r\n/g, '\n').trim() !==
             currentSrcinfo.replace(/\r\n/g, '\n').trim()) {
             throw new Error(`Generated .SRCINFO does not match ${pkg.srcinfoPath}`);
         }
-        await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path);
-        const packageList = await runner.run('makepkg', ['--packagelist'], pkg.path);
+        await runner.run('makepkg', ['-sf', '--noconfirm'], pkg.path, makepkgEnvironment);
+        const packageList = await runner.run('makepkg', ['--packagelist'], pkg.path, makepkgEnvironment);
         const expectedArtifacts = packageList
             .split('\n')
             .map((entry) => entry.trim())
@@ -36843,7 +36855,7 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
         if (expectedArtifacts.length === 0) {
             throw new Error(`No package artifact was produced for ${pkg.name}`);
         }
-        const artifacts = expectedArtifacts.map((artifact) => resolveArtifactPath(pkg.path, artifact));
+        const artifacts = expectedArtifacts.map((artifact) => resolveArtifactPath(packageDirectory, artifact));
         const missingArtifacts = [];
         for (const artifact of artifacts) {
             try {
@@ -36866,6 +36878,9 @@ async function validatePackage(pkg, runner = hostCommandRunner) {
             throw error;
         await validatePackageWithDocker(pkg);
     }
+    finally {
+        await rm$1(validationDirectory, { recursive: true, force: true });
+    }
 }
 async function validatePackageWithDocker(pkg) {
     const uid = String(process.getuid?.() ?? 1000);
@@ -36884,7 +36899,7 @@ async function validatePackageWithDocker(pkg) {
         'archlinux:latest',
         'bash',
         '-c',
-        'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-pkgdest && chown builder:builder /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
+        'pacman -Syu --noconfirm --needed base-devel namcap sudo && groupadd -o -g "$HOST_GID" builder && useradd -o -u "$HOST_UID" -g "$HOST_GID" --create-home builder && echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && mkdir -p /tmp/aur-maintainer-srcdest /tmp/aur-maintainer-pkgdest && chown -R builder:builder /tmp/aur-maintainer-srcdest /tmp/aur-maintainer-pkgdest && cd /pkg && sudo -u builder namcap PKGBUILD && sudo -u builder env SRCDEST=/tmp/aur-maintainer-srcdest PKGDEST=/tmp/aur-maintainer-pkgdest makepkg --verifysource && sudo -u builder makepkg --printsrcinfo > .SRCINFO.generated && diff -u .SRCINFO .SRCINFO.generated && rm .SRCINFO.generated && sudo -u builder env SRCDEST=/tmp/aur-maintainer-srcdest PKGDEST=/tmp/aur-maintainer-pkgdest makepkg -sf --noconfirm && packages=(/tmp/aur-maintainer-pkgdest/*.pkg.tar.*) && [[ -e "${packages[0]}" ]] && for package in "${packages[@]}"; do namcap "$package"; done && pacman -U --noconfirm "${packages[@]}"'
     ], { cwd: pkg.path });
 }
 function resolveArtifactPath(packagePath, artifact) {
