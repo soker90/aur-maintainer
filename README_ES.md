@@ -61,6 +61,7 @@ jobs:
 | auto-merge-timeout | 1800                | Tiempo máximo de espera de checks, en segundos.                   |
 | aur-publish        | false               | Publicar la actualización validada en AUR.                        |
 | aur-publish-only   | false               | Publicar el estado actual sin detectar upstream; tiene prioridad. |
+| aur-rewrite-history | false              | Respaldar y sanear commits históricos AUR con blobs de más de 500.000 bytes antes de publicar. |
 | aur-ssh-key        | —                   | Clave SSH privada autorizada en AUR.                              |
 | aur-known-hosts    | —                   | Host keys confiables de aur.archlinux.org.                        |
 
@@ -233,6 +234,14 @@ con el directorio gestionado, incluyendo la eliminación de archivos versionados
 que ya no existen.
 
 aur-publish-only evita la detección upstream y publica el estado actual.
+
+Si AUR rechaza la publicación por blobs históricos demasiado grandes, activa
+`aur-rewrite-history: true`. La Action guarda primero una copia completa del
+historial en `$RUNNER_TEMP/aur-maintainer-aur-backups/`, elimina los archivos
+históricos que superan 500.000 bytes y reescribe los commits mediante el
+mecanismo explícito `AUR_OVERWRITE=1` de AUR. Es una operación destructiva sobre
+el historial publicado; conserva el bundle de respaldo como artefacto del
+workflow antes de darla por completada.
 
 ## Seguridad
 
