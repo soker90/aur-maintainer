@@ -123,7 +123,7 @@ export async function publishAurPackage(
           'filter-branch',
           '--force',
           '--tree-filter',
-          `find . -type f -size +${MAX_AUR_BLOB_SIZE}c -delete`,
+          `find . -path ./.git -prune -o -type f -size +${MAX_AUR_BLOB_SIZE}c -delete`,
           '--',
           'master'
         ],
