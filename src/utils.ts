@@ -4,12 +4,17 @@ import { promisify } from 'node:util'
 const execFile = promisify(execFileCallback)
 
 export interface CommandRunner {
-  run(command: string, args: string[], cwd?: string): Promise<string>
+  run(
+    command: string,
+    args: string[],
+    cwd?: string,
+    env?: NodeJS.ProcessEnv
+  ): Promise<string>
 }
 
 export const hostCommandRunner: CommandRunner = {
-  async run(command, args, cwd) {
-    const result = await execFile(command, args, { cwd })
+  async run(command, args, cwd, env) {
+    const result = await execFile(command, args, { cwd, env })
     return result.stdout
   }
 }
