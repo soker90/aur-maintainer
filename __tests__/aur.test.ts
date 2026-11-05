@@ -77,7 +77,7 @@ describe('AUR publishing', () => {
         { sshKey: 'PRIVATE KEY', knownHosts: 'KNOWN HOST' },
         { run }
       )
-    ).rejects.toThrow(/local\.patch.*500000-byte blob limit/)
+    ).rejects.toThrow(/500000-byte blob limit: local\.patch/)
 
     expect(run).not.toHaveBeenCalled()
   })
