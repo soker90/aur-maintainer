@@ -79,7 +79,7 @@ export async function validatePackage(
     }
 
     const artifacts = expectedArtifacts.map((artifact) =>
-      resolveArtifactPath(pkg.path, artifact)
+      resolveArtifactPath(packageDirectory, artifact)
     )
     const missingArtifacts: string[] = []
 
