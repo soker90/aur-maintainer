@@ -72,9 +72,9 @@ export async function run(): Promise<void> {
       const published = await publishAurPackage(packageToPublish, {
         sshKey: aurSshKey,
         knownHosts: aurKnownHosts,
-        ...(aurRewriteHistory ? { rewriteHistory: true } : {})
-      })
-      if (published) core.info(`Published ${packageToPublish.name} to the AUR`)
+            ...(aurRewriteHistory ? { rewriteHistory: true } : {})
+          })
+          if (published) core.info(`Published ${packageToPublish.name} to the AUR`)
       else
         core.info(`AUR package ${packageToPublish.name} is already up to date`)
 
