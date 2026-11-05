@@ -86,10 +86,14 @@ describe('package validation', () => {
     )
     const makepkgEnvironment = run.mock.calls[1][3] as NodeJS.ProcessEnv
     expect(
-      path.relative(directory, makepkgEnvironment.SRCDEST ?? '').startsWith('..')
+      path
+        .relative(directory, makepkgEnvironment.SRCDEST ?? '')
+        .startsWith('..')
     ).toBe(true)
     expect(
-      path.relative(directory, makepkgEnvironment.PKGDEST ?? '').startsWith('..')
+      path
+        .relative(directory, makepkgEnvironment.PKGDEST ?? '')
+        .startsWith('..')
     ).toBe(true)
     expect(run).toHaveBeenNthCalledWith(6, 'namcap', [artifactPath], pkg.path)
     expect(run).toHaveBeenNthCalledWith(
