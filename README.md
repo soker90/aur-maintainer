@@ -316,7 +316,9 @@ After an update, AUR Maintainer:
 9. installs artifacts with pacman -U --noconfirm.
 
 If the Arch tools are unavailable, validation is repeated in an Arch Linux
-Docker container.
+Docker container. Source downloads and package archives use temporary
+`SRCDEST` and `PKGDEST` directories outside the package workspace, so generated
+files cannot be mistaken for AUR repository content.
 
 On validation failure, the updated files are preserved and an issue is created
 when GitHub authentication is available. The action then fails.
