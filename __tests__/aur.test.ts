@@ -230,4 +230,45 @@ describe('AUR publishing', () => {
     )
     expect(historyScans).toBe(2)
   })
+  it('pushes sanitized history even when package files are already synchronized', async () => {
+    const directory = await createPackageDirectory()
+    const runnerTemp = await mkdtemp(path.join(os.tmpdir(), 'aur-runner-'))
+    process.env.RUNNER_TEMP = runnerTemp
+    let historyScans = 0
+    const run = jest
+      .fn()
+      .mockImplementation(async (_command: string, args: string[]) => {
+        if (args[0] === 'clone') await mkdir(args[2], { recursive: true })
+        if (args[0] === 'bash') {
+          historyScans += 1
+          return historyScans === 1
+            ? 'blob 0123456789012345678901234567890123456789 600001 old.patch\\n'
+            : ''
+        }
+        return ''
+      })
+
+    await expect(
+      publishAurPackage(
+        { ...pkg, path: directory },
+        {
+          sshKey: 'PRIVATE KEY',
+          knownHosts: 'KNOWN HOST',
+          rewriteHistory: true
+        },
+        { run }
+      )
+    ).resolves.toBe(true)
+
+    expect(
+      run.mock.calls.some((call) => call[1]?.[0] === 'commit')
+    ).toBe(false)
+    expect(run).toHaveBeenCalledWith(
+      'git',
+      ['push', '--force', 'origin', 'master'],
+      expect.any(String),
+      expect.objectContaining({ AUR_OVERWRITE: '1' })
+    )
+  })
+
 })
