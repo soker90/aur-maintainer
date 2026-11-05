@@ -70,8 +70,8 @@ auto-merge-timeout: 1800
 
 For a package that has no upstream version connector, pass both manual inputs.
 The action skips connector detection, updates the selected package to the
-requested version, regenerates checksums and .SRCINFO, validates it, and opens
-a package-specific pull request. A GitHub token is required. This path never
+requested version, regenerates checksums and .SRCINFO, validates it, and opens a
+package-specific pull request. A GitHub token is required. This path never
 publishes directly to AUR; the normal post-merge publish workflow remains
 responsible for that.
 

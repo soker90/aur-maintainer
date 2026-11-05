@@ -49,21 +49,21 @@ jobs:
 
 ## Inputs
 
-| Input              | Por defecto         | Descripción                                                       |
-| ------------------ | ------------------- | ----------------------------------------------------------------- |
-| config             | .aur-maintainer.yml | Configuración global.                                             |
-| github-token       | —                   | Token para API, ramas, PR, issues y merge.                        |
-| manual-package     | —                   | Nombre exacto del paquete que se actualizará manualmente.         |
-| manual-version     | —                   | Versión pkgver de destino; debe acompañar a manual-package.       |
-| update-branch      | update              | Prefijo de ramas de actualización.                                |
-| base-branch        | main                | Rama base de las PR.                                              |
-| auto-merge         | false               | Esperar checks y hacer squash-merge.                              |
-| auto-merge-timeout | 1800                | Tiempo máximo de espera de checks, en segundos.                   |
-| aur-publish        | false               | Publicar la actualización validada en AUR.                        |
-| aur-publish-only   | false               | Publicar el estado actual sin detectar upstream; tiene prioridad. |
-| aur-rewrite-history | false              | Respaldar y sanear commits históricos AUR con blobs de más de 500.000 bytes antes de publicar. |
-| aur-ssh-key        | —                   | Clave SSH privada autorizada en AUR.                              |
-| aur-known-hosts    | —                   | Host keys confiables de aur.archlinux.org.                        |
+| Input               | Por defecto         | Descripción                                                                                    |
+| ------------------- | ------------------- | ---------------------------------------------------------------------------------------------- |
+| config              | .aur-maintainer.yml | Configuración global.                                                                          |
+| github-token        | —                   | Token para API, ramas, PR, issues y merge.                                                     |
+| manual-package      | —                   | Nombre exacto del paquete que se actualizará manualmente.                                      |
+| manual-version      | —                   | Versión pkgver de destino; debe acompañar a manual-package.                                    |
+| update-branch       | update              | Prefijo de ramas de actualización.                                                             |
+| base-branch         | main                | Rama base de las PR.                                                                           |
+| auto-merge          | false               | Esperar checks y hacer squash-merge.                                                           |
+| auto-merge-timeout  | 1800                | Tiempo máximo de espera de checks, en segundos.                                                |
+| aur-publish         | false               | Publicar la actualización validada en AUR.                                                     |
+| aur-publish-only    | false               | Publicar el estado actual sin detectar upstream; tiene prioridad.                              |
+| aur-rewrite-history | false               | Respaldar y sanear commits históricos AUR con blobs de más de 500.000 bytes antes de publicar. |
+| aur-ssh-key         | —                   | Clave SSH privada autorizada en AUR.                                                           |
+| aur-known-hosts     | —                   | Host keys confiables de aur.archlinux.org.                                                     |
 
 github-token es obligatorio si auto-merge está activado. Los inputs SSH son
 obligatorios para publicar.
@@ -72,9 +72,9 @@ obligatorios para publicar.
 
 Para actualizar un paquete sin conector automático, pasa los dos inputs
 manuales. La Action omite la detección de versiones, actualiza el paquete a la
-versión indicada, regenera checksums y .SRCINFO, valida y abre una PR individual.
-Necesita `github-token`. Esta ruta no publica directamente en AUR: la
-publicación sigue correspondiendo al workflow que se ejecuta tras el merge.
+versión indicada, regenera checksums y .SRCINFO, valida y abre una PR
+individual. Necesita `github-token`. Esta ruta no publica directamente en AUR:
+la publicación sigue correspondiendo al workflow que se ejecuta tras el merge.
 
 ```yaml
 - uses: soker90/aur-maintainer@v1

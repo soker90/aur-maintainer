@@ -156,12 +156,8 @@ describe('AUR publishing', () => {
       )
     ).rejects.toThrow(/aur-rewrite-history/)
 
-    expect(
-      run.mock.calls.some((call) => call[1]?.[0] === 'bundle')
-    ).toBe(false)
-    expect(
-      run.mock.calls.some((call) => call[1]?.[0] === 'push')
-    ).toBe(false)
+    expect(run.mock.calls.some((call) => call[1]?.[0] === 'bundle')).toBe(false)
+    expect(run.mock.calls.some((call) => call[1]?.[0] === 'push')).toBe(false)
   })
 
   it('backs up and sanitizes oversized AUR history before force-pushing', async () => {
@@ -260,9 +256,7 @@ describe('AUR publishing', () => {
       )
     ).resolves.toBe(true)
 
-    expect(
-      run.mock.calls.some((call) => call[1]?.[0] === 'commit')
-    ).toBe(false)
+    expect(run.mock.calls.some((call) => call[1]?.[0] === 'commit')).toBe(false)
     expect(run).toHaveBeenCalledWith(
       'git',
       ['push', '--force', 'origin', 'master'],
@@ -270,5 +264,4 @@ describe('AUR publishing', () => {
       expect.objectContaining({ AUR_OVERWRITE: '1' })
     )
   })
-
 })

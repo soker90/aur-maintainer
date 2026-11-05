@@ -245,7 +245,8 @@ async function findOversizedHistoryBlobs(
     .filter(
       (blob, index, blobs) =>
         blobs.findIndex(
-          (candidate) => candidate.sha === blob.sha && candidate.path === blob.path
+          (candidate) =>
+            candidate.sha === blob.sha && candidate.path === blob.path
         ) === index
     )
 }
