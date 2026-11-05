@@ -124,6 +124,12 @@ updates can still run, but no GitHub branch/PR is created.
 - aur-publish: publish an updated package after validation.
 - aur-publish-only: publish the current package state without upstream
   detection.
+- aur-rewrite-history: when enabled, back up the AUR Git history and remove
+  historical blobs larger than 500,000 bytes before publishing. This rewrites
+  historical commits and uses AUR's explicit `AUR_OVERWRITE=1` mechanism; only
+  enable it to repair an AUR history rejected for oversized legacy blobs. The
+  bundle is written to `$RUNNER_TEMP/aur-maintainer-aur-backups/` for upload as
+  a workflow artifact.
 - aur-ssh-key: private SSH key authorized for the AUR account.
 - aur-known-hosts: trusted host-key data for aur.archlinux.org.
 
