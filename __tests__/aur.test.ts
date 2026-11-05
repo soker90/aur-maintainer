@@ -238,7 +238,7 @@ describe('AUR publishing', () => {
         if (args[0] === 'bash') {
           historyScans += 1
           return historyScans === 1
-            ? 'blob 0123456789012345678901234567890123456789 600001 old.patch\\n'
+            ? 'blob 0123456789012345678901234567890123456789 600001 old.patch\n'
             : ''
         }
         return ''
