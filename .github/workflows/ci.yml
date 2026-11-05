@@ -39,6 +39,8 @@ jobs:
       - name: Format source files for same-repository pull requests
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: |
+          git fetch origin "$GITHUB_HEAD_REF"
+          git checkout -B "$GITHUB_HEAD_REF" FETCH_HEAD
           npm run format:write
           if git diff --quiet --exit-code; then
             exit 0
